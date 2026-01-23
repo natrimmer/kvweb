@@ -20,6 +20,7 @@ type Config struct {
 	ReadOnly     bool
 	Prefix       string // Only show/allow keys matching this prefix
 	DisableFlush bool   // Block FLUSHDB even in write mode
+	MaxKeys      int64  // Limit SCAN count to prevent UI overload (0 = no limit)
 }
 
 // New creates a new Config with default values

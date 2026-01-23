@@ -146,6 +146,11 @@ func (h *Handler) handleKeys(w http.ResponseWriter, r *http.Request) {
 		count, _ = strconv.ParseInt(countStr, 10, 64)
 	}
 
+	// Apply max-keys limit if configured
+	if h.cfg.MaxKeys > 0 && count > h.cfg.MaxKeys {
+		count = h.cfg.MaxKeys
+	}
+
 	keys, nextCursor, err := h.client.Keys(r.Context(), pattern, cursor, count)
 	if err != nil {
 		jsonError(w, err.Error(), http.StatusInternalServerError)

@@ -31,6 +31,7 @@ func main() {
 	flag.BoolVar(&cfg.ReadOnly, "readonly", false, "Disable write operations (set, delete, flush)")
 	flag.StringVar(&cfg.Prefix, "prefix", "", "Only show/allow keys matching this prefix")
 	flag.BoolVar(&cfg.DisableFlush, "disable-flush", false, "Block FLUSHDB even in write mode")
+	flag.Int64Var(&cfg.MaxKeys, "max-keys", 0, "Limit SCAN count per request (0 = no limit)")
 	showVersion := flag.Bool("version", false, "Show version")
 	flag.Parse()
 
