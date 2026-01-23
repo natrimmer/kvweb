@@ -1,0 +1,64 @@
+package main
+
+import (
+	"flag"
+	"fmt"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
+
+	"github.com/gnat/kvweb/internal/config"
+	"github.com/gnat/kvweb/internal/server"
+	"github.com/gnat/kvweb/internal/valkey"
+)
+
+var (
+	version = "dev"
+	commit  = "none"
+)
+
+func main() {
+	cfg := config.New()
+
+	// CLI flags
+	flag.StringVar(&cfg.Host, "host", "localhost", "HTTP server host")
+	flag.IntVar(&cfg.Port, "port", 8080, "HTTP server port")
+	flag.StringVar(&cfg.ValkeyURL, "url", "localhost:6379", "Valkey/Redis server URL")
+	flag.StringVar(&cfg.ValkeyPassword, "password", "", "Valkey/Redis password")
+	flag.IntVar(&cfg.ValkeyDB, "db", 0, "Valkey/Redis database number")
+	flag.BoolVar(&cfg.OpenBrowser, "open", false, "Open browser on start")
+	showVersion := flag.Bool("version", false, "Show version")
+	flag.Parse()
+
+	if *showVersion {
+		fmt.Printf("kvweb %s (%s)\n", version, commit)
+		os.Exit(0)
+	}
+
+	// Initialize Valkey client
+	client, err := valkey.New(cfg)
+	if err != nil {
+		log.Fatalf("Failed to connect to Valkey: %v", err)
+	}
+	defer client.Close()
+
+	// Create and start server
+	srv := server.New(cfg, client)
+
+	// Graceful shutdown
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		<-stop
+		log.Println("Shutting down...")
+		srv.Shutdown()
+	}()
+
+	log.Printf("Connected to Valkey at %s", cfg.ValkeyURL)
+	log.Printf("kvweb running at http://%s:%d", cfg.Host, cfg.Port)
+	if err := srv.Start(); err != nil {
+		log.Fatalf("Server error: %v", err)
+	}
+}
