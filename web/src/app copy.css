@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+@theme {
+  --color-black-50: #f3f1f3;
+  --color-black-100: #e7e4e7;
+  --color-black-200: #d0c8d0;
+  --color-black-300: #b8adb8;
+  --color-black-400: #a092a0;
+  --color-black-500: #887788;
+  --color-black-600: #6d5f6d;
+  --color-black-700: #524752;
+  --color-black-800: #372f37;
+  --color-black-900: #1b181b;
+  --color-black-950: #131113;
+
+  --color-crayola-blue-50: #e5edff;
+  --color-crayola-blue-100: #ccdbff;
+  --color-crayola-blue-200: #99b8ff;
+  --color-crayola-blue-300: #6694ff;
+  --color-crayola-blue-400: #3370ff;
+  --color-crayola-blue-500: #004cff;
+  --color-crayola-blue-600: #003dcc;
+  --color-crayola-blue-700: #002e99;
+  --color-crayola-blue-800: #001f66;
+  --color-crayola-blue-900: #000f33;
+  --color-crayola-blue-950: #000b24;
+
+  --color-scarlet-rush-50: #fce9ea;
+  --color-scarlet-rush-100: #f8d3d5;
+  --color-scarlet-rush-200: #f2a6ab;
+  --color-scarlet-rush-300: #eb7a81;
+  --color-scarlet-rush-400: #e44e58;
+  --color-scarlet-rush-500: #de212e;
+  --color-scarlet-rush-600: #b11b25;
+  --color-scarlet-rush-700: #85141b;
+  --color-scarlet-rush-800: #590d12;
+  --color-scarlet-rush-900: #2c0709;
+  --color-scarlet-rush-950: #1f0506;
+
+  --color-golden-pollen-50: #fff8e6;
+  --color-golden-pollen-100: #fef1cd;
+  --color-golden-pollen-200: #fee39a;
+  --color-golden-pollen-300: #fdd568;
+  --color-golden-pollen-400: #fdc835;
+  --color-golden-pollen-500: #fcba03;
+  --color-golden-pollen-600: #ca9502;
+  --color-golden-pollen-700: #976f02;
+  --color-golden-pollen-800: #654a01;
+  --color-golden-pollen-900: #322501;
+  --color-golden-pollen-950: #231a00;
+
+  --color-alabaster-grey-50: #f2f3f2;
+  --color-alabaster-grey-100: #e4e7e4;
+  --color-alabaster-grey-200: #caceca;
+  --color-alabaster-grey-300: #afb6af;
+  --color-alabaster-grey-400: #959d95;
+  --color-alabaster-grey-500: #7a857a;
+  --color-alabaster-grey-600: #626a62;
+  --color-alabaster-grey-700: #495049;
+  --color-alabaster-grey-800: #313531;
+  --color-alabaster-grey-900: #181b18;
+  --color-alabaster-grey-950: #111311;
+
+  --font-sans: Avenir, Montserrat, Corbel, 'URW Gothic', source-sans-pro, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+}
+
+@layer base {
+  * {
+    @apply m-0 p-0 box-border;
+  }
+
+  body {
+    @apply font-sans font-normal bg-alabaster-grey-50 text-black-950 leading-relaxed;
+  }
+
+  button {
+    @apply cursor-pointer border-none px-4 py-2 rounded text-sm transition-all duration-200;
+  }
+
+  button:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  input, textarea {
+    @apply bg-alabaster-grey-100 border border-black-700 text-black-950 p-2 rounded font-mono font-normal;
+  }
+
+  input:focus, textarea:focus {
+    @apply outline-none border-crayola-blue-500;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-crayola-blue-500 text-white hover:not-disabled:bg-crayola-blue-400;
+  }
+
+  .btn-secondary {
+    @apply bg-black-800 text-black-100 hover:not-disabled:bg-black-700;
+  }
+
+  .btn-danger {
+    @apply bg-scarlet-rush-500 text-white hover:not-disabled:bg-scarlet-rush-400;
+  }
+}
