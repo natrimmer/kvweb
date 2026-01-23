@@ -4,9 +4,10 @@
   interface Props {
     key: string
     ondeleted: () => void
+    readOnly: boolean
   }
 
-  let { key, ondeleted }: Props = $props()
+  let { key, ondeleted, readOnly }: Props = $props()
 
   let keyInfo = $state<KeyInfo | null>(null)
   let loading = $state(false)
@@ -93,14 +94,18 @@
       <div class="ttl-section">
         <label>
           TTL:
-          <input
-            type="number"
-            bind:value={editTtl}
-            placeholder="seconds (empty = no expiry)"
-          />
-          <button class="btn-secondary" onclick={updateTtl}>Set TTL</button>
+          {#if readOnly}
+            <span class="ttl-display">{formatTtl(keyInfo.ttl)}</span>
+          {:else}
+            <input
+              type="number"
+              bind:value={editTtl}
+              placeholder="seconds (empty = no expiry)"
+            />
+            <button class="btn-secondary" onclick={updateTtl}>Set TTL</button>
+            <span class="ttl-display">{formatTtl(keyInfo.ttl)}</span>
+          {/if}
         </label>
-        <span class="ttl-display">{formatTtl(keyInfo.ttl)}</span>
       </div>
     </div>
 
@@ -111,24 +116,29 @@
           id="value-textarea"
           bind:value={editValue}
           rows="15"
+          readonly={readOnly}
         ></textarea>
       </div>
 
-      <div class="actions">
-        <button class="btn-primary" onclick={saveValue} disabled={saving}>
-          {saving ? 'Saving...' : 'Save'}
-        </button>
-        <button class="btn-danger" onclick={deleteKey}>
-          Delete
-        </button>
-      </div>
+      {#if !readOnly}
+        <div class="actions">
+          <button class="btn-primary" onclick={saveValue} disabled={saving}>
+            {saving ? 'Saving...' : 'Save'}
+          </button>
+          <button class="btn-danger" onclick={deleteKey}>
+            Delete
+          </button>
+        </div>
+      {/if}
     {:else}
       <div class="unsupported">
         <p>Editing {keyInfo.type} values is not yet supported.</p>
         <pre>{JSON.stringify(keyInfo.value, null, 2)}</pre>
-        <button class="btn-danger" onclick={deleteKey}>
-          Delete
-        </button>
+        {#if !readOnly}
+          <button class="btn-danger" onclick={deleteKey}>
+            Delete
+          </button>
+        {/if}
       </div>
     {/if}
   {/if}

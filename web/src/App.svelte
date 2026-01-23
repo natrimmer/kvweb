@@ -1,19 +1,24 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
-  import KeyList from './lib/KeyList.svelte'
-  import KeyEditor from './lib/KeyEditor.svelte'
-  import ServerInfo from './lib/ServerInfo.svelte'
-  import { api } from './lib/api'
+  import { onMount } from 'svelte';
+  import KeyEditor from './lib/KeyEditor.svelte';
+  import KeyList from './lib/KeyList.svelte';
+  import ServerInfo from './lib/ServerInfo.svelte';
+  import { api } from './lib/api';
 
   let selectedKey = $state<string | null>(null)
   let view = $state<'keys' | 'info'>('keys')
   let dbSize = $state(0)
   let connected = $state(false)
+  let readOnly = $state(false)
 
   onMount(async () => {
     try {
-      const info = await api.getInfo()
+      const [info, config] = await Promise.all([
+        api.getInfo(),
+        api.getConfig()
+      ])
       dbSize = info.dbSize
+      readOnly = config.readOnly
       connected = true
     } catch (e) {
       connected = false
@@ -52,6 +57,9 @@
       </button>
     </nav>
     <div class="status">
+      {#if readOnly}
+        <span class="readonly-badge">READ-ONLY</span>
+      {/if}
       <span class="indicator" class:connected></span>
       {connected ? `${dbSize} keys` : 'Disconnected'}
     </div>
@@ -65,6 +73,7 @@
             onselect={handleKeySelect}
             selected={selectedKey}
             oncreated={handleKeyCreated}
+            {readOnly}
           />
         </aside>
         <section class="editor">
@@ -72,6 +81,7 @@
             <KeyEditor
               key={selectedKey}
               ondeleted={handleKeyDeleted}
+              {readOnly}
             />
           {:else}
             <div class="placeholder">
@@ -81,7 +91,7 @@
         </section>
       </div>
     {:else}
-      <ServerInfo />
+      <ServerInfo {readOnly} />
     {/if}
   </main>
 </div>
@@ -146,6 +156,15 @@
 
   .indicator.connected {
     background: var(--success);
+  }
+
+  .readonly-badge {
+    padding: 0.25rem 0.5rem;
+    background: #b45309;
+    color: white;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
   }
 
   main {

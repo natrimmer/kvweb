@@ -1,14 +1,15 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
-  import { api } from './api'
+  import { onMount } from 'svelte';
+  import { api } from './api';
 
   interface Props {
     selected: string | null
     onselect: (key: string) => void
     oncreated: () => void
+    readOnly: boolean
   }
 
-  let { selected, onselect, oncreated }: Props = $props()
+  let { selected, onselect, oncreated, readOnly }: Props = $props()
 
   let keys = $state<string[]>([])
   let pattern = $state('*')
@@ -73,13 +74,15 @@
     </button>
   </div>
 
-  <div class="actions">
-    <button class="btn-secondary" onclick={() => showNewKey = !showNewKey}>
-      + New Key
-    </button>
-  </div>
+  {#if !readOnly}
+    <div class="actions">
+      <button class="btn-secondary" onclick={() => showNewKey = !showNewKey}>
+        + New Key
+      </button>
+    </div>
+  {/if}
 
-  {#if showNewKey}
+  {#if showNewKey && !readOnly}
     <div class="new-key">
       <input
         type="text"

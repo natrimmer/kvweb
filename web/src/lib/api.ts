@@ -17,6 +17,10 @@ export interface KeysResponse {
   cursor: number
 }
 
+export interface AppConfig {
+  readOnly: boolean
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
     ...options,
@@ -35,6 +39,10 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  getConfig(): Promise<AppConfig> {
+    return request('/config')
+  },
+
   getInfo(section?: string): Promise<ServerInfo> {
     const params = section ? `?section=${section}` : ''
     return request(`/info${params}`)

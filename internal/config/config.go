@@ -15,6 +15,9 @@ type Config struct {
 
 	// UI settings
 	OpenBrowser bool
+
+	// Security settings
+	ReadOnly bool
 }
 
 // New creates a new Config with default values

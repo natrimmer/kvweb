@@ -1,6 +1,12 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
-  import { api } from './api'
+  import { onMount } from 'svelte';
+  import { api } from './api';
+
+  interface Props {
+    readOnly: boolean
+  }
+
+  let { readOnly }: Props = $props()
 
   let info = $state('')
   let loading = $state(false)
@@ -50,9 +56,11 @@
     <button class="btn-secondary" onclick={loadInfo} disabled={loading}>
       Refresh
     </button>
-    <button class="btn-danger" onclick={flushDb}>
-      Flush Database
-    </button>
+    {#if !readOnly}
+      <button class="btn-danger" onclick={flushDb}>
+        Flush Database
+      </button>
+    {/if}
   </div>
 
   <pre class="info-content">{loading ? 'Loading...' : info}</pre>

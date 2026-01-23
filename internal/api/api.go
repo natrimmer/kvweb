@@ -7,23 +7,27 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gnat/kvweb/internal/config"
 	"github.com/gnat/kvweb/internal/valkey"
 )
 
 // Handler handles API requests
 type Handler struct {
+	cfg    *config.Config
 	client *valkey.Client
 	mux    *http.ServeMux
 }
 
 // New creates a new API handler
-func New(client *valkey.Client) *Handler {
+func New(cfg *config.Config, client *valkey.Client) *Handler {
 	h := &Handler{
+		cfg:    cfg,
 		client: client,
 		mux:    http.NewServeMux(),
 	}
 
 	// Register routes
+	h.mux.HandleFunc("GET /api/config", h.handleConfig)
 	h.mux.HandleFunc("GET /api/info", h.handleInfo)
 	h.mux.HandleFunc("GET /api/keys", h.handleKeys)
 	h.mux.HandleFunc("GET /api/key/{key}", h.handleGetKey)
@@ -64,7 +68,22 @@ func jsonError(w http.ResponseWriter, message string, code int) {
 	json.NewEncoder(w).Encode(map[string]string{"error": message})
 }
 
+// checkReadOnly returns true and sends an error response if in readonly mode
+func (h *Handler) checkReadOnly(w http.ResponseWriter) bool {
+	if h.cfg.ReadOnly {
+		jsonError(w, "Server is in read-only mode", http.StatusForbidden)
+		return true
+	}
+	return false
+}
+
 // Handlers
+
+func (h *Handler) handleConfig(w http.ResponseWriter, r *http.Request) {
+	jsonResponse(w, map[string]any{
+		"readOnly": h.cfg.ReadOnly,
+	})
+}
 
 func (h *Handler) handleInfo(w http.ResponseWriter, r *http.Request) {
 	section := r.URL.Query().Get("section")
@@ -152,6 +171,10 @@ func (h *Handler) handleGetKey(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleSetKey(w http.ResponseWriter, r *http.Request) {
+	if h.checkReadOnly(w) {
+		return
+	}
+
 	key := r.PathValue("key")
 
 	var body struct {
@@ -178,6 +201,10 @@ func (h *Handler) handleSetKey(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleDeleteKey(w http.ResponseWriter, r *http.Request) {
+	if h.checkReadOnly(w) {
+		return
+	}
+
 	key := r.PathValue("key")
 
 	deleted, err := h.client.Del(r.Context(), key)
@@ -192,6 +219,10 @@ func (h *Handler) handleDeleteKey(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleExpire(w http.ResponseWriter, r *http.Request) {
+	if h.checkReadOnly(w) {
+		return
+	}
+
 	key := r.PathValue("key")
 
 	var body struct {
@@ -221,6 +252,10 @@ func (h *Handler) handleExpire(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleRename(w http.ResponseWriter, r *http.Request) {
+	if h.checkReadOnly(w) {
+		return
+	}
+
 	key := r.PathValue("key")
 
 	var body struct {
@@ -247,6 +282,10 @@ func (h *Handler) handleRename(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleFlush(w http.ResponseWriter, r *http.Request) {
+	if h.checkReadOnly(w) {
+		return
+	}
+
 	if err := h.client.FlushDB(r.Context()); err != nil {
 		jsonError(w, err.Error(), http.StatusInternalServerError)
 		return

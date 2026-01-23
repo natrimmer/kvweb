@@ -28,7 +28,7 @@ func New(cfg *config.Config, client *valkey.Client) *Server {
 	mux := http.NewServeMux()
 
 	// API routes
-	apiHandler := api.New(client)
+	apiHandler := api.New(cfg, client)
 	mux.Handle("/api/", apiHandler)
 
 	// WebSocket for real-time updates
