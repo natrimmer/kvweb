@@ -43,39 +43,39 @@
   }
 </script>
 
-<div class="app">
-  <header>
-    <h1>kvweb</h1>
-    <nav>
+<div class="flex flex-col h-screen">
+  <header class="flex items-center gap-8 px-6 py-4 bg-alabaster-grey-50 border-b border-black-700">
+    <h1 class="text-2xl font-semibold text-crayola-blue-400">kvweb</h1>
+    <nav class="flex gap-2">
       <button
-        class:active={view === 'keys'}
+        class="bg-transparent text-black-400 hover:text-black-100 {view === 'keys' ? 'text-crayola-blue-400 border-b-2 border-crayola-blue-400' : ''}"
         onclick={() => view = 'keys'}
       >
         Keys
       </button>
       <button
-        class:active={view === 'info'}
+        class="bg-transparent text-black-400 hover:text-black-100 {view === 'info' ? 'text-crayola-blue-400 border-b-2 border-crayola-blue-400' : ''}"
         onclick={() => view = 'info'}
       >
         Server Info
       </button>
     </nav>
-    <div class="status">
+    <div class="ml-auto flex items-center gap-2 text-black-400 text-sm">
       {#if prefix}
-        <span class="prefix-badge">{prefix}*</span>
+        <span class="px-2 py-1 bg-black-800 text-black-300 rounded text-xs font-mono">{prefix}*</span>
       {/if}
       {#if readOnly}
-        <span class="readonly-badge">READ-ONLY</span>
+        <span class="px-2 py-1 bg-golden-pollen-600 text-white rounded text-xs font-semibold">READ-ONLY</span>
       {/if}
-      <span class="indicator" class:connected></span>
+      <span class="w-2 h-2 rounded-full {connected ? 'bg-crayola-blue-500' : 'bg-scarlet-rush-500'}"></span>
       {connected ? `${dbSize} keys` : 'Disconnected'}
     </div>
   </header>
 
-  <main>
+  <main class="flex-1 overflow-hidden">
     {#if view === 'keys'}
-      <div class="keys-view">
-        <aside>
+      <div class="flex h-full">
+        <aside class="w-80 border-r border-black-700 overflow-hidden flex flex-col">
           <KeyList
             onselect={handleKeySelect}
             selected={selectedKey}
@@ -84,7 +84,7 @@
             {prefix}
           />
         </aside>
-        <section class="editor">
+        <section class="flex-1 overflow-auto">
           {#if selectedKey}
             <KeyEditor
               key={selectedKey}
@@ -92,7 +92,7 @@
               {readOnly}
             />
           {:else}
-            <div class="placeholder">
+            <div class="flex items-center justify-center h-full text-black-400">
               Select a key to view/edit its value
             </div>
           {/if}
@@ -103,115 +103,3 @@
     {/if}
   </main>
 </div>
-
-<style>
-  .app {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-  }
-
-  header {
-    display: flex;
-    align-items: center;
-    gap: 2rem;
-    padding: 1rem 1.5rem;
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border);
-  }
-
-  h1 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: var(--accent);
-  }
-
-  nav {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  nav button {
-    background: transparent;
-    color: var(--text-secondary);
-    padding: 0.5rem 1rem;
-  }
-
-  nav button:hover {
-    color: var(--text-primary);
-  }
-
-  nav button.active {
-    color: var(--accent);
-    border-bottom: 2px solid var(--accent);
-  }
-
-  .status {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-  }
-
-  .indicator {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #dc2626;
-  }
-
-  .indicator.connected {
-    background: var(--success);
-  }
-
-  .readonly-badge {
-    padding: 0.25rem 0.5rem;
-    background: #b45309;
-    color: white;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 600;
-  }
-
-  .prefix-badge {
-    padding: 0.25rem 0.5rem;
-    background: var(--bg-tertiary);
-    color: var(--text-secondary);
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-family: var(--font-mono);
-  }
-
-  main {
-    flex: 1;
-    overflow: hidden;
-  }
-
-  .keys-view {
-    display: flex;
-    height: 100%;
-  }
-
-  aside {
-    width: 320px;
-    border-right: 1px solid var(--border);
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .editor {
-    flex: 1;
-    overflow: auto;
-  }
-
-  .placeholder {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    color: var(--text-secondary);
-  }
-</style>

@@ -63,13 +63,14 @@
   })
 </script>
 
-<div class="key-list">
-  <div class="search">
+<div class="flex flex-col h-full p-4 gap-3">
+  <div class="flex gap-2">
     <input
       type="text"
       bind:value={pattern}
       placeholder="Pattern (e.g., user:*)"
       onkeydown={(e) => e.key === 'Enter' && handleSearch()}
+      class="flex-1"
     />
     <button class="btn-primary" onclick={handleSearch} disabled={loading}>
       Search
@@ -77,7 +78,7 @@
   </div>
 
   {#if !readOnly}
-    <div class="actions">
+    <div class="flex gap-2">
       <button class="btn-secondary" onclick={() => showNewKey = !showNewKey}>
         + New Key
       </button>
@@ -85,26 +86,26 @@
   {/if}
 
   {#if showNewKey && !readOnly}
-    <div class="new-key">
+    <div class="flex gap-2 p-2 bg-black-800 rounded">
       {#if prefix}
-        <span class="prefix-label">{prefix}</span>
+        <span class="text-black-400 font-mono text-sm">{prefix}</span>
       {/if}
       <input
         type="text"
         bind:value={newKeyName}
         placeholder="Key name"
         onkeydown={(e) => e.key === 'Enter' && createKey()}
+        class="flex-1"
       />
       <button class="btn-primary" onclick={createKey}>Create</button>
     </div>
   {/if}
 
-  <ul class="keys">
+  <ul class="flex-1 overflow-y-auto list-none">
     {#each keys as key (key)}
       <li>
         <button
-          class="key-item"
-          class:selected={key === selected}
+          class="w-full text-left p-2 bg-transparent text-black-100 font-mono text-sm rounded overflow-hidden text-ellipsis whitespace-nowrap hover:bg-black-800 {key === selected ? 'bg-crayola-blue-600' : ''}"
           onclick={() => onselect(key)}
         >
           {key}
@@ -115,7 +116,7 @@
 
   {#if hasMore}
     <button
-      class="btn-secondary load-more"
+      class="btn-secondary w-full"
       onclick={() => loadKeys(false)}
       disabled={loading}
     >
@@ -124,86 +125,6 @@
   {/if}
 
   {#if keys.length === 0 && !loading}
-    <div class="empty">No keys found</div>
+    <div class="text-center text-black-400 py-8">No keys found</div>
   {/if}
 </div>
-
-<style>
-  .key-list {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    padding: 1rem;
-    gap: 0.75rem;
-  }
-
-  .search {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .search input {
-    flex: 1;
-  }
-
-  .actions {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .new-key {
-    display: flex;
-    gap: 0.5rem;
-    padding: 0.5rem;
-    background: var(--bg-tertiary);
-    border-radius: 4px;
-  }
-
-  .new-key input {
-    flex: 1;
-  }
-
-  .prefix-label {
-    color: var(--text-secondary);
-    font-family: var(--font-mono);
-    font-size: 0.875rem;
-  }
-
-  .keys {
-    flex: 1;
-    overflow-y: auto;
-    list-style: none;
-  }
-
-  .key-item {
-    width: 100%;
-    text-align: left;
-    padding: 0.5rem;
-    background: transparent;
-    color: var(--text-primary);
-    font-family: var(--font-mono);
-    font-size: 0.875rem;
-    border-radius: 4px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .key-item:hover {
-    background: var(--bg-tertiary);
-  }
-
-  .key-item.selected {
-    background: var(--accent);
-  }
-
-  .load-more {
-    width: 100%;
-  }
-
-  .empty {
-    text-align: center;
-    color: var(--text-secondary);
-    padding: 2rem;
-  }
-</style>

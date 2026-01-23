@@ -46,9 +46,9 @@
   }
 </script>
 
-<div class="server-info">
-  <div class="controls">
-    <select bind:value={section} onchange={handleSectionChange}>
+<div class="p-6 h-full flex flex-col gap-4">
+  <div class="flex gap-2">
+    <select bind:value={section} onchange={handleSectionChange} class="bg-black-900 border border-black-700 text-black-100 p-2 rounded">
       <option value="">All Sections</option>
       {#each sections.slice(1) as s}
         <option value={s}>{s}</option>
@@ -64,40 +64,5 @@
     {/if}
   </div>
 
-  <pre class="info-content">{loading ? 'Loading...' : info}</pre>
+  <pre class="flex-1 bg-alabaster-grey-50 p-4 rounded overflow-auto font-mono text-sm whitespace-pre-wrap break-all">{loading ? 'Loading...' : info}</pre>
 </div>
-
-<style>
-  .server-info {
-    padding: 1.5rem;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .controls {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  select {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    color: var(--text-primary);
-    padding: 0.5rem;
-    border-radius: 4px;
-  }
-
-  .info-content {
-    flex: 1;
-    background: var(--bg-secondary);
-    padding: 1rem;
-    border-radius: 4px;
-    overflow: auto;
-    font-family: var(--font-mono);
-    font-size: 0.875rem;
-    white-space: pre-wrap;
-    word-break: break-all;
-  }
-</style>

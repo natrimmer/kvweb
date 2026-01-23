@@ -79,49 +79,51 @@
   }
 </script>
 
-<div class="editor">
+<div class="p-6 h-full flex flex-col gap-4">
   {#if loading}
-    <div class="loading">Loading...</div>
+    <div class="flex items-center justify-center h-full text-black-400">Loading...</div>
   {:else if error}
-    <div class="error">{error}</div>
+    <div class="flex items-center justify-center h-full text-scarlet-rush-400">{error}</div>
   {:else if keyInfo}
-    <div class="header">
-      <h2>{key}</h2>
-      <span class="type-badge">{keyInfo.type}</span>
+    <div class="flex items-center gap-4">
+      <h2 class="font-mono text-xl break-all">{key}</h2>
+      <span class="px-2 py-1 bg-black-800 rounded text-xs uppercase">{keyInfo.type}</span>
     </div>
 
-    <div class="meta">
-      <div class="ttl-section">
-        <label>
+    <div class="p-4 bg-black-900 rounded">
+      <div class="flex items-center gap-4">
+        <label class="flex items-center gap-2">
           TTL:
           {#if readOnly}
-            <span class="ttl-display">{formatTtl(keyInfo.ttl)}</span>
+            <span class="text-black-400 text-sm">{formatTtl(keyInfo.ttl)}</span>
           {:else}
             <input
               type="number"
               bind:value={editTtl}
               placeholder="seconds (empty = no expiry)"
+              class="w-[150px]"
             />
             <button class="btn-secondary" onclick={updateTtl}>Set TTL</button>
-            <span class="ttl-display">{formatTtl(keyInfo.ttl)}</span>
+            <span class="text-black-400 text-sm">{formatTtl(keyInfo.ttl)}</span>
           {/if}
         </label>
       </div>
     </div>
 
     {#if keyInfo.type === 'string'}
-      <div class="value-editor">
+      <div class="flex-1 flex flex-col gap-2">
         <label for="value-textarea">Value:</label>
         <textarea
           id="value-textarea"
           bind:value={editValue}
           rows="15"
           readonly={readOnly}
+          class="flex-1 resize-none text-sm"
         ></textarea>
       </div>
 
       {#if !readOnly}
-        <div class="actions">
+        <div class="flex gap-2">
           <button class="btn-primary" onclick={saveValue} disabled={saving}>
             {saving ? 'Saving...' : 'Save'}
           </button>
@@ -131,9 +133,9 @@
         </div>
       {/if}
     {:else}
-      <div class="unsupported">
+      <div class="flex flex-col gap-4">
         <p>Editing {keyInfo.type} values is not yet supported.</p>
-        <pre>{JSON.stringify(keyInfo.value, null, 2)}</pre>
+        <pre class="bg-black-900 p-4 rounded overflow-auto font-mono text-sm">{JSON.stringify(keyInfo.value, null, 2)}</pre>
         {#if !readOnly}
           <button class="btn-danger" onclick={deleteKey}>
             Delete
@@ -143,105 +145,3 @@
     {/if}
   {/if}
 </div>
-
-<style>
-  .editor {
-    padding: 1.5rem;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .loading, .error {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    color: var(--text-secondary);
-  }
-
-  .error {
-    color: var(--accent);
-  }
-
-  .header {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-  }
-
-  h2 {
-    font-family: var(--font-mono);
-    font-size: 1.25rem;
-    word-break: break-all;
-  }
-
-  .type-badge {
-    padding: 0.25rem 0.5rem;
-    background: var(--bg-tertiary);
-    border-radius: 4px;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-  }
-
-  .meta {
-    padding: 1rem;
-    background: var(--bg-secondary);
-    border-radius: 4px;
-  }
-
-  .ttl-section {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-  }
-
-  .ttl-section label {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .ttl-section input {
-    width: 150px;
-  }
-
-  .ttl-display {
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-  }
-
-  .value-editor {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .value-editor textarea {
-    flex: 1;
-    resize: none;
-    font-size: 0.875rem;
-  }
-
-  .actions {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .unsupported {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .unsupported pre {
-    background: var(--bg-secondary);
-    padding: 1rem;
-    border-radius: 4px;
-    overflow: auto;
-    font-family: var(--font-mono);
-    font-size: 0.875rem;
-  }
-</style>
