@@ -7,9 +7,10 @@
     onselect: (key: string) => void
     oncreated: () => void
     readOnly: boolean
+    prefix: string
   }
 
-  let { selected, onselect, oncreated, readOnly }: Props = $props()
+  let { selected, onselect, oncreated, readOnly, prefix }: Props = $props()
 
   let keys = $state<string[]>([])
   let pattern = $state('*')
@@ -45,11 +46,12 @@
   async function createKey() {
     if (!newKeyName.trim()) return
     try {
-      await api.setKey(newKeyName, '')
+      const fullKeyName = prefix + newKeyName
+      await api.setKey(fullKeyName, '')
       newKeyName = ''
       showNewKey = false
       await loadKeys(true)
-      onselect(newKeyName)
+      onselect(fullKeyName)
       oncreated()
     } catch (e) {
       console.error('Failed to create key:', e)
@@ -84,6 +86,9 @@
 
   {#if showNewKey && !readOnly}
     <div class="new-key">
+      {#if prefix}
+        <span class="prefix-label">{prefix}</span>
+      {/if}
       <input
         type="text"
         bind:value={newKeyName}
@@ -156,6 +161,12 @@
 
   .new-key input {
     flex: 1;
+  }
+
+  .prefix-label {
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
   }
 
   .keys {

@@ -18,6 +18,7 @@ type Config struct {
 
 	// Security settings
 	ReadOnly bool
+	Prefix   string // Only show/allow keys matching this prefix
 }
 
 // New creates a new Config with default values

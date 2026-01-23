@@ -10,6 +10,7 @@
   let dbSize = $state(0)
   let connected = $state(false)
   let readOnly = $state(false)
+  let prefix = $state('')
 
   onMount(async () => {
     try {
@@ -19,6 +20,7 @@
       ])
       dbSize = info.dbSize
       readOnly = config.readOnly
+      prefix = config.prefix
       connected = true
     } catch (e) {
       connected = false
@@ -57,6 +59,9 @@
       </button>
     </nav>
     <div class="status">
+      {#if prefix}
+        <span class="prefix-badge">{prefix}*</span>
+      {/if}
       {#if readOnly}
         <span class="readonly-badge">READ-ONLY</span>
       {/if}
@@ -74,6 +79,7 @@
             selected={selectedKey}
             oncreated={handleKeyCreated}
             {readOnly}
+            {prefix}
           />
         </aside>
         <section class="editor">
@@ -165,6 +171,15 @@
     border-radius: 4px;
     font-size: 0.75rem;
     font-weight: 600;
+  }
+
+  .prefix-badge {
+    padding: 0.25rem 0.5rem;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
   }
 
   main {

@@ -29,6 +29,7 @@ func main() {
 	flag.IntVar(&cfg.ValkeyDB, "db", 0, "Valkey/Redis database number")
 	flag.BoolVar(&cfg.OpenBrowser, "open", false, "Open browser on start")
 	flag.BoolVar(&cfg.ReadOnly, "readonly", false, "Disable write operations (set, delete, flush)")
+	flag.StringVar(&cfg.Prefix, "prefix", "", "Only show/allow keys matching this prefix")
 	showVersion := flag.Bool("version", false, "Show version")
 	flag.Parse()
 

@@ -77,11 +77,35 @@ func (h *Handler) checkReadOnly(w http.ResponseWriter) bool {
 	return false
 }
 
+// checkKeyPrefix returns true and sends an error response if key doesn't match prefix
+func (h *Handler) checkKeyPrefix(w http.ResponseWriter, key string) bool {
+	if h.cfg.Prefix != "" && !strings.HasPrefix(key, h.cfg.Prefix) {
+		jsonError(w, "Key does not match required prefix", http.StatusForbidden)
+		return true
+	}
+	return false
+}
+
+// applyPrefixToPattern prepends the configured prefix to a search pattern
+func (h *Handler) applyPrefixToPattern(pattern string) string {
+	if h.cfg.Prefix == "" {
+		return pattern
+	}
+	// If pattern is "*", return "prefix*"
+	// If pattern is "foo*", return "prefixfoo*"
+	// This ensures we only see keys under our prefix
+	if pattern == "*" {
+		return h.cfg.Prefix + "*"
+	}
+	return h.cfg.Prefix + pattern
+}
+
 // Handlers
 
 func (h *Handler) handleConfig(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, map[string]any{
 		"readOnly": h.cfg.ReadOnly,
+		"prefix":   h.cfg.Prefix,
 	})
 }
 
@@ -107,6 +131,7 @@ func (h *Handler) handleKeys(w http.ResponseWriter, r *http.Request) {
 	if pattern == "" {
 		pattern = "*"
 	}
+	pattern = h.applyPrefixToPattern(pattern)
 
 	cursorStr := r.URL.Query().Get("cursor")
 	cursor := uint64(0)
@@ -134,6 +159,9 @@ func (h *Handler) handleKeys(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleGetKey(w http.ResponseWriter, r *http.Request) {
 	key := r.PathValue("key")
+	if h.checkKeyPrefix(w, key) {
+		return
+	}
 
 	keyType, err := h.client.Type(r.Context(), key)
 	if err != nil {
@@ -176,6 +204,9 @@ func (h *Handler) handleSetKey(w http.ResponseWriter, r *http.Request) {
 	}
 
 	key := r.PathValue("key")
+	if h.checkKeyPrefix(w, key) {
+		return
+	}
 
 	var body struct {
 		Value string `json:"value"`
@@ -206,6 +237,9 @@ func (h *Handler) handleDeleteKey(w http.ResponseWriter, r *http.Request) {
 	}
 
 	key := r.PathValue("key")
+	if h.checkKeyPrefix(w, key) {
+		return
+	}
 
 	deleted, err := h.client.Del(r.Context(), key)
 	if err != nil {
@@ -224,6 +258,9 @@ func (h *Handler) handleExpire(w http.ResponseWriter, r *http.Request) {
 	}
 
 	key := r.PathValue("key")
+	if h.checkKeyPrefix(w, key) {
+		return
+	}
 
 	var body struct {
 		TTL int64 `json:"ttl"` // seconds, 0 = persist (remove TTL)
@@ -257,6 +294,9 @@ func (h *Handler) handleRename(w http.ResponseWriter, r *http.Request) {
 	}
 
 	key := r.PathValue("key")
+	if h.checkKeyPrefix(w, key) {
+		return
+	}
 
 	var body struct {
 		NewKey string `json:"newKey"`
@@ -270,6 +310,11 @@ func (h *Handler) handleRename(w http.ResponseWriter, r *http.Request) {
 	body.NewKey = strings.TrimSpace(body.NewKey)
 	if body.NewKey == "" {
 		jsonError(w, "New key name required", http.StatusBadRequest)
+		return
+	}
+
+	// Ensure new key also matches prefix
+	if h.checkKeyPrefix(w, body.NewKey) {
 		return
 	}
 

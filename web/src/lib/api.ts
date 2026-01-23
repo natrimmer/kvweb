@@ -19,6 +19,7 @@ export interface KeysResponse {
 
 export interface AppConfig {
   readOnly: boolean
+  prefix: string
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
