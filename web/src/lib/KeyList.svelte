@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { Badge } from '$lib/components/ui/badge';
+  import { Button } from '$lib/components/ui/button';
+  import { Input } from '$lib/components/ui/input';
   import { onMount } from 'svelte';
   import { api } from './api';
 
@@ -65,63 +68,65 @@
 
 <div class="flex flex-col h-full p-4 gap-3">
   <div class="flex gap-2">
-    <input
+    <Input
       type="text"
       bind:value={pattern}
       placeholder="Pattern (e.g., user:*)"
       onkeydown={(e) => e.key === 'Enter' && handleSearch()}
       class="flex-1"
     />
-    <button class="btn-primary" onclick={handleSearch} disabled={loading}>
+    <Button onclick={handleSearch} disabled={loading}>
       Search
-    </button>
+    </Button>
   </div>
 
   {#if !readOnly}
     <div class="flex gap-2">
-      <button class="btn-secondary" onclick={() => showNewKey = !showNewKey}>
+      <Button variant="secondary" onclick={() => showNewKey = !showNewKey}>
         + New Key
-      </button>
+      </Button>
     </div>
   {/if}
 
   {#if showNewKey && !readOnly}
     <div class="flex gap-2 p-2 bg-black-800 rounded">
       {#if prefix}
-        <span class="text-black-400 font-mono text-sm">{prefix}</span>
+        <Badge variant="secondary" class="text-black-400 font-mono">{prefix}</Badge>
       {/if}
-      <input
+      <Input
         type="text"
         bind:value={newKeyName}
         placeholder="Key name"
         onkeydown={(e) => e.key === 'Enter' && createKey()}
         class="flex-1"
       />
-      <button class="btn-primary" onclick={createKey}>Create</button>
+      <Button onclick={createKey}>Create</Button>
     </div>
   {/if}
 
   <ul class="flex-1 overflow-y-auto list-none">
     {#each keys as key (key)}
       <li>
-        <button
-          class="w-full text-left p-2 bg-transparent text-black-100 font-mono text-sm rounded overflow-hidden text-ellipsis whitespace-nowrap hover:bg-black-800 {key === selected ? 'bg-crayola-blue-600' : ''}"
+        <Button
+          variant="ghost"
+          class="w-full justify-start p-2 text-black-100 font-mono text-sm rounded overflow-hidden text-ellipsis whitespace-nowrap hover:bg-black-800 {key === selected ? 'bg-crayola-blue-600 hover:bg-crayola-blue-600' : ''}"
           onclick={() => onselect(key)}
         >
           {key}
-        </button>
+        </Button>
       </li>
     {/each}
   </ul>
 
   {#if hasMore}
-    <button
-      class="btn-secondary w-full"
+    <Button
+      variant="secondary"
+      class="w-full"
       onclick={() => loadKeys(false)}
       disabled={loading}
     >
       {loading ? 'Loading...' : 'Load more'}
-    </button>
+    </Button>
   {/if}
 
   {#if keys.length === 0 && !loading}

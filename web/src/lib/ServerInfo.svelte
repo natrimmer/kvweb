@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { Button } from '$lib/components/ui/button';
+  import * as Select from '$lib/components/ui/select';
   import { onMount } from 'svelte';
   import { api } from './api';
 
@@ -13,7 +15,20 @@
   let loading = $state(false)
   let section = $state('')
 
-  const sections = ['', 'server', 'clients', 'memory', 'stats', 'replication', 'cpu', 'keyspace']
+  const sections = [
+    { value: '', label: 'All Sections' },
+    { value: 'server', label: 'Server' },
+    { value: 'clients', label: 'Clients' },
+    { value: 'memory', label: 'Memory' },
+    { value: 'stats', label: 'Stats' },
+    { value: 'replication', label: 'Replication' },
+    { value: 'cpu', label: 'CPU' },
+    { value: 'keyspace', label: 'Keyspace' }
+  ]
+
+  const selectedLabel = $derived(
+    sections.find((s) => s.value === section)?.label ?? 'All Sections'
+  )
 
   async function loadInfo() {
     loading = true
@@ -31,8 +46,11 @@
     loadInfo()
   })
 
-  function handleSectionChange() {
-    loadInfo()
+  function handleValueChange(value: string | undefined) {
+    if (value !== undefined) {
+      section = value
+      loadInfo()
+    }
   }
 
   async function flushDb() {
@@ -48,19 +66,23 @@
 
 <div class="p-6 h-full flex flex-col gap-4">
   <div class="flex gap-2">
-    <select bind:value={section} onchange={handleSectionChange} class="bg-black-900 border border-black-700 text-black-100 p-2 rounded">
-      <option value="">All Sections</option>
-      {#each sections.slice(1) as s}
-        <option value={s}>{s}</option>
-      {/each}
-    </select>
-    <button class="btn-secondary" onclick={loadInfo} disabled={loading}>
+    <Select.Root type="single" bind:value={section} onValueChange={handleValueChange}>
+      <Select.Trigger class="w-50">
+        {selectedLabel}
+      </Select.Trigger>
+      <Select.Content>
+        {#each sections as sect}
+          <Select.Item value={sect.value}>{sect.label}</Select.Item>
+        {/each}
+      </Select.Content>
+    </Select.Root>
+    <Button variant="secondary" onclick={loadInfo} disabled={loading}>
       Refresh
-    </button>
+    </Button>
     {#if !readOnly && !disableFlush}
-      <button class="btn-danger" onclick={flushDb}>
+      <Button variant="destructive" onclick={flushDb}>
         Flush Database
-      </button>
+      </Button>
     {/if}
   </div>
 
