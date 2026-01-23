@@ -1,10 +1,42 @@
-# Devenv
-.devenv*
-devenv.local.nix
-devenv.local.yaml
+# Binary
+kvweb
+!cmd/kvweb/
 
-# direnv
-.direnv
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
 
-# pre-commit
-.pre-commit-config.yaml
+# Web frontend
+web/node_modules/
+web/dist/
+
+# Built frontend (keep placeholder)
+static/dist/*
+!static/dist/.gitkeep
+!static/dist/index.html
+
+# IDE
+.zed/
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# devenv
+.devenv/
+.devenv.flake.nix
+.direnv/
+logs/
+
+# AI
+.claude/
