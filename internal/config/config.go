@@ -17,8 +17,9 @@ type Config struct {
 	OpenBrowser bool
 
 	// Security settings
-	ReadOnly bool
-	Prefix   string // Only show/allow keys matching this prefix
+	ReadOnly     bool
+	Prefix       string // Only show/allow keys matching this prefix
+	DisableFlush bool   // Block FLUSHDB even in write mode
 }
 
 // New creates a new Config with default values

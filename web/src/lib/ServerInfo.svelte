@@ -4,9 +4,10 @@
 
   interface Props {
     readOnly: boolean
+    disableFlush: boolean
   }
 
-  let { readOnly }: Props = $props()
+  let { readOnly, disableFlush }: Props = $props()
 
   let info = $state('')
   let loading = $state(false)
@@ -56,7 +57,7 @@
     <button class="btn-secondary" onclick={loadInfo} disabled={loading}>
       Refresh
     </button>
-    {#if !readOnly}
+    {#if !readOnly && !disableFlush}
       <button class="btn-danger" onclick={flushDb}>
         Flush Database
       </button>

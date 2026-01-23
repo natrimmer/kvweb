@@ -30,6 +30,7 @@ func main() {
 	flag.BoolVar(&cfg.OpenBrowser, "open", false, "Open browser on start")
 	flag.BoolVar(&cfg.ReadOnly, "readonly", false, "Disable write operations (set, delete, flush)")
 	flag.StringVar(&cfg.Prefix, "prefix", "", "Only show/allow keys matching this prefix")
+	flag.BoolVar(&cfg.DisableFlush, "disable-flush", false, "Block FLUSHDB even in write mode")
 	showVersion := flag.Bool("version", false, "Show version")
 	flag.Parse()
 

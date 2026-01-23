@@ -20,6 +20,7 @@ export interface KeysResponse {
 export interface AppConfig {
   readOnly: boolean
   prefix: string
+  disableFlush: boolean
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {

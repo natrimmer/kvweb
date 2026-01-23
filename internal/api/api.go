@@ -104,8 +104,9 @@ func (h *Handler) applyPrefixToPattern(pattern string) string {
 
 func (h *Handler) handleConfig(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, map[string]any{
-		"readOnly": h.cfg.ReadOnly,
-		"prefix":   h.cfg.Prefix,
+		"readOnly":     h.cfg.ReadOnly,
+		"prefix":       h.cfg.Prefix,
+		"disableFlush": h.cfg.DisableFlush,
 	})
 }
 
@@ -328,6 +329,11 @@ func (h *Handler) handleRename(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleFlush(w http.ResponseWriter, r *http.Request) {
 	if h.checkReadOnly(w) {
+		return
+	}
+
+	if h.cfg.DisableFlush {
+		jsonError(w, "FLUSHDB is disabled", http.StatusForbidden)
 		return
 	}
 

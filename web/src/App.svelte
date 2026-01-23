@@ -11,6 +11,7 @@
   let connected = $state(false)
   let readOnly = $state(false)
   let prefix = $state('')
+  let disableFlush = $state(false)
 
   onMount(async () => {
     try {
@@ -21,6 +22,7 @@
       dbSize = info.dbSize
       readOnly = config.readOnly
       prefix = config.prefix
+      disableFlush = config.disableFlush
       connected = true
     } catch (e) {
       connected = false
@@ -97,7 +99,7 @@
         </section>
       </div>
     {:else}
-      <ServerInfo {readOnly} />
+      <ServerInfo {readOnly} {disableFlush} />
     {/if}
   </main>
 </div>
