@@ -2,7 +2,6 @@
   import { Badge } from '$lib/components/ui/badge';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
-  import { onMount } from 'svelte';
   import { api } from './api';
 
   interface Props {
@@ -22,6 +21,19 @@
   let hasMore = $state(false)
   let showNewKey = $state(false)
   let newKeyName = $state('')
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null
+
+  // Debounced search when pattern changes
+  $effect(() => {
+    pattern  // track dependency
+    if (debounceTimer) clearTimeout(debounceTimer)
+    debounceTimer = setTimeout(() => {
+      loadKeys(true)
+    }, 300)
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer)
+    }
+  })
 
   async function loadKeys(reset = false) {
     loading = true
@@ -42,10 +54,6 @@
     }
   }
 
-  function handleSearch() {
-    loadKeys(true)
-  }
-
   async function createKey() {
     if (!newKeyName.trim()) return
     try {
@@ -60,25 +68,14 @@
       console.error('Failed to create key:', e)
     }
   }
-
-  onMount(() => {
-    loadKeys(true)
-  })
 </script>
 
 <div class="flex flex-col h-full p-4 gap-3">
-  <div class="flex gap-2">
-    <Input
-      type="text"
-      bind:value={pattern}
-      placeholder="Pattern (e.g., user:*)"
-      onkeydown={(e) => e.key === 'Enter' && handleSearch()}
-      class="flex-1"
-    />
-    <Button onclick={handleSearch} disabled={loading}>
-      Search
-    </Button>
-  </div>
+  <Input
+    type="text"
+    bind:value={pattern}
+    placeholder="Pattern (e.g., user:*)"
+  />
 
   {#if !readOnly}
     <div class="flex gap-2">
