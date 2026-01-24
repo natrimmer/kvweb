@@ -3,6 +3,7 @@ package valkey
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/gnat/kvweb/internal/config"
@@ -137,4 +138,100 @@ func (c *Client) Rename(ctx context.Context, key, newkey string) error {
 // FlushDB deletes all keys in the current database
 func (c *Client) FlushDB(ctx context.Context) error {
 	return c.client.Do(ctx, c.client.B().Flushdb().Build()).Error()
+}
+
+// List operations
+
+// LLen returns the length of a list
+func (c *Client) LLen(ctx context.Context, key string) (int64, error) {
+	return c.client.Do(ctx, c.client.B().Llen().Key(key).Build()).ToInt64()
+}
+
+// LRange returns elements from a list
+func (c *Client) LRange(ctx context.Context, key string, start, stop int64) ([]string, error) {
+	return c.client.Do(ctx, c.client.B().Lrange().Key(key).Start(start).Stop(stop).Build()).AsStrSlice()
+}
+
+// Set operations
+
+// SCard returns the number of members in a set
+func (c *Client) SCard(ctx context.Context, key string) (int64, error) {
+	return c.client.Do(ctx, c.client.B().Scard().Key(key).Build()).ToInt64()
+}
+
+// SMembers returns all members of a set
+func (c *Client) SMembers(ctx context.Context, key string) ([]string, error) {
+	return c.client.Do(ctx, c.client.B().Smembers().Key(key).Build()).AsStrSlice()
+}
+
+// Hash operations
+
+// HLen returns the number of fields in a hash
+func (c *Client) HLen(ctx context.Context, key string) (int64, error) {
+	return c.client.Do(ctx, c.client.B().Hlen().Key(key).Build()).ToInt64()
+}
+
+// HGetAll returns all fields and values in a hash
+func (c *Client) HGetAll(ctx context.Context, key string) (map[string]string, error) {
+	return c.client.Do(ctx, c.client.B().Hgetall().Key(key).Build()).AsStrMap()
+}
+
+// Sorted set operations
+
+// ZCard returns the number of members in a sorted set
+func (c *Client) ZCard(ctx context.Context, key string) (int64, error) {
+	return c.client.Do(ctx, c.client.B().Zcard().Key(key).Build()).ToInt64()
+}
+
+// ZMember represents a member with score in a sorted set
+type ZMember struct {
+	Member string  `json:"member"`
+	Score  float64 `json:"score"`
+}
+
+// ZRangeWithScores returns members with scores from a sorted set
+func (c *Client) ZRangeWithScores(ctx context.Context, key string, start, stop int64) ([]ZMember, error) {
+	result, err := c.client.Do(ctx, c.client.B().Zrange().Key(key).Min(toString(start)).Max(toString(stop)).Withscores().Build()).AsZScores()
+	if err != nil {
+		return nil, err
+	}
+	members := make([]ZMember, len(result))
+	for i, z := range result {
+		members[i] = ZMember{Member: z.Member, Score: z.Score}
+	}
+	return members, nil
+}
+
+func toString(i int64) string {
+	return strconv.FormatInt(i, 10)
+}
+
+// Stream operations
+
+// XLen returns the number of entries in a stream
+func (c *Client) XLen(ctx context.Context, key string) (int64, error) {
+	return c.client.Do(ctx, c.client.B().Xlen().Key(key).Build()).ToInt64()
+}
+
+// StreamEntry represents an entry in a stream
+type StreamEntry struct {
+	ID     string            `json:"id"`
+	Fields map[string]string `json:"fields"`
+}
+
+// XRange returns entries from a stream
+func (c *Client) XRange(ctx context.Context, key, start, stop string, count int64) ([]StreamEntry, error) {
+	cmd := c.client.B().Xrange().Key(key).Start(start).End(stop)
+	if count > 0 {
+		cmd.Count(count)
+	}
+	result, err := c.client.Do(ctx, cmd.Build()).AsXRange()
+	if err != nil {
+		return nil, err
+	}
+	entries := make([]StreamEntry, len(result))
+	for i, e := range result {
+		entries[i] = StreamEntry{ID: e.ID, Fields: e.FieldValues}
+	}
+	return entries, nil
 }

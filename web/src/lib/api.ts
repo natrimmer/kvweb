@@ -1,10 +1,23 @@
 const BASE_URL = '/api'
 
+export interface ZSetMember {
+  member: string
+  score: number
+}
+
+export interface StreamEntry {
+  id: string
+  fields: Record<string, string>
+}
+
+export type KeyType = 'string' | 'list' | 'set' | 'hash' | 'zset' | 'stream'
+
 export interface KeyInfo {
   key: string
-  type: string
-  value: unknown
+  type: KeyType
+  value: string | string[] | Record<string, string> | ZSetMember[] | StreamEntry[]
   ttl: number
+  length?: number
 }
 
 export interface ServerInfo {

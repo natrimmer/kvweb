@@ -163,6 +163,8 @@ func (h *Handler) handleKeys(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+const maxItems = 100 // limit items returned for large collections
+
 func (h *Handler) handleGetKey(w http.ResponseWriter, r *http.Request) {
 	key := r.PathValue("key")
 	if h.checkKeyPrefix(w, key) {
@@ -181,14 +183,31 @@ func (h *Handler) handleGetKey(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ttl, _ := h.client.TTL(r.Context(), key)
+	ctx := r.Context()
 
 	var value any
+	var length int64
+
 	switch keyType {
 	case "string":
-		value, err = h.client.Get(r.Context(), key)
+		value, err = h.client.Get(ctx, key)
+	case "list":
+		length, _ = h.client.LLen(ctx, key)
+		value, err = h.client.LRange(ctx, key, 0, maxItems-1)
+	case "set":
+		length, _ = h.client.SCard(ctx, key)
+		value, err = h.client.SMembers(ctx, key)
+	case "hash":
+		length, _ = h.client.HLen(ctx, key)
+		value, err = h.client.HGetAll(ctx, key)
+	case "zset":
+		length, _ = h.client.ZCard(ctx, key)
+		value, err = h.client.ZRangeWithScores(ctx, key, 0, maxItems-1)
+	case "stream":
+		length, _ = h.client.XLen(ctx, key)
+		value, err = h.client.XRange(ctx, key, "-", "+", maxItems)
 	default:
-		// TODO: Handle other types (list, set, hash, zset, stream)
-		value = "(complex type - not yet supported)"
+		value = "(unsupported type)"
 	}
 
 	if err != nil {
@@ -196,12 +215,18 @@ func (h *Handler) handleGetKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonResponse(w, map[string]any{
+	resp := map[string]any{
 		"key":   key,
 		"type":  keyType,
 		"value": value,
 		"ttl":   ttl,
-	})
+	}
+
+	if length > 0 {
+		resp["length"] = length
+	}
+
+	jsonResponse(w, resp)
 }
 
 func (h *Handler) handleSetKey(w http.ResponseWriter, r *http.Request) {

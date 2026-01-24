@@ -3,7 +3,7 @@
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Textarea } from '$lib/components/ui/textarea';
-  import { api, type KeyInfo } from './api';
+  import { api, type KeyInfo, type StreamEntry, type ZSetMember } from './api';
 
   interface Props {
     key: string
@@ -19,6 +19,22 @@
   let editValue = $state('')
   let editTtl = $state('')
   let error = $state('')
+
+  // Type-safe accessors for complex types
+  function asArray(): string[] {
+    return Array.isArray(keyInfo?.value) ? keyInfo.value as string[] : []
+  }
+  function asHash(): Record<string, string> {
+    return keyInfo?.value && typeof keyInfo.value === 'object' && !Array.isArray(keyInfo.value)
+      ? keyInfo.value as Record<string, string>
+      : {}
+  }
+  function asZSet(): ZSetMember[] {
+    return Array.isArray(keyInfo?.value) ? keyInfo.value as ZSetMember[] : []
+  }
+  function asStream(): StreamEntry[] {
+    return Array.isArray(keyInfo?.value) ? keyInfo.value as StreamEntry[] : []
+  }
 
   $effect(() => {
     loadKey(key)
@@ -135,10 +151,121 @@
           </Button>
         </div>
       {/if}
+    {:else if keyInfo.type === 'list'}
+      <div class="flex-1 flex flex-col gap-2 overflow-auto">
+        <div class="text-sm text-black-400">
+          {keyInfo.length} items{keyInfo.length && keyInfo.length > 100 ? ' (showing first 100)' : ''}
+        </div>
+        <table class="w-full text-sm border-collapse">
+          <thead class="bg-alabaster-grey-50 sticky top-0">
+            <tr>
+              <th class="text-left p-2 border-b w-16">Index</th>
+              <th class="text-left p-2 border-b">Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            {#each asArray() as item, i}
+              <tr class="border-b border-alabaster-grey-100 hover:bg-alabaster-grey-50">
+                <td class="p-2 text-black-400 font-mono">{i}</td>
+                <td class="p-2 font-mono break-all">{item}</td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
+      {#if !readOnly}
+        <Button variant="destructive" onclick={deleteKey}>Delete</Button>
+      {/if}
+    {:else if keyInfo.type === 'set'}
+      <div class="flex-1 flex flex-col gap-2 overflow-auto">
+        <div class="text-sm text-black-400">
+          {keyInfo.length} members{keyInfo.length && keyInfo.length > 100 ? ' (showing first 100)' : ''}
+        </div>
+        <div class="flex flex-wrap gap-2">
+          {#each asArray() as member}
+            <span class="px-2 py-1 bg-alabaster-grey-100 rounded font-mono text-sm">{member}</span>
+          {/each}
+        </div>
+      </div>
+      {#if !readOnly}
+        <Button variant="destructive" onclick={deleteKey}>Delete</Button>
+      {/if}
+    {:else if keyInfo.type === 'hash'}
+      <div class="flex-1 flex flex-col gap-2 overflow-auto">
+        <div class="text-sm text-black-400">
+          {keyInfo.length} fields{keyInfo.length && keyInfo.length > 100 ? ' (showing first 100)' : ''}
+        </div>
+        <table class="w-full text-sm border-collapse">
+          <thead class="bg-alabaster-grey-50 sticky top-0">
+            <tr>
+              <th class="text-left p-2 border-b">Field</th>
+              <th class="text-left p-2 border-b">Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            {#each Object.entries(asHash()) as [field, val]}
+              <tr class="border-b border-alabaster-grey-100 hover:bg-alabaster-grey-50">
+                <td class="p-2 font-mono text-black-600">{field}</td>
+                <td class="p-2 font-mono break-all">{val}</td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
+      {#if !readOnly}
+        <Button variant="destructive" onclick={deleteKey}>Delete</Button>
+      {/if}
+    {:else if keyInfo.type === 'zset'}
+      <div class="flex-1 flex flex-col gap-2 overflow-auto">
+        <div class="text-sm text-black-400">
+          {keyInfo.length} members{keyInfo.length && keyInfo.length > 100 ? ' (showing first 100)' : ''}
+        </div>
+        <table class="w-full text-sm border-collapse">
+          <thead class="bg-alabaster-grey-50 sticky top-0">
+            <tr>
+              <th class="text-left p-2 border-b">Member</th>
+              <th class="text-left p-2 border-b w-24">Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            {#each asZSet() as zitem}
+              <tr class="border-b border-alabaster-grey-100 hover:bg-alabaster-grey-50">
+                <td class="p-2 font-mono break-all">{zitem.member}</td>
+                <td class="p-2 font-mono text-black-600">{zitem.score}</td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
+      {#if !readOnly}
+        <Button variant="destructive" onclick={deleteKey}>Delete</Button>
+      {/if}
+    {:else if keyInfo.type === 'stream'}
+      <div class="flex-1 flex flex-col gap-2 overflow-auto">
+        <div class="text-sm text-black-400">
+          {keyInfo.length} entries{keyInfo.length && keyInfo.length > 100 ? ' (showing first 100)' : ''}
+        </div>
+        <div class="flex flex-col gap-2">
+          {#each asStream() as entry}
+            <div class="border border-alabaster-grey-200 rounded p-3">
+              <div class="font-mono text-xs text-black-400 mb-2">{entry.id}</div>
+              <div class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+                {#each Object.entries(entry.fields) as [field, val]}
+                  <span class="font-mono text-black-600">{field}</span>
+                  <span class="font-mono break-all">{val}</span>
+                {/each}
+              </div>
+            </div>
+          {/each}
+        </div>
+      </div>
+      {#if !readOnly}
+        <Button variant="destructive" onclick={deleteKey}>Delete</Button>
+      {/if}
     {:else}
       <div class="flex flex-col gap-4">
-        <p>Editing {keyInfo.type} values is not yet supported.</p>
-        <pre class="bg-black-900 p-4 rounded overflow-auto font-mono text-sm">{JSON.stringify(keyInfo.value, null, 2)}</pre>
+        <p>Unknown type: {keyInfo.type}</p>
+        <pre class="bg-alabaster-grey-50 p-4 rounded overflow-auto font-mono text-sm">{JSON.stringify(keyInfo.value, null, 2)}</pre>
         {#if !readOnly}
           <Button variant="destructive" onclick={deleteKey}>
             Delete
