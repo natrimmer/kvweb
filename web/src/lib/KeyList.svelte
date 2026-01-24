@@ -22,6 +22,48 @@
   let showNewKey = $state(false)
   let newKeyName = $state('')
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
+  let showHistory = $state(false)
+  let searchHistory = $state<string[]>([])
+
+  const HISTORY_KEY = 'kvweb:search-history'
+  const MAX_HISTORY = 20
+
+  function loadHistory() {
+    try {
+      const stored = localStorage.getItem(HISTORY_KEY)
+      searchHistory = stored ? JSON.parse(stored) : []
+    } catch {
+      searchHistory = []
+    }
+  }
+
+  function saveHistory() {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(searchHistory))
+  }
+
+  function addToHistory(p: string) {
+    if (!p || p === '*') return
+    searchHistory = [p, ...searchHistory.filter(h => h !== p)].slice(0, MAX_HISTORY)
+    saveHistory()
+  }
+
+  function removeFromHistory(p: string) {
+    searchHistory = searchHistory.filter(h => h !== p)
+    saveHistory()
+  }
+
+  function clearHistory() {
+    searchHistory = []
+    saveHistory()
+  }
+
+  function selectHistory(p: string) {
+    pattern = p
+    showHistory = false
+  }
+
+  // Load history on init
+  loadHistory()
 
   // Debounced search when pattern changes
   $effect(() => {
@@ -29,6 +71,7 @@
     if (debounceTimer) clearTimeout(debounceTimer)
     debounceTimer = setTimeout(() => {
       loadKeys(true)
+      addToHistory(pattern)
     }, 300)
     return () => {
       if (debounceTimer) clearTimeout(debounceTimer)
@@ -71,11 +114,47 @@
 </script>
 
 <div class="flex flex-col h-full p-4 gap-3">
-  <Input
-    type="text"
-    bind:value={pattern}
-    placeholder="Pattern (e.g., user:*)"
-  />
+  <div class="relative">
+    <Input
+      type="text"
+      bind:value={pattern}
+      placeholder="Pattern (e.g., user:*)"
+      onfocus={() => showHistory = true}
+      onblur={() => setTimeout(() => showHistory = false, 150)}
+    />
+    {#if showHistory && searchHistory.length > 0}
+      <div class="absolute top-full left-0 right-0 mt-1 bg-white border border-alabaster-grey-200 rounded shadow-lg z-10 max-h-60 overflow-auto">
+        <div class="flex items-center justify-between px-3 py-2 border-b border-alabaster-grey-100">
+          <span class="text-xs text-black-400">Recent searches</span>
+          <button
+            type="button"
+            class="text-xs text-black-400 hover:text-scarlet-rush-500"
+            onmousedown={() => clearHistory()}
+          >
+            Clear all
+          </button>
+        </div>
+        {#each searchHistory as h}
+          <div class="flex items-center group hover:bg-alabaster-grey-50">
+            <button
+              type="button"
+              class="flex-1 px-3 py-2 text-left font-mono text-sm"
+              onmousedown={() => selectHistory(h)}
+            >
+              {h}
+            </button>
+            <button
+              type="button"
+              class="px-2 py-1 text-black-300 hover:text-scarlet-rush-500 opacity-0 group-hover:opacity-100"
+              onmousedown={() => removeFromHistory(h)}
+            >
+              ×
+            </button>
+          </div>
+        {/each}
+      </div>
+    {/if}
+  </div>
 
   {#if !readOnly}
     <div class="flex gap-2">
