@@ -63,8 +63,10 @@ export const api = {
     return request(`/info${params}`)
   },
 
-  getKeys(pattern = '*', cursor = 0, count = 100): Promise<KeysResponse> {
-    return request(`/keys?pattern=${encodeURIComponent(pattern)}&cursor=${cursor}&count=${count}`)
+  getKeys(pattern = '*', cursor = 0, count = 100, type?: string): Promise<KeysResponse> {
+    let url = `/keys?pattern=${encodeURIComponent(pattern)}&cursor=${cursor}&count=${count}`
+    if (type) url += `&type=${encodeURIComponent(type)}`
+    return request(url)
   },
 
   getKey(key: string): Promise<KeyInfo> {

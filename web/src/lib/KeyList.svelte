@@ -16,6 +16,7 @@
 
   let keys = $state<string[]>([])
   let pattern = $state('*')
+  let typeFilter = $state('')
   let loading = $state(false)
   let cursor = $state(0)
   let hasMore = $state(false)
@@ -24,6 +25,8 @@
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
   let showHistory = $state(false)
   let searchHistory = $state<string[]>([])
+
+  const keyTypes = ['', 'string', 'hash', 'list', 'set', 'zset', 'stream'] as const
 
   const HISTORY_KEY = 'kvweb:search-history'
   const MAX_HISTORY = 20
@@ -65,9 +68,10 @@
   // Load history on init
   loadHistory()
 
-  // Debounced search when pattern changes
+  // Debounced search when pattern or type filter changes
   $effect(() => {
     pattern  // track dependency
+    typeFilter  // track dependency
     if (debounceTimer) clearTimeout(debounceTimer)
     debounceTimer = setTimeout(() => {
       loadKeys(true)
@@ -82,7 +86,7 @@
     loading = true
     try {
       const c = reset ? 0 : cursor
-      const result = await api.getKeys(pattern, c)
+      const result = await api.getKeys(pattern, c, 100, typeFilter || undefined)
       if (reset) {
         keys = result.keys
       } else {
@@ -155,6 +159,16 @@
       </div>
     {/if}
   </div>
+
+  <select
+    bind:value={typeFilter}
+    class="w-full px-3 py-2 border border-alabaster-grey-200 rounded text-sm bg-white"
+  >
+    <option value="">All types</option>
+    {#each keyTypes.slice(1) as t}
+      <option value={t}>{t}</option>
+    {/each}
+  </select>
 
   {#if !readOnly}
     <div class="flex gap-2">

@@ -151,10 +151,24 @@ func (h *Handler) handleKeys(w http.ResponseWriter, r *http.Request) {
 		count = h.cfg.MaxKeys
 	}
 
+	typeFilter := r.URL.Query().Get("type")
+
 	keys, nextCursor, err := h.client.Keys(r.Context(), pattern, cursor, count)
 	if err != nil {
 		jsonError(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	// Filter by type if requested
+	if typeFilter != "" {
+		filtered := make([]string, 0, len(keys))
+		for _, key := range keys {
+			keyType, err := h.client.Type(r.Context(), key)
+			if err == nil && keyType == typeFilter {
+				filtered = append(filtered, key)
+			}
+		}
+		keys = filtered
 	}
 
 	jsonResponse(w, map[string]any{
