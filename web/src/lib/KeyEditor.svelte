@@ -19,6 +19,38 @@
   let editValue = $state('')
   let editTtl = $state('')
   let error = $state('')
+  let liveTtl = $state<number | null>(null)
+  let ttlInterval: ReturnType<typeof setInterval> | null = null
+  let expiresAt: number | null = null
+
+  function startTtlCountdown(ttl: number) {
+    stopTtlCountdown()
+    if (ttl > 0) {
+      expiresAt = Date.now() + ttl * 1000
+      updateLiveTtl()
+      ttlInterval = setInterval(updateLiveTtl, 1000)
+    } else {
+      liveTtl = ttl
+    }
+  }
+
+  function updateLiveTtl() {
+    if (expiresAt !== null) {
+      const remaining = Math.round((expiresAt - Date.now()) / 1000)
+      liveTtl = Math.max(0, remaining)
+      if (remaining <= 0) {
+        stopTtlCountdown()
+      }
+    }
+  }
+
+  function stopTtlCountdown() {
+    if (ttlInterval) {
+      clearInterval(ttlInterval)
+      ttlInterval = null
+    }
+    expiresAt = null
+  }
 
   // Type-safe accessors for complex types
   function asArray(): string[] {
@@ -38,15 +70,18 @@
 
   $effect(() => {
     loadKey(key)
+    return () => stopTtlCountdown()
   })
 
   async function loadKey(k: string) {
     loading = true
     error = ''
+    stopTtlCountdown()
     try {
       keyInfo = await api.getKey(k)
       editValue = typeof keyInfo.value === 'string' ? keyInfo.value : JSON.stringify(keyInfo.value, null, 2)
       editTtl = keyInfo.ttl > 0 ? String(keyInfo.ttl) : ''
+      startTtlCountdown(keyInfo.ttl)
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load key'
       keyInfo = null
@@ -115,7 +150,7 @@
         <label class="flex items-center gap-2">
           TTL:
           {#if readOnly}
-            <span class="text-black-400 text-sm">{formatTtl(keyInfo.ttl)}</span>
+            <span class="text-black-400 text-sm">{formatTtl(liveTtl ?? keyInfo.ttl)}</span>
           {:else}
             <Input
               type="number"
@@ -124,7 +159,7 @@
               class="w-37.5"
             />
             <Button variant="secondary" onclick={updateTtl}>Set TTL</Button>
-            <span class="text-black-400 text-sm">{formatTtl(keyInfo.ttl)}</span>
+            <span class="text-black-400 text-sm">{formatTtl(liveTtl ?? keyInfo.ttl)}</span>
           {/if}
         </label>
       </div>
