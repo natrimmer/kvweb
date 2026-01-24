@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -30,6 +31,7 @@ func New(cfg *config.Config, client *valkey.Client) *Handler {
 	h.mux.HandleFunc("GET /api/config", h.handleConfig)
 	h.mux.HandleFunc("GET /api/info", h.handleInfo)
 	h.mux.HandleFunc("GET /api/keys", h.handleKeys)
+	h.mux.HandleFunc("GET /api/prefixes", h.handlePrefixes)
 	h.mux.HandleFunc("GET /api/key/{key}", h.handleGetKey)
 	h.mux.HandleFunc("PUT /api/key/{key}", h.handleSetKey)
 	h.mux.HandleFunc("DELETE /api/key/{key}", h.handleDeleteKey)
@@ -196,6 +198,106 @@ func (h *Handler) handleKeys(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, map[string]any{
 		"keys":   keys,
 		"cursor": nextCursor,
+	})
+}
+
+type prefixEntry struct {
+	Prefix   string `json:"prefix"`
+	Count    int    `json:"count"`
+	IsLeaf   bool   `json:"isLeaf"`
+	FullKey  string `json:"fullKey,omitempty"`
+	KeyType  string `json:"type,omitempty"`
+}
+
+func (h *Handler) handlePrefixes(w http.ResponseWriter, r *http.Request) {
+	prefix := r.URL.Query().Get("prefix")
+	delimiter := r.URL.Query().Get("delimiter")
+	if delimiter == "" {
+		delimiter = ":"
+	}
+
+	// Build the search pattern
+	pattern := h.applyPrefixToPattern("*")
+	if prefix != "" {
+		pattern = h.applyPrefixToPattern(prefix + "*")
+	}
+
+	// Scan all matching keys (with reasonable limit)
+	var allKeys []string
+	var cursor uint64
+	limit := int64(10000)
+	if h.cfg.MaxKeys > 0 && h.cfg.MaxKeys < limit {
+		limit = h.cfg.MaxKeys
+	}
+
+	for {
+		keys, nextCursor, err := h.client.Keys(r.Context(), pattern, cursor, 1000)
+		if err != nil {
+			jsonError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		allKeys = append(allKeys, keys...)
+		cursor = nextCursor
+		if cursor == 0 || int64(len(allKeys)) >= limit {
+			break
+		}
+	}
+
+	// Group by next prefix segment
+	prefixLen := len(prefix)
+	groups := make(map[string][]string)
+
+	for _, key := range allKeys {
+		// Remove the search prefix to get the remainder
+		remainder := key
+		if prefixLen > 0 && len(key) > prefixLen {
+			remainder = key[prefixLen:]
+		} else if prefixLen > 0 {
+			remainder = ""
+		}
+
+		// Find the next delimiter
+		delimIdx := strings.Index(remainder, delimiter)
+		if delimIdx == -1 {
+			// This is a leaf key
+			groups[key] = nil
+		} else {
+			// This is a prefix group
+			groupPrefix := prefix + remainder[:delimIdx+1]
+			groups[groupPrefix] = append(groups[groupPrefix], key)
+		}
+	}
+
+	// Build response
+	entries := make([]prefixEntry, 0, len(groups))
+	for groupKey, members := range groups {
+		if members == nil {
+			// Leaf key - get its type
+			keyType, _ := h.client.Type(r.Context(), groupKey)
+			entries = append(entries, prefixEntry{
+				Prefix:  groupKey,
+				Count:   1,
+				IsLeaf:  true,
+				FullKey: groupKey,
+				KeyType: keyType,
+			})
+		} else {
+			entries = append(entries, prefixEntry{
+				Prefix: groupKey,
+				Count:  len(members),
+				IsLeaf: false,
+			})
+		}
+	}
+
+	// Sort by prefix
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].Prefix < entries[j].Prefix
+	})
+
+	jsonResponse(w, map[string]any{
+		"entries": entries,
+		"prefix":  prefix,
 	})
 }
 

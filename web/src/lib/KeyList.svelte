@@ -3,6 +3,7 @@
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { api, type KeyMeta } from './api';
+  import KeyTree from './KeyTree.svelte';
 
   interface Props {
     selected: string | null
@@ -14,6 +15,7 @@
 
   let { selected, onselect, oncreated, readOnly, prefix }: Props = $props()
 
+  let viewMode = $state<'list' | 'tree'>('list')
   let keys = $state<KeyMeta[]>([])
   let pattern = $state('*')
   let typeFilter = $state('')
@@ -146,129 +148,143 @@
   }
 </script>
 
-<div class="flex flex-col h-full p-4 gap-3">
-  <div class="relative">
-    <Input
-      type="text"
-      bind:value={pattern}
-      placeholder="Pattern (e.g., user:*)"
-      onfocus={() => showHistory = true}
-      onblur={() => setTimeout(() => showHistory = false, 150)}
-    />
-    {#if showHistory && searchHistory.length > 0}
-      <div class="absolute top-full left-0 right-0 mt-1 bg-white border border-alabaster-grey-200 rounded shadow-lg z-10 max-h-60 overflow-auto">
-        <div class="flex items-center justify-between px-3 py-2 border-b border-alabaster-grey-100">
-          <span class="text-xs text-black-400">Recent searches</span>
-          <button
-            type="button"
-            class="text-xs text-black-400 hover:text-scarlet-rush-500"
-            onmousedown={() => clearHistory()}
-          >
-            Clear all
-          </button>
-        </div>
-        {#each searchHistory as h}
-          <div class="flex items-center group hover:bg-alabaster-grey-50">
-            <button
-              type="button"
-              class="flex-1 px-3 py-2 text-left font-mono text-sm"
-              onmousedown={() => selectHistory(h)}
-            >
-              {h}
-            </button>
-            <button
-              type="button"
-              class="px-2 py-1 text-black-300 hover:text-scarlet-rush-500 opacity-0 group-hover:opacity-100"
-              onmousedown={() => removeFromHistory(h)}
-            >
-              ×
-            </button>
+{#if viewMode === 'tree'}
+  <KeyTree {selected} {onselect} onclose={() => viewMode = 'list'} />
+{:else}
+  <div class="flex flex-col h-full p-4 gap-3">
+    <div class="flex gap-2">
+      <div class="relative flex-1">
+        <Input
+          type="text"
+          bind:value={pattern}
+          placeholder="Pattern (e.g., user:*)"
+          onfocus={() => showHistory = true}
+          onblur={() => setTimeout(() => showHistory = false, 150)}
+        />
+        {#if showHistory && searchHistory.length > 0}
+          <div class="absolute top-full left-0 right-0 mt-1 bg-white border border-alabaster-grey-200 rounded shadow-lg z-10 max-h-60 overflow-auto">
+            <div class="flex items-center justify-between px-3 py-2 border-b border-alabaster-grey-100">
+              <span class="text-xs text-black-400">Recent searches</span>
+              <button
+                type="button"
+                class="text-xs text-black-400 hover:text-scarlet-rush-500"
+                onmousedown={() => clearHistory()}
+              >
+                Clear all
+              </button>
+            </div>
+            {#each searchHistory as h}
+              <div class="flex items-center group hover:bg-alabaster-grey-50">
+                <button
+                  type="button"
+                  class="flex-1 px-3 py-2 text-left font-mono text-sm"
+                  onmousedown={() => selectHistory(h)}
+                >
+                  {h}
+                </button>
+                <button
+                  type="button"
+                  class="px-2 py-1 text-black-300 hover:text-scarlet-rush-500 opacity-0 group-hover:opacity-100"
+                  onmousedown={() => removeFromHistory(h)}
+                >
+                  ×
+                </button>
+              </div>
+            {/each}
           </div>
+        {/if}
+      </div>
+      <button
+        type="button"
+        onclick={() => viewMode = 'tree'}
+        class="px-3 py-2 border border-alabaster-grey-200 rounded text-sm bg-white hover:bg-alabaster-grey-50 font-mono"
+        title="Tree view"
+      >
+        ▸
+      </button>
+    </div>
+
+    <div class="flex gap-2">
+      <select
+        bind:value={typeFilter}
+        class="flex-1 px-3 py-2 border border-alabaster-grey-200 rounded text-sm bg-white"
+      >
+        <option value="">All types</option>
+        {#each keyTypes.slice(1) as t}
+          <option value={t}>{t}</option>
         {/each}
+      </select>
+      <select
+        bind:value={sortBy}
+        class="px-3 py-2 border border-alabaster-grey-200 rounded text-sm bg-white"
+      >
+        {#each sortOptions as opt}
+          <option value={opt.value}>Sort: {opt.label}</option>
+        {/each}
+      </select>
+      <button
+        type="button"
+        onclick={() => sortAsc = !sortAsc}
+        class="px-3 py-2 border border-alabaster-grey-200 rounded text-sm bg-white hover:bg-alabaster-grey-50"
+        title={sortAsc ? 'Ascending' : 'Descending'}
+      >
+        {sortAsc ? '↑' : '↓'}
+      </button>
+    </div>
+
+    {#if !readOnly}
+      <div class="flex gap-2">
+        <Button variant="secondary" onclick={() => showNewKey = !showNewKey}>
+          + New Key
+        </Button>
       </div>
     {/if}
-  </div>
 
-  <div class="flex gap-2">
-    <select
-      bind:value={typeFilter}
-      class="flex-1 px-3 py-2 border border-alabaster-grey-200 rounded text-sm bg-white"
-    >
-      <option value="">All types</option>
-      {#each keyTypes.slice(1) as t}
-        <option value={t}>{t}</option>
-      {/each}
-    </select>
-    <select
-      bind:value={sortBy}
-      class="px-3 py-2 border border-alabaster-grey-200 rounded text-sm bg-white"
-    >
-      {#each sortOptions as opt}
-        <option value={opt.value}>Sort: {opt.label}</option>
-      {/each}
-    </select>
-    <button
-      type="button"
-      onclick={() => sortAsc = !sortAsc}
-      class="px-3 py-2 border border-alabaster-grey-200 rounded text-sm bg-white hover:bg-alabaster-grey-50"
-      title={sortAsc ? 'Ascending' : 'Descending'}
-    >
-      {sortAsc ? '↑' : '↓'}
-    </button>
-  </div>
+    {#if showNewKey && !readOnly}
+      <div class="flex gap-2 p-2 bg-black-800 rounded">
+        {#if prefix}
+          <Badge variant="secondary" class="text-black-400 font-mono">{prefix}</Badge>
+        {/if}
+        <Input
+          type="text"
+          bind:value={newKeyName}
+          placeholder="Key name"
+          onkeydown={(e) => e.key === 'Enter' && createKey()}
+          class="flex-1"
+        />
+        <Button onclick={createKey}>Create</Button>
+      </div>
+    {/if}
 
-  {#if !readOnly}
-    <div class="flex gap-2">
-      <Button variant="secondary" onclick={() => showNewKey = !showNewKey}>
-        + New Key
+    <ul class="flex-1 overflow-y-auto list-none">
+      {#each sortedKeys as item, i (item.key)}
+        {@const hasTtlBoundary = sortBy === 'ttl' && i < sortedKeys.length - 1 && (item.ttl >= 0) !== (sortedKeys[i + 1].ttl >= 0)}
+        <li class={hasTtlBoundary ? 'border-b border-alabaster-grey-300 mb-1 pb-1' : ''}>
+          <Button
+            variant="ghost"
+            class="w-full justify-start p-2 text-black-950 font-mono text-sm rounded overflow-hidden text-ellipsis whitespace-nowrap hover:bg-crayola-blue-200 {item.key === selected ? 'bg-crayola-blue-100 hover:bg-crayola-blue-100' : ''}"
+            onclick={() => onselect(item.key)}
+          >
+            <span class="flex-1 overflow-hidden text-ellipsis text-left">{item.key}</span>
+            <Badge variant="secondary" class="ml-2 text-xs opacity-60">{item.type}</Badge>
+          </Button>
+        </li>
+      {/each}
+    </ul>
+
+    {#if hasMore}
+      <Button
+        variant="secondary"
+        class="w-full"
+        onclick={() => loadKeys(false)}
+        disabled={loading}
+      >
+        {loading ? 'Loading...' : 'Load more'}
       </Button>
-    </div>
-  {/if}
+    {/if}
 
-  {#if showNewKey && !readOnly}
-    <div class="flex gap-2 p-2 bg-black-800 rounded">
-      {#if prefix}
-        <Badge variant="secondary" class="text-black-400 font-mono">{prefix}</Badge>
-      {/if}
-      <Input
-        type="text"
-        bind:value={newKeyName}
-        placeholder="Key name"
-        onkeydown={(e) => e.key === 'Enter' && createKey()}
-        class="flex-1"
-      />
-      <Button onclick={createKey}>Create</Button>
-    </div>
-  {/if}
-
-  <ul class="flex-1 overflow-y-auto list-none">
-    {#each sortedKeys as item, i (item.key)}
-      {@const hasTtlBoundary = sortBy === 'ttl' && i < sortedKeys.length - 1 && (item.ttl >= 0) !== (sortedKeys[i + 1].ttl >= 0)}
-      <li class={hasTtlBoundary ? 'border-b border-alabaster-grey-300 mb-1 pb-1' : ''}>
-        <Button
-          variant="ghost"
-          class="w-full justify-start p-2 text-black-950 font-mono text-sm rounded overflow-hidden text-ellipsis whitespace-nowrap hover:bg-crayola-blue-200 {item.key === selected ? 'bg-crayola-blue-100 hover:bg-crayola-blue-100' : ''}"
-          onclick={() => onselect(item.key)}
-        >
-          <span class="flex-1 overflow-hidden text-ellipsis text-left">{item.key}</span>
-          <Badge variant="secondary" class="ml-2 text-xs opacity-60">{item.type}</Badge>
-        </Button>
-      </li>
-    {/each}
-  </ul>
-
-  {#if hasMore}
-    <Button
-      variant="secondary"
-      class="w-full"
-      onclick={() => loadKeys(false)}
-      disabled={loading}
-    >
-      {loading ? 'Loading...' : 'Load more'}
-    </Button>
-  {/if}
-
-  {#if sortedKeys.length === 0 && !loading}
-    <div class="text-center text-black-400 py-8">No keys found</div>
-  {/if}
-</div>
+    {#if sortedKeys.length === 0 && !loading}
+      <div class="text-center text-black-400 py-8">No keys found</div>
+    {/if}
+  </div>
+{/if}

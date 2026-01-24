@@ -42,6 +42,19 @@ export interface AppConfig {
   disableFlush: boolean
 }
 
+export interface PrefixEntry {
+  prefix: string
+  count: number
+  isLeaf: boolean
+  fullKey?: string
+  type?: string
+}
+
+export interface PrefixResponse {
+  entries: PrefixEntry[]
+  prefix: string
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
     ...options,
@@ -74,6 +87,10 @@ export const api = {
     if (type) url += `&type=${encodeURIComponent(type)}`
     if (meta) url += '&meta=1'
     return request(url)
+  },
+
+  getPrefixes(prefix = '', delimiter = ':'): Promise<PrefixResponse> {
+    return request(`/prefixes?prefix=${encodeURIComponent(prefix)}&delimiter=${encodeURIComponent(delimiter)}`)
   },
 
   getKey(key: string): Promise<KeyInfo> {
