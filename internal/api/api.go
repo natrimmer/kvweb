@@ -127,6 +127,12 @@ func (h *Handler) handleInfo(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+type keyMeta struct {
+	Key  string `json:"key"`
+	Type string `json:"type"`
+	TTL  int64  `json:"ttl"`
+}
+
 func (h *Handler) handleKeys(w http.ResponseWriter, r *http.Request) {
 	pattern := r.URL.Query().Get("pattern")
 	if pattern == "" {
@@ -152,6 +158,7 @@ func (h *Handler) handleKeys(w http.ResponseWriter, r *http.Request) {
 	}
 
 	typeFilter := r.URL.Query().Get("type")
+	withMeta := r.URL.Query().Get("meta") == "1"
 
 	keys, nextCursor, err := h.client.Keys(r.Context(), pattern, cursor, count)
 	if err != nil {
@@ -169,6 +176,21 @@ func (h *Handler) handleKeys(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		keys = filtered
+	}
+
+	// Return with metadata if requested (for sorting)
+	if withMeta {
+		metas := make([]keyMeta, 0, len(keys))
+		for _, key := range keys {
+			keyType, _ := h.client.Type(r.Context(), key)
+			ttl, _ := h.client.TTL(r.Context(), key)
+			metas = append(metas, keyMeta{Key: key, Type: keyType, TTL: ttl})
+		}
+		jsonResponse(w, map[string]any{
+			"keys":   metas,
+			"cursor": nextCursor,
+		})
+		return
 	}
 
 	jsonResponse(w, map[string]any{

@@ -2,7 +2,7 @@
   import { Badge } from '$lib/components/ui/badge';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
-  import { api } from './api';
+  import { api, type KeyMeta } from './api';
 
   interface Props {
     selected: string | null
@@ -14,9 +14,11 @@
 
   let { selected, onselect, oncreated, readOnly, prefix }: Props = $props()
 
-  let keys = $state<string[]>([])
+  let keys = $state<KeyMeta[]>([])
   let pattern = $state('*')
   let typeFilter = $state('')
+  let sortBy = $state<'key' | 'type' | 'ttl'>('key')
+  let sortAsc = $state(true)
   let loading = $state(false)
   let cursor = $state(0)
   let hasMore = $state(false)
@@ -27,6 +29,32 @@
   let searchHistory = $state<string[]>([])
 
   const keyTypes = ['', 'string', 'hash', 'list', 'set', 'zset', 'stream'] as const
+  const sortOptions = [
+    { value: 'key', label: 'Name' },
+    { value: 'type', label: 'Type' },
+    { value: 'ttl', label: 'TTL' },
+  ] as const
+
+  function sortKeys(items: KeyMeta[]): KeyMeta[] {
+    const sorted = [...items].sort((a, b) => {
+      switch (sortBy) {
+        case 'key':
+          return a.key.localeCompare(b.key)
+        case 'type':
+          return a.type.localeCompare(b.type) || a.key.localeCompare(b.key)
+        case 'ttl':
+          // -1 means no TTL, sort those last (or first when descending)
+          const aTtl = a.ttl < 0 ? Infinity : a.ttl
+          const bTtl = b.ttl < 0 ? Infinity : b.ttl
+          return aTtl - bTtl || a.key.localeCompare(b.key)
+        default:
+          return 0
+      }
+    })
+    return sortAsc ? sorted : sorted.reverse()
+  }
+
+  let sortedKeys = $derived(sortKeys(keys))
 
   const HISTORY_KEY = 'kvweb:search-history'
   const MAX_HISTORY = 20
@@ -86,11 +114,12 @@
     loading = true
     try {
       const c = reset ? 0 : cursor
-      const result = await api.getKeys(pattern, c, 100, typeFilter || undefined)
+      const result = await api.getKeys(pattern, c, 100, typeFilter || undefined, true)
+      const newKeys = result.keys as KeyMeta[]
       if (reset) {
-        keys = result.keys
+        keys = newKeys
       } else {
-        keys = [...keys, ...result.keys]
+        keys = [...keys, ...newKeys]
       }
       cursor = result.cursor
       hasMore = result.cursor !== 0
@@ -160,15 +189,33 @@
     {/if}
   </div>
 
-  <select
-    bind:value={typeFilter}
-    class="w-full px-3 py-2 border border-alabaster-grey-200 rounded text-sm bg-white"
-  >
-    <option value="">All types</option>
-    {#each keyTypes.slice(1) as t}
-      <option value={t}>{t}</option>
-    {/each}
-  </select>
+  <div class="flex gap-2">
+    <select
+      bind:value={typeFilter}
+      class="flex-1 px-3 py-2 border border-alabaster-grey-200 rounded text-sm bg-white"
+    >
+      <option value="">All types</option>
+      {#each keyTypes.slice(1) as t}
+        <option value={t}>{t}</option>
+      {/each}
+    </select>
+    <select
+      bind:value={sortBy}
+      class="px-3 py-2 border border-alabaster-grey-200 rounded text-sm bg-white"
+    >
+      {#each sortOptions as opt}
+        <option value={opt.value}>Sort: {opt.label}</option>
+      {/each}
+    </select>
+    <button
+      type="button"
+      onclick={() => sortAsc = !sortAsc}
+      class="px-3 py-2 border border-alabaster-grey-200 rounded text-sm bg-white hover:bg-alabaster-grey-50"
+      title={sortAsc ? 'Ascending' : 'Descending'}
+    >
+      {sortAsc ? '↑' : '↓'}
+    </button>
+  </div>
 
   {#if !readOnly}
     <div class="flex gap-2">
@@ -195,14 +242,16 @@
   {/if}
 
   <ul class="flex-1 overflow-y-auto list-none">
-    {#each keys as key (key)}
-      <li>
+    {#each sortedKeys as item, i (item.key)}
+      {@const hasTtlBoundary = sortBy === 'ttl' && i < sortedKeys.length - 1 && (item.ttl >= 0) !== (sortedKeys[i + 1].ttl >= 0)}
+      <li class={hasTtlBoundary ? 'border-b border-alabaster-grey-300 mb-1 pb-1' : ''}>
         <Button
           variant="ghost"
-          class="w-full justify-start p-2 text-black-950 font-mono text-sm rounded overflow-hidden text-ellipsis whitespace-nowrap hover:bg-crayola-blue-200 {key === selected ? 'bg-crayola-blue-100 hover:bg-crayola-blue-100' : ''}"
-          onclick={() => onselect(key)}
+          class="w-full justify-start p-2 text-black-950 font-mono text-sm rounded overflow-hidden text-ellipsis whitespace-nowrap hover:bg-crayola-blue-200 {item.key === selected ? 'bg-crayola-blue-100 hover:bg-crayola-blue-100' : ''}"
+          onclick={() => onselect(item.key)}
         >
-          {key}
+          <span class="flex-1 overflow-hidden text-ellipsis text-left">{item.key}</span>
+          <Badge variant="secondary" class="ml-2 text-xs opacity-60">{item.type}</Badge>
         </Button>
       </li>
     {/each}
@@ -219,7 +268,7 @@
     </Button>
   {/if}
 
-  {#if keys.length === 0 && !loading}
+  {#if sortedKeys.length === 0 && !loading}
     <div class="text-center text-black-400 py-8">No keys found</div>
   {/if}
 </div>

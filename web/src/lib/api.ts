@@ -25,8 +25,14 @@ export interface ServerInfo {
   dbSize: number
 }
 
+export interface KeyMeta {
+  key: string
+  type: string
+  ttl: number
+}
+
 export interface KeysResponse {
-  keys: string[]
+  keys: string[] | KeyMeta[]
   cursor: number
 }
 
@@ -63,9 +69,10 @@ export const api = {
     return request(`/info${params}`)
   },
 
-  getKeys(pattern = '*', cursor = 0, count = 100, type?: string): Promise<KeysResponse> {
+  getKeys(pattern = '*', cursor = 0, count = 100, type?: string, meta = false): Promise<KeysResponse> {
     let url = `/keys?pattern=${encodeURIComponent(pattern)}&cursor=${cursor}&count=${count}`
     if (type) url += `&type=${encodeURIComponent(type)}`
+    if (meta) url += '&meta=1'
     return request(url)
   },
 
