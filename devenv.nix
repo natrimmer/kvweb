@@ -158,6 +158,58 @@ in
       echo "  Frontend    http://localhost:$PORT_FRONTEND"
     '';
 
+    seed.exec = ''
+      echo "Seeding valkey with sample data..."
+      CLI="valkey-cli -p $PORT_VALKEY"
+
+      # String examples
+      $CLI SET "user:1:name" "Alice Johnson"
+      $CLI SET "user:1:email" "alice@example.com"
+      $CLI SET "user:2:name" "Bob Smith"
+      $CLI SET "user:2:email" "bob@example.com"
+      $CLI SET "config:app:version" "1.0.0"
+      $CLI SET "config:app:environment" "development"
+      $CLI SET "session:abc123" '{"userId":1,"createdAt":"2024-01-15T10:30:00Z"}'
+
+      # Hash examples
+      $CLI HSET "user:1" name "Alice Johnson" email "alice@example.com" age 28 role "admin"
+      $CLI HSET "user:2" name "Bob Smith" email "bob@example.com" age 34 role "user"
+      $CLI HSET "product:1001" name "Widget Pro" price "29.99" stock 150 category "tools"
+      $CLI HSET "product:1002" name "Gadget Plus" price "49.99" stock 75 category "electronics"
+
+      # List examples
+      $CLI RPUSH "queue:emails" "welcome@example.com" "newsletter@example.com" "alert@example.com"
+      $CLI RPUSH "recent:searches" "redis tutorial" "key-value stores" "caching strategies"
+      $CLI RPUSH "logs:app" '{"level":"info","msg":"App started"}' '{"level":"warn","msg":"High memory"}' '{"level":"error","msg":"Connection failed"}'
+
+      # Set examples
+      $CLI SADD "tags:post:1" "redis" "database" "nosql" "tutorial"
+      $CLI SADD "tags:post:2" "golang" "backend" "api"
+      $CLI SADD "online:users" "user:1" "user:2" "user:5" "user:8"
+
+      # Sorted set examples
+      $CLI ZADD "leaderboard:game1" 1500 "player:alice" 1350 "player:bob" 1200 "player:charlie" 980 "player:diana"
+      $CLI ZADD "trending:articles" 342 "article:1001" 256 "article:1002" 189 "article:1003"
+
+      # Stream example
+      $CLI XADD "events:user" "*" action "login" userId 1 ip "192.168.1.1"
+      $CLI XADD "events:user" "*" action "page_view" userId 1 page "/dashboard"
+      $CLI XADD "events:user" "*" action "logout" userId 1
+
+      # Keys with TTL
+      $CLI SET "cache:weather:nyc" '{"temp":72,"conditions":"sunny"}' EX 3600
+      $CLI SET "cache:weather:la" '{"temp":85,"conditions":"clear"}' EX 3600
+
+      # Nested namespace examples
+      $CLI SET "api:v1:users:count" "1542"
+      $CLI SET "api:v1:requests:today" "28493"
+      $CLI SET "api:v2:users:count" "892"
+
+      echo ""
+      echo "Seeded $(valkey-cli -p $PORT_VALKEY DBSIZE | cut -d' ' -f2) keys"
+      echo "Run 'valkey-cli -p $PORT_VALKEY KEYS \"*\"' to see all keys"
+    '';
+
     commands.exec = ''
       echo "Available commands:"
       echo ""
@@ -167,6 +219,7 @@ in
       echo "  test       - Run all tests"
       echo "  lint       - Run linters"
       echo "  deps       - Update dependencies"
+      echo "  seed       - Populate valkey with sample data"
       echo "  ports      - Show service ports"
       echo "  commands   - Show this help"
     '';
