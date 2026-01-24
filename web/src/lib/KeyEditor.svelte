@@ -94,7 +94,7 @@
       <Badge variant="secondary" class="uppercase">{keyInfo.type}</Badge>
     </div>
 
-    <div class="p-4 bg-black-900 rounded">
+    <div class="p-4 bg-alabaster-grey-50 rounded">
       <div class="flex items-center gap-4">
         <label class="flex items-center gap-2">
           TTL:

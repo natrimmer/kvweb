@@ -109,7 +109,7 @@
       <li>
         <Button
           variant="ghost"
-          class="w-full justify-start p-2 text-black-100 font-mono text-sm rounded overflow-hidden text-ellipsis whitespace-nowrap hover:bg-black-800 {key === selected ? 'bg-crayola-blue-600 hover:bg-crayola-blue-600' : ''}"
+          class="w-full justify-start p-2 text-black-950 font-mono text-sm rounded overflow-hidden text-ellipsis whitespace-nowrap hover:bg-crayola-blue-200 {key === selected ? 'bg-crayola-blue-100 hover:bg-crayola-blue-100' : ''}"
           onclick={() => onselect(key)}
         >
           {key}

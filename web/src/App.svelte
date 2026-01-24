@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Badge } from '$lib/components/ui/badge';
   import { Button } from '$lib/components/ui/button';
+  import * as Resizable from '$lib/components/ui/resizable';
   import { onMount } from 'svelte';
   import KeyEditor from './lib/KeyEditor.svelte';
   import KeyList from './lib/KeyList.svelte';
@@ -46,19 +47,19 @@
 </script>
 
 <div class="flex flex-col h-screen">
-  <header class="flex items-center gap-8 px-6 py-4 bg-alabaster-grey-50 border-b border-black-700">
+  <header class="flex items-center gap-8 px-6 py-4 bg-crayola-blue-50 border-b border-black-700">
     <h1 class="text-2xl font-semibold text-crayola-blue-400">kvweb</h1>
     <nav class="flex gap-2">
       <Button
-        variant="ghost"
-        class="text-black-400 hover:text-black-100 {view === 'keys' ? 'text-crayola-blue-400 border-b-2 border-crayola-blue-400 rounded-none' : ''}"
+        variant="outline"
+        class="text-black-400 hover:text-crayola-blue-400 hover:border-crayola-blue-400 rounded-none {view === 'keys' ? 'text-crayola-blue-400 border-b-2 border-crayola-blue-400' : ''}"
         onclick={() => view = 'keys'}
       >
         Keys
       </Button>
       <Button
-        variant="ghost"
-        class="text-black-400 hover:text-black-100 {view === 'info' ? 'text-crayola-blue-400 border-b-2 border-crayola-blue-400 rounded-none' : ''}"
+        variant="outline"
+        class="text-black-400 hover:text-crayola-blue-400 hover:border-crayola-blue-400 rounded-none {view === 'info' ? 'text-crayola-blue-400 border-b-2 border-crayola-blue-400' : ''}"
         onclick={() => view = 'info'}
       >
         Server Info
@@ -78,30 +79,35 @@
 
   <main class="flex-1 overflow-hidden">
     {#if view === 'keys'}
-      <div class="flex h-full">
-        <aside class="w-80 border-r border-black-700 overflow-hidden flex flex-col">
-          <KeyList
-            onselect={handleKeySelect}
-            selected={selectedKey}
-            oncreated={handleKeyCreated}
-            {readOnly}
-            {prefix}
-          />
-        </aside>
-        <section class="flex-1 overflow-auto">
-          {#if selectedKey}
-            <KeyEditor
-              key={selectedKey}
-              ondeleted={handleKeyDeleted}
+      <Resizable.PaneGroup direction="horizontal" class="h-full">
+        <Resizable.Pane defaultSize={25} minSize={15} maxSize={50}>
+          <div class="h-full overflow-hidden flex flex-col border-r border-black-700">
+            <KeyList
+              onselect={handleKeySelect}
+              selected={selectedKey}
+              oncreated={handleKeyCreated}
               {readOnly}
+              {prefix}
             />
-          {:else}
-            <div class="flex items-center justify-center h-full text-black-400">
-              Select a key to view/edit its value
-            </div>
-          {/if}
-        </section>
-      </div>
+          </div>
+        </Resizable.Pane>
+        <Resizable.Handle withHandle />
+        <Resizable.Pane defaultSize={75}>
+          <div class="h-full overflow-auto">
+            {#if selectedKey}
+              <KeyEditor
+                key={selectedKey}
+                ondeleted={handleKeyDeleted}
+                {readOnly}
+              />
+            {:else}
+              <div class="flex items-center justify-center h-full text-black-400">
+                Select a key to view/edit its value
+              </div>
+            {/if}
+          </div>
+        </Resizable.Pane>
+      </Resizable.PaneGroup>
     {:else}
       <ServerInfo {readOnly} {disableFlush} />
     {/if}
