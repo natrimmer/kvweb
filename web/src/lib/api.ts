@@ -128,4 +128,15 @@ export const api = {
   flushDb(): Promise<void> {
     return request('/flush', { method: 'POST' })
   },
+
+  getNotifications(): Promise<{ enabled: boolean; value: string }> {
+    return request('/notifications')
+  },
+
+  setNotifications(enabled: boolean): Promise<{ ok: boolean; enabled: boolean }> {
+    return request('/notifications', {
+      method: 'POST',
+      body: JSON.stringify({ enabled }),
+    })
+  },
 }

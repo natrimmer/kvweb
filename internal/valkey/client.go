@@ -235,3 +235,19 @@ func (c *Client) XRange(ctx context.Context, key, start, stop string, count int6
 	}
 	return entries, nil
 }
+
+// Config operations
+
+// GetNotifyKeyspaceEvents returns the current notify-keyspace-events setting
+func (c *Client) GetNotifyKeyspaceEvents(ctx context.Context) (string, error) {
+	result, err := c.client.Do(ctx, c.client.B().ConfigGet().Parameter("notify-keyspace-events").Build()).AsStrMap()
+	if err != nil {
+		return "", err
+	}
+	return result["notify-keyspace-events"], nil
+}
+
+// SetNotifyKeyspaceEvents enables/disables keyspace notifications
+func (c *Client) SetNotifyKeyspaceEvents(ctx context.Context, value string) error {
+	return c.client.Do(ctx, c.client.B().ConfigSet().ParameterValue().ParameterValue("notify-keyspace-events", value).Build()).Error()
+}

@@ -2,8 +2,10 @@
   import { Badge } from '$lib/components/ui/badge';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
+  import { onMount } from 'svelte';
   import { api, type KeyMeta } from './api';
   import KeyTree from './KeyTree.svelte';
+  import { ws } from './ws';
 
   interface Props {
     selected: string | null
@@ -117,6 +119,44 @@
 
   // Load history on init
   loadHistory()
+
+  // Subscribe to WebSocket key events for live updates
+  // Operations that indicate a key was deleted or expired
+  const deleteOps = new Set(['del', 'expired'])
+  // Operations that indicate a key was created or modified
+  const modifyOps = new Set([
+    'set',           // string
+    'lpush', 'rpush', 'lpop', 'rpop', 'lset', 'ltrim',  // list
+    'hset', 'hdel', 'hincrby', 'hincrbyfloat',          // hash
+    'sadd', 'srem', 'spop',                              // set
+    'zadd', 'zrem', 'zincrby',                           // sorted set
+    'xadd', 'xtrim',                                     // stream
+    'append', 'incr', 'decr', 'incrby', 'decrby',       // string modifications
+    'setex', 'psetex', 'setnx',                          // string variants
+  ])
+
+  onMount(() => {
+    return ws.onKeyEvent((event) => {
+      if (deleteOps.has(event.op)) {
+        // Remove deleted/expired keys from list
+        keys = keys.filter(k => k.key !== event.key)
+      } else if (modifyOps.has(event.op)) {
+        // Check if key already exists in list
+        const exists = keys.some(k => k.key === event.key)
+        if (!exists) {
+          // New key - reload to get metadata (type, ttl)
+          loadKeys(true)
+        }
+        // If key exists and is selected, parent will handle refresh
+      } else if (event.op === 'rename_from') {
+        // Remove the old key name
+        keys = keys.filter(k => k.key !== event.key)
+      } else if (event.op === 'rename_to') {
+        // New key name appeared - reload to get it
+        loadKeys(true)
+      }
+    })
+  })
 
   // Debounced search when pattern, type filter, or regex mode changes
   $effect(() => {

@@ -3,6 +3,7 @@
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Textarea } from '$lib/components/ui/textarea';
+  import { ws } from './ws';
 
   import { api, type KeyInfo, type StreamEntry, type ZSetMember } from './api';
 
@@ -28,6 +29,10 @@
   let prettyPrint = $state(false)
   let highlightedHtml = $state('')
   let listHighlights = $state<Record<number, string>>({})
+
+  // External modification detection
+  let externallyModified = $state(false)
+  let keyDeleted = $state(false)
 
   function startTtlCountdown(ttl: number) {
     stopTtlCountdown()
@@ -145,7 +150,45 @@
 
   $effect(() => {
     loadKey(key)
+    // Reset external modification state when key changes
+    externallyModified = false
+    keyDeleted = false
     return () => stopTtlCountdown()
+  })
+
+  // Subscribe to WebSocket key events for external modification detection
+  // Operations that indicate a key was deleted
+  const deleteOps = new Set(['del', 'expired'])
+  // Operations that indicate a key was modified
+  const modifyOps = new Set([
+    'set',           // string
+    'lpush', 'rpush', 'lpop', 'rpop', 'lset', 'ltrim',  // list
+    'hset', 'hdel', 'hincrby', 'hincrbyfloat',          // hash
+    'sadd', 'srem', 'spop',                              // set
+    'zadd', 'zrem', 'zincrby',                           // sorted set
+    'xadd', 'xtrim',                                     // stream
+    'append', 'incr', 'decr', 'incrby', 'decrby',       // string modifications
+    'setex', 'psetex', 'setnx',                          // string variants
+  ])
+
+  $effect(() => {
+    if (!key) return
+
+    const unsubscribe = ws.onKeyEvent((event) => {
+      if (event.key !== key) return
+
+      if (deleteOps.has(event.op)) {
+        keyDeleted = true
+        externallyModified = false
+      } else if (modifyOps.has(event.op)) {
+        // Only mark as externally modified if we're not currently saving
+        if (!saving) {
+          externallyModified = true
+        }
+      }
+    })
+
+    return unsubscribe
   })
 
   async function loadKey(k: string) {
@@ -219,6 +262,22 @@
       <h2 class="font-mono text-xl break-all">{key}</h2>
       <Badge variant="secondary" class="uppercase">{keyInfo.type}</Badge>
     </div>
+
+    {#if keyDeleted}
+      <div class="bg-scarlet-rush-100 text-scarlet-rush-800 p-3 rounded flex items-center justify-between text-sm">
+        <span>This key was deleted externally</span>
+        <Button variant="secondary" size="sm" onclick={ondeleted}>
+          Close
+        </Button>
+      </div>
+    {:else if externallyModified}
+      <div class="bg-golden-pollen-100 text-golden-pollen-800 p-3 rounded flex items-center justify-between text-sm">
+        <span>Modified externally</span>
+        <Button variant="secondary" size="sm" onclick={() => { loadKey(key); externallyModified = false }}>
+          Reload
+        </Button>
+      </div>
+    {/if}
 
     <div class="p-4 bg-alabaster-grey-50 rounded">
       <div class="flex items-center gap-4">

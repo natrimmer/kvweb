@@ -32,6 +32,7 @@ func main() {
 	flag.StringVar(&cfg.Prefix, "prefix", "", "Only show/allow keys matching this prefix")
 	flag.BoolVar(&cfg.DisableFlush, "disable-flush", false, "Block FLUSHDB even in write mode")
 	flag.Int64Var(&cfg.MaxKeys, "max-keys", 0, "Limit SCAN count per request (0 = no limit)")
+	flag.BoolVar(&cfg.Notifications, "notifications", false, "Auto-enable Valkey keyspace notifications for live updates")
 	showVersion := flag.Bool("version", false, "Show version")
 	flag.Parse()
 

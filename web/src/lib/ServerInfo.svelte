@@ -3,6 +3,7 @@
   import * as Select from '$lib/components/ui/select';
   import { onMount } from 'svelte';
   import { api } from './api';
+  import { ws, type Stats, type Status } from './ws';
 
   interface Props {
     readOnly: boolean
@@ -14,6 +15,8 @@
   let info = $state('')
   let loading = $state(false)
   let section = $state('')
+  let notificationsEnabled = $state(false)
+  let enablingNotifications = $state(false)
 
   const sections = [
     { value: '', label: 'All Sections' },
@@ -44,6 +47,28 @@
 
   onMount(() => {
     loadInfo()
+
+    // Load initial notifications status
+    api.getNotifications().then((result) => {
+      notificationsEnabled = result.enabled
+    }).catch(() => {
+      // Ignore if endpoint not available
+    })
+
+    // Subscribe to status updates for immediate notification changes
+    const unsubStatus = ws.onStatus((status: Status) => {
+      notificationsEnabled = status.live
+    })
+
+    // Subscribe to stats updates for live notifications status
+    const unsubStats = ws.onStats((stats: Stats) => {
+      notificationsEnabled = stats.notificationsOn
+    })
+
+    return () => {
+      unsubStatus()
+      unsubStats()
+    }
   })
 
   function handleValueChange(value: string | undefined) {
@@ -60,6 +85,21 @@
       alert('Database flushed successfully')
     } catch (e) {
       alert('Failed to flush database')
+    }
+  }
+
+  async function enableNotifications() {
+    enablingNotifications = true
+    try {
+      const result = await api.setNotifications(true)
+      notificationsEnabled = result.enabled
+      if (result.enabled) {
+        alert('Live updates enabled. The server will now broadcast key changes.')
+      }
+    } catch (e) {
+      alert('Failed to enable notifications')
+    } finally {
+      enablingNotifications = false
     }
   }
 </script>
@@ -82,6 +122,11 @@
     {#if !readOnly && !disableFlush}
       <Button variant="destructive" onclick={flushDb}>
         Flush Database
+      </Button>
+    {/if}
+    {#if !readOnly && !notificationsEnabled}
+      <Button variant="secondary" onclick={enableNotifications} disabled={enablingNotifications}>
+        {enablingNotifications ? 'Enabling...' : 'Enable Live Updates'}
       </Button>
     {/if}
   </div>

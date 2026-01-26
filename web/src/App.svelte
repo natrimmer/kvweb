@@ -7,6 +7,7 @@
   import KeyList from './lib/KeyList.svelte';
   import ServerInfo from './lib/ServerInfo.svelte';
   import { api } from './lib/api';
+  import { ws } from './lib/ws';
 
   let selectedKey = $state<string | null>(null)
   let view = $state<'keys' | 'info'>('keys')
@@ -15,21 +16,36 @@
   let readOnly = $state(false)
   let prefix = $state('')
   let disableFlush = $state(false)
+  let liveUpdates = $state(false)
 
-  onMount(async () => {
-    try {
-      const [info, config] = await Promise.all([
-        api.getInfo(),
-        api.getConfig()
-      ])
+  onMount(() => {
+    // Load initial data
+    Promise.all([
+      api.getInfo(),
+      api.getConfig()
+    ]).then(([info, config]) => {
       dbSize = info.dbSize
       readOnly = config.readOnly
       prefix = config.prefix
       disableFlush = config.disableFlush
       connected = true
-    } catch (e) {
+    }).catch(() => {
       connected = false
-    }
+    })
+
+    // Connect WebSocket
+    ws.connect()
+
+    ws.onStatus((status) => {
+      liveUpdates = status.live
+    })
+
+    ws.onStats((stats) => {
+      dbSize = stats.dbSize
+      liveUpdates = stats.notificationsOn
+    })
+
+    return () => ws.disconnect()
   })
 
   function handleKeySelect(key: string) {
@@ -65,7 +81,13 @@
         Server Info
       </Button>
     </nav>
-    <div class="ml-auto flex items-center gap-2 text-black-400 text-sm">
+    <div class="ml-auto flex items-center gap-3 text-black-400 text-sm">
+      {#if liveUpdates}
+        <span class="flex items-center gap-1.5 text-crayola-blue-500">
+          <span class="w-2 h-2 rounded-full bg-crayola-blue-500 animate-pulse"></span>
+          Live
+        </span>
+      {/if}
       {#if prefix}
         <Badge variant="secondary" class="bg-black-800 text-black-300 font-mono">{prefix}*</Badge>
       {/if}

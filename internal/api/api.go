@@ -15,9 +15,10 @@ import (
 
 // Handler handles API requests
 type Handler struct {
-	cfg    *config.Config
-	client *valkey.Client
-	mux    *http.ServeMux
+	cfg                    *config.Config
+	client                 *valkey.Client
+	mux                    *http.ServeMux
+	onNotificationsEnabled func() // Callback when notifications are enabled at runtime
 }
 
 // New creates a new API handler
@@ -39,8 +40,15 @@ func New(cfg *config.Config, client *valkey.Client) *Handler {
 	h.mux.HandleFunc("POST /api/key/{key}/expire", h.handleExpire)
 	h.mux.HandleFunc("POST /api/key/{key}/rename", h.handleRename)
 	h.mux.HandleFunc("POST /api/flush", h.handleFlush)
+	h.mux.HandleFunc("GET /api/notifications", h.handleGetNotifications)
+	h.mux.HandleFunc("POST /api/notifications", h.handleSetNotifications)
 
 	return h
+}
+
+// SetOnNotificationsEnabled sets the callback for when notifications are enabled at runtime
+func (h *Handler) SetOnNotificationsEnabled(fn func()) {
+	h.onNotificationsEnabled = fn
 }
 
 // ServeHTTP implements http.Handler
@@ -539,4 +547,53 @@ func (h *Handler) handleFlush(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jsonResponse(w, map[string]string{"status": "ok"})
+}
+
+func (h *Handler) handleGetNotifications(w http.ResponseWriter, r *http.Request) {
+	val, err := h.client.GetNotifyKeyspaceEvents(r.Context())
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	jsonResponse(w, map[string]any{
+		"enabled": val != "",
+		"value":   val,
+	})
+}
+
+func (h *Handler) handleSetNotifications(w http.ResponseWriter, r *http.Request) {
+	if h.checkReadOnly(w) {
+		return
+	}
+
+	var body struct {
+		Enabled bool `json:"enabled"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		jsonError(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	val := ""
+	if body.Enabled {
+		// K = Keyspace events, E = Keyevent events
+		// g = generic (DEL, EXPIRE, RENAME, etc), $ = string, l = list, s = set, h = hash, z = zset, x = stream, e = expired, t = stream
+		val = "KEg$lshzxet"
+	}
+
+	if err := h.client.SetNotifyKeyspaceEvents(r.Context(), val); err != nil {
+		jsonError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Trigger callback if enabling notifications
+	if body.Enabled && h.onNotificationsEnabled != nil {
+		h.onNotificationsEnabled()
+	}
+
+	jsonResponse(w, map[string]any{
+		"ok":      true,
+		"enabled": body.Enabled,
+	})
 }
