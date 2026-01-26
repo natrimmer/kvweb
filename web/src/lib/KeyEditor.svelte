@@ -3,6 +3,7 @@
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Textarea } from '$lib/components/ui/textarea';
+
   import { api, type KeyInfo, type StreamEntry, type ZSetMember } from './api';
 
   interface Props {
@@ -22,6 +23,11 @@
   let liveTtl = $state<number | null>(null)
   let ttlInterval: ReturnType<typeof setInterval> | null = null
   let expiresAt: number | null = null
+
+  // JSON highlighting state
+  let prettyPrint = $state(false)
+  let highlightedHtml = $state('')
+  let listHighlights = $state<Record<number, string>>({})
 
   function startTtlCountdown(ttl: number) {
     stopTtlCountdown()
@@ -67,6 +73,75 @@
   function asStream(): StreamEntry[] {
     return Array.isArray(keyInfo?.value) ? keyInfo.value as StreamEntry[] : []
   }
+
+  function isJson(str: string): boolean {
+    if (!str || str.length < 2) return false
+    const trimmed = str.trim()
+    if (!((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+          (trimmed.startsWith('[') && trimmed.endsWith(']')))) {
+      return false
+    }
+    try {
+      JSON.parse(str)
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  // Lightweight JSON syntax highlighter (no dependencies)
+  function highlight(str: string, format: boolean): string {
+    try {
+      const code = format ? JSON.stringify(JSON.parse(str), null, 2) : str
+      // Escape HTML and apply syntax highlighting
+      const escaped = code
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+
+      // Apply highlighting with regex
+      const highlighted = escaped
+        // Strings (including keys)
+        .replace(/"([^"\\]|\\.)*"/g, (match) => {
+          return `<span class="json-string">${match}</span>`
+        })
+        // Numbers
+        .replace(/\b(-?\d+\.?\d*(?:[eE][+-]?\d+)?)\b/g, '<span class="json-number">$1</span>')
+        // Booleans and null
+        .replace(/\b(true|false|null)\b/g, '<span class="json-keyword">$1</span>')
+
+      return `<pre class="json-highlight">${highlighted}</pre>`
+    } catch {
+      return ''
+    }
+  }
+
+  // Highlight string value when it changes or prettyPrint toggles
+  $effect(() => {
+    if (keyInfo?.type === 'string' && isJson(editValue)) {
+      highlightedHtml = highlight(editValue, prettyPrint)
+    } else {
+      highlightedHtml = ''
+    }
+  })
+
+  // Highlight list items containing JSON
+  $effect(() => {
+    if (keyInfo?.type === 'list') {
+      const items = asArray()
+      const highlights: Record<number, string> = {}
+      for (let i = 0; i < items.length; i++) {
+        if (isJson(items[i])) {
+          highlights[i] = highlight(items[i], prettyPrint)
+        }
+      }
+      listHighlights = highlights
+    } else {
+      listHighlights = {}
+    }
+  })
+
+  let isJsonValue = $derived(keyInfo?.type === 'string' && isJson(editValue))
 
   $effect(() => {
     loadKey(key)
@@ -167,13 +242,32 @@
 
     {#if keyInfo.type === 'string'}
       <div class="flex-1 flex flex-col gap-2">
-        <label for="value-textarea">Value:</label>
-        <Textarea
-          id="value-textarea"
-          bind:value={editValue}
-          readonly={readOnly}
-          class="flex-1 resize-none text-sm min-h-75"
-        />
+        <div class="flex items-center justify-between">
+          <label for="value-textarea">Value:</label>
+          {#if isJsonValue}
+            <button
+              type="button"
+              onclick={() => prettyPrint = !prettyPrint}
+              class="px-2 py-1 text-xs rounded font-mono {prettyPrint ? 'bg-crayola-blue-100 text-crayola-blue-700' : 'bg-alabaster-grey-100 hover:bg-alabaster-grey-200'}"
+              title="Toggle JSON formatting"
+            >
+              {"{ }"}
+            </button>
+          {/if}
+        </div>
+
+        {#if isJsonValue && highlightedHtml}
+          <div class="flex-1 overflow-auto rounded border border-alabaster-grey-200 min-h-75 [&>pre]:p-4 [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:text-sm">
+            {@html highlightedHtml}
+          </div>
+        {:else}
+          <Textarea
+            id="value-textarea"
+            bind:value={editValue}
+            readonly={readOnly}
+            class="flex-1 resize-none text-sm min-h-75"
+          />
+        {/if}
       </div>
 
       {#if !readOnly}
@@ -188,8 +282,20 @@
       {/if}
     {:else if keyInfo.type === 'list'}
       <div class="flex-1 flex flex-col gap-2 overflow-auto">
-        <div class="text-sm text-black-400">
-          {keyInfo.length} items{keyInfo.length && keyInfo.length > 100 ? ' (showing first 100)' : ''}
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-black-400">
+            {keyInfo.length} items{keyInfo.length && keyInfo.length > 100 ? ' (showing first 100)' : ''}
+          </span>
+          {#if Object.keys(listHighlights).length > 0}
+            <button
+              type="button"
+              onclick={() => prettyPrint = !prettyPrint}
+              class="px-2 py-1 text-xs rounded font-mono {prettyPrint ? 'bg-crayola-blue-100 text-crayola-blue-700' : 'bg-alabaster-grey-100 hover:bg-alabaster-grey-200'}"
+              title="Toggle JSON formatting"
+            >
+              {"{ }"}
+            </button>
+          {/if}
         </div>
         <table class="w-full text-sm border-collapse">
           <thead class="bg-alabaster-grey-50 sticky top-0">
@@ -201,8 +307,16 @@
           <tbody>
             {#each asArray() as item, i}
               <tr class="border-b border-alabaster-grey-100 hover:bg-alabaster-grey-50">
-                <td class="p-2 text-black-400 font-mono">{i}</td>
-                <td class="p-2 font-mono break-all">{item}</td>
+                <td class="p-2 text-black-400 font-mono align-top">{i}</td>
+                <td class="p-2 font-mono break-all">
+                  {#if listHighlights[i]}
+                    <div class="[&>pre]:p-0 [&>pre]:m-0 [&>pre]:bg-transparent [&>pre]:text-sm">
+                      {@html listHighlights[i]}
+                    </div>
+                  {:else}
+                    {item}
+                  {/if}
+                </td>
               </tr>
             {/each}
           </tbody>
@@ -310,3 +424,23 @@
     {/if}
   {/if}
 </div>
+
+<style>
+  :global(.json-highlight) {
+    margin: 0;
+    font-family: ui-monospace, monospace;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  :global(.json-string) {
+    color: #0550ae;
+  }
+  :global(.json-number) {
+    color: #116329;
+  }
+  :global(.json-keyword) {
+    color: #cf222e;
+  }
+</style>
