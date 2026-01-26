@@ -1,7 +1,9 @@
 <script lang="ts">
   import { Badge } from '$lib/components/ui/badge';
   import { Button } from '$lib/components/ui/button';
+  import * as Empty from '$lib/components/ui/empty';
   import * as Resizable from '$lib/components/ui/resizable';
+  import DatabaseIcon from '@lucide/svelte/icons/database';
   import { onMount } from 'svelte';
   import KeyEditor from './lib/KeyEditor.svelte';
   import KeyList from './lib/KeyList.svelte';
@@ -123,9 +125,17 @@
                 {readOnly}
               />
             {:else}
-              <div class="flex items-center justify-center h-full text-black-400">
-                Select a key to view/edit its value
-              </div>
+              <Empty.Root class="h-full">
+                <Empty.Header>
+                  <Empty.Media variant="icon">
+                    <DatabaseIcon />
+                  </Empty.Media>
+                  <Empty.Title>No Key Selected</Empty.Title>
+                  <Empty.Description>
+                    Select a key from the list to view or edit its value.
+                  </Empty.Description>
+                </Empty.Header>
+              </Empty.Root>
             {/if}
           </div>
         </Resizable.Pane>
