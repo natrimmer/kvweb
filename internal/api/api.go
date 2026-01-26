@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -140,7 +141,23 @@ func (h *Handler) handleKeys(w http.ResponseWriter, r *http.Request) {
 	if pattern == "" {
 		pattern = "*"
 	}
-	pattern = h.applyPrefixToPattern(pattern)
+
+	useRegex := r.URL.Query().Get("regex") == "1"
+
+	// If regex mode, validate and compile the pattern before applying prefix
+	var re *regexp.Regexp
+	if useRegex {
+		var err error
+		re, err = regexp.Compile(pattern)
+		if err != nil {
+			jsonError(w, "Invalid regex: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		// Use wildcard for SCAN, filter with regex after
+		pattern = h.applyPrefixToPattern("*")
+	} else {
+		pattern = h.applyPrefixToPattern(pattern)
+	}
 
 	cursorStr := r.URL.Query().Get("cursor")
 	cursor := uint64(0)
@@ -166,6 +183,17 @@ func (h *Handler) handleKeys(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		jsonError(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	// Filter by regex if in regex mode
+	if re != nil {
+		filtered := make([]string, 0, len(keys))
+		for _, key := range keys {
+			if re.MatchString(key) {
+				filtered = append(filtered, key)
+			}
+		}
+		keys = filtered
 	}
 
 	// Filter by type if requested

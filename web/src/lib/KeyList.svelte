@@ -18,6 +18,8 @@
   let viewMode = $state<'list' | 'tree'>('list')
   let keys = $state<KeyMeta[]>([])
   let pattern = $state('*')
+  let useRegex = $state(false)
+  let regexError = $state('')
   let typeFilter = $state('')
   let sortBy = $state<'key' | 'type' | 'ttl'>('key')
   let sortAsc = $state(true)
@@ -28,7 +30,12 @@
   let newKeyName = $state('')
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
   let showHistory = $state(false)
-  let searchHistory = $state<string[]>([])
+
+  interface HistoryEntry {
+    pattern: string
+    regex: boolean
+  }
+  let searchHistory = $state<HistoryEntry[]>([])
 
   const keyTypes = ['', 'string', 'hash', 'list', 'set', 'zset', 'stream'] as const
   const sortOptions = [
@@ -64,7 +71,18 @@
   function loadHistory() {
     try {
       const stored = localStorage.getItem(HISTORY_KEY)
-      searchHistory = stored ? JSON.parse(stored) : []
+      if (!stored) {
+        searchHistory = []
+        return
+      }
+      const parsed = JSON.parse(stored)
+      // Migrate old string[] format to HistoryEntry[]
+      if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'string') {
+        searchHistory = parsed.map((p: string) => ({ pattern: p, regex: false }))
+        saveHistory()
+      } else {
+        searchHistory = parsed
+      }
     } catch {
       searchHistory = []
     }
@@ -74,14 +92,15 @@
     localStorage.setItem(HISTORY_KEY, JSON.stringify(searchHistory))
   }
 
-  function addToHistory(p: string) {
+  function addToHistory(p: string, isRegex: boolean) {
     if (!p || p === '*') return
-    searchHistory = [p, ...searchHistory.filter(h => h !== p)].slice(0, MAX_HISTORY)
+    const entry: HistoryEntry = { pattern: p, regex: isRegex }
+    searchHistory = [entry, ...searchHistory.filter(h => !(h.pattern === p && h.regex === isRegex))].slice(0, MAX_HISTORY)
     saveHistory()
   }
 
-  function removeFromHistory(p: string) {
-    searchHistory = searchHistory.filter(h => h !== p)
+  function removeFromHistory(entry: HistoryEntry) {
+    searchHistory = searchHistory.filter(h => !(h.pattern === entry.pattern && h.regex === entry.regex))
     saveHistory()
   }
 
@@ -90,22 +109,24 @@
     saveHistory()
   }
 
-  function selectHistory(p: string) {
-    pattern = p
+  function selectHistory(entry: HistoryEntry) {
+    pattern = entry.pattern
+    useRegex = entry.regex
     showHistory = false
   }
 
   // Load history on init
   loadHistory()
 
-  // Debounced search when pattern or type filter changes
+  // Debounced search when pattern, type filter, or regex mode changes
   $effect(() => {
     pattern  // track dependency
     typeFilter  // track dependency
+    useRegex  // track dependency
     if (debounceTimer) clearTimeout(debounceTimer)
     debounceTimer = setTimeout(() => {
       loadKeys(true)
-      addToHistory(pattern)
+      addToHistory(pattern, useRegex)
     }, 300)
     return () => {
       if (debounceTimer) clearTimeout(debounceTimer)
@@ -114,9 +135,10 @@
 
   async function loadKeys(reset = false) {
     loading = true
+    regexError = ''
     try {
       const c = reset ? 0 : cursor
-      const result = await api.getKeys(pattern, c, 100, typeFilter || undefined, true)
+      const result = await api.getKeys(pattern, c, 100, typeFilter || undefined, true, useRegex)
       const newKeys = result.keys as KeyMeta[]
       if (reset) {
         keys = newKeys
@@ -126,7 +148,12 @@
       cursor = result.cursor
       hasMore = result.cursor !== 0
     } catch (e) {
-      console.error('Failed to load keys:', e)
+      const msg = e instanceof Error ? e.message : 'Failed to load keys'
+      if (useRegex && msg.includes('Invalid regex')) {
+        regexError = msg
+      } else {
+        console.error('Failed to load keys:', e)
+      }
     } finally {
       loading = false
     }
@@ -157,7 +184,7 @@
         <Input
           type="text"
           bind:value={pattern}
-          placeholder="Pattern (e.g., user:*)"
+          placeholder={useRegex ? "Regex (e.g., ^user:\\d+)" : "Pattern (e.g., user:*)"}
           onfocus={() => showHistory = true}
           onblur={() => setTimeout(() => showHistory = false, 150)}
         />
@@ -177,10 +204,13 @@
               <div class="flex items-center group hover:bg-alabaster-grey-50">
                 <button
                   type="button"
-                  class="flex-1 px-3 py-2 text-left font-mono text-sm"
+                  class="flex-1 px-3 py-2 text-left font-mono text-sm flex items-center gap-2"
                   onmousedown={() => selectHistory(h)}
                 >
-                  {h}
+                  <span class="flex-1 overflow-hidden text-ellipsis">{h.pattern}</span>
+                  {#if h.regex}
+                    <span class="text-xs text-crayola-blue-600 opacity-70">.*</span>
+                  {/if}
                 </button>
                 <button
                   type="button"
@@ -196,6 +226,14 @@
       </div>
       <button
         type="button"
+        onclick={() => useRegex = !useRegex}
+        class="px-3 py-2 border rounded text-sm font-mono {useRegex ? 'bg-crayola-blue-100 border-crayola-blue-300 text-crayola-blue-700' : 'border-alabaster-grey-200 bg-white hover:bg-alabaster-grey-50'}"
+        title={useRegex ? 'Regex mode (click for glob)' : 'Glob mode (click for regex)'}
+      >
+        .*
+      </button>
+      <button
+        type="button"
         onclick={() => viewMode = 'tree'}
         class="px-3 py-2 border border-alabaster-grey-200 rounded text-sm bg-white hover:bg-alabaster-grey-50 font-mono"
         title="Tree view"
@@ -203,6 +241,9 @@
         ▸
       </button>
     </div>
+    {#if regexError}
+      <div class="text-sm text-scarlet-rush-500">{regexError}</div>
+    {/if}
 
     <div class="flex gap-2">
       <select
