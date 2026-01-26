@@ -3,6 +3,8 @@
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Textarea } from '$lib/components/ui/textarea';
+  import CheckIcon from '@lucide/svelte/icons/check';
+  import CopyIcon from '@lucide/svelte/icons/copy';
   import { ws } from './ws';
 
   import { api, type KeyInfo, type StreamEntry, type ZSetMember } from './api';
@@ -33,6 +35,17 @@
   // External modification detection
   let externallyModified = $state(false)
   let keyDeleted = $state(false)
+
+  // Copy to clipboard state
+  let copied = $state(false)
+
+  async function copyValue() {
+    if (!keyInfo) return
+    const text = typeof keyInfo.value === 'string' ? keyInfo.value : JSON.stringify(keyInfo.value, null, 2)
+    await navigator.clipboard.writeText(text)
+    copied = true
+    setTimeout(() => copied = false, 2000)
+  }
 
   function startTtlCountdown(ttl: number) {
     stopTtlCountdown()
@@ -261,6 +274,18 @@
     <div class="flex items-center gap-4">
       <h2 class="font-mono text-xl break-all">{key}</h2>
       <Badge variant="secondary" class="uppercase">{keyInfo.type}</Badge>
+      <button
+        type="button"
+        onclick={copyValue}
+        class="p-1.5 rounded hover:bg-alabaster-grey-100 text-black-400 hover:text-black-600 transition-colors"
+        title="Copy value to clipboard"
+      >
+        {#if copied}
+          <CheckIcon class="w-4 h-4 text-crayola-blue-500" />
+        {:else}
+          <CopyIcon class="w-4 h-4" />
+        {/if}
+      </button>
     </div>
 
     {#if keyDeleted}
