@@ -245,7 +245,7 @@ in
     ts-fmt = {
       enable = true;
       name = "TypeScript Format";
-      entry = "${pkgs.bash}/bin/bash -c 'cd frontend && ${pkgs.pnpm}/bin/pnpm format'";
+      entry = "${pkgs.bash}/bin/bash -c 'cd web && ${pkgs.pnpm}/bin/pnpm format'";
       files = "\\.(ts|js|svelte)$";
       language = "system";
       pass_filenames = false;
