@@ -202,7 +202,6 @@
     // Reset external modification state when key changes
     externallyModified = false
     keyDeleted = false
-    rawView = false
     return () => stopTtlCountdown()
   })
 
