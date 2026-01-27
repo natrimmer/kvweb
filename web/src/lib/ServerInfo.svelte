@@ -5,6 +5,7 @@
   import { onMount } from 'svelte';
   import { toast } from 'svelte-sonner';
   import { api } from './api';
+  import { toastError } from './utils';
   import { ws, type Stats, type Status } from './ws';
 
   interface Props {
@@ -86,7 +87,7 @@
       await api.flushDb()
       toast.success('Database flushed')
     } catch (e) {
-      toast.error('Failed to flush database')
+      toastError(e, 'Failed to flush database')
     } finally {
       flushDialogOpen = false
     }
@@ -101,7 +102,7 @@
         toast.success('Live updates enabled')
       }
     } catch (e) {
-      toast.error('Failed to enable notifications')
+      toastError(e, 'Failed to enable notifications')
     } finally {
       enablingNotifications = false
     }

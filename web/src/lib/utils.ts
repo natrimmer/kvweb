@@ -1,8 +1,25 @@
 import { clsx, type ClassValue } from "clsx";
+import { toast } from 'svelte-sonner';
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
+}
+
+/**
+ * Extracts an error message from an unknown error value.
+ */
+export function getErrorMessage(e: unknown, fallback = 'An error occurred'): string {
+	if (e instanceof Error) return e.message
+	if (typeof e === 'string') return e
+	return fallback
+}
+
+/**
+ * Shows a toast error notification with a consistent format.
+ */
+export function toastError(e: unknown, fallback = 'An error occurred'): void {
+	toast.error(getErrorMessage(e, fallback))
 }
 
 /**

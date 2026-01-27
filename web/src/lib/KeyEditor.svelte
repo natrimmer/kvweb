@@ -10,7 +10,7 @@
   import { toast } from 'svelte-sonner';
   import { api, type KeyInfo, type StreamEntry, type ZSetMember } from './api';
   import CollapsibleValue from './CollapsibleValue.svelte';
-  import { copyToClipboard, deleteOps, formatTtl, highlightJson, modifyOps } from './utils';
+  import { copyToClipboard, deleteOps, formatTtl, getErrorMessage, highlightJson, modifyOps, toastError } from './utils';
   import { ws } from './ws';
 
   interface Props {
@@ -24,6 +24,7 @@
   let keyInfo = $state<KeyInfo | null>(null)
   let loading = $state(false)
   let saving = $state(false)
+  let updatingTtl = $state(false)
   let editValue = $state('')
   let editTtl = $state('')
   let error = $state('')
@@ -205,7 +206,7 @@
       editTtl = keyInfo.ttl > 0 ? String(keyInfo.ttl) : ''
       startTtlCountdown(keyInfo.ttl)
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to load key'
+      error = getErrorMessage(e, 'Failed to load key')
       keyInfo = null
     } finally {
       loading = false
@@ -222,7 +223,7 @@
       await loadKey(key)
       toast.success('Value saved')
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Failed to save')
+      toastError(e, 'Failed to save')
     } finally {
       saving = false
     }
@@ -234,7 +235,7 @@
       toast.success('Key deleted')
       ondeleted()
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Failed to delete')
+      toastError(e, 'Failed to delete')
     } finally {
       deleteDialogOpen = false
     }
@@ -242,13 +243,16 @@
 
   async function updateTtl() {
     if (!keyInfo) return
+    updatingTtl = true
     try {
       const ttl = editTtl ? parseInt(editTtl, 10) : 0
       await api.expireKey(key, ttl)
       await loadKey(key)
       toast.success('TTL updated')
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Failed to update TTL')
+      toastError(e, 'Failed to update TTL')
+    } finally {
+      updatingTtl = false
     }
   }
 </script>
@@ -310,7 +314,9 @@
             placeholder="seconds"
             class="w-25"
           />
-          <Button variant="secondary" size="sm" onclick={updateTtl}>Set</Button>
+          <Button variant="secondary" size="sm" onclick={updateTtl} disabled={updatingTtl}>
+            {updatingTtl ? 'Setting...' : 'Set'}
+          </Button>
           <span class="text-black-400 text-sm">{formatTtl(liveTtl ?? keyInfo.ttl)}</span>
         {/if}
       </label>

@@ -3,6 +3,7 @@
   import { Button } from '$lib/components/ui/button';
   import { Dot, Folder, House, List, MoveLeft } from '@lucide/svelte';
   import { api, type PrefixEntry } from './api';
+  import { getErrorMessage } from './utils';
 
   interface Props {
     selected: string | null
@@ -26,7 +27,7 @@
       entries = result.entries
       currentPrefix = prefix
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to load'
+      error = getErrorMessage(e, 'Failed to load')
       entries = []
     } finally {
       loading = false

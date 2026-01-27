@@ -6,7 +6,7 @@
   import { onMount } from 'svelte';
   import { api, type KeyMeta } from './api';
   import KeyTree from './KeyTree.svelte';
-  import { deleteOps, modifyOps } from './utils';
+  import { deleteOps, getErrorMessage, modifyOps, toastError } from './utils';
   import { ws } from './ws';
 
   interface Props {
@@ -176,11 +176,11 @@
       cursor = result.cursor
       hasMore = result.cursor !== 0
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Failed to load keys'
+      const msg = getErrorMessage(e, 'Failed to load keys')
       if (useRegex && msg.includes('Invalid regex')) {
         regexError = msg
       } else {
-        console.error('Failed to load keys:', e)
+        toastError(e, 'Failed to load keys')
       }
     } finally {
       loading = false
@@ -198,7 +198,7 @@
       onselect(fullKeyName)
       oncreated()
     } catch (e) {
-      console.error('Failed to create key:', e)
+      toastError(e, 'Failed to create key')
     }
   }
 </script>
