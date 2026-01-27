@@ -268,7 +268,7 @@
       <h2 class="font-mono text-xl break-all flex-1">{key}</h2>
       <Badge variant="secondary" class="uppercase">{keyInfo.type}</Badge>
       <ButtonGroup.Root>
-        <Button variant="outline" size="sm" onclick={copyKeyName} title="Copy key name">
+        <Button variant="outline" size="sm" onclick={copyKeyName} title="Copy key name to clipboard" class="cursor-pointer">
           {#if copiedKey}
             <CheckIcon class="w-4 h-4 text-primary" />
           {:else}
@@ -276,7 +276,7 @@
           {/if}
           Key
         </Button>
-        <Button variant="outline" size="sm" onclick={copyValue} title="Copy value">
+        <Button variant="outline" size="sm" onclick={copyValue} title="Copy value to clipboard" class="cursor-pointer">
           {#if copiedValue}
             <CheckIcon class="w-4 h-4 text-primary" />
           {:else}
@@ -290,14 +290,14 @@
     {#if keyDeleted}
       <div class="bg-destructive/10 text-destructive p-3 rounded flex items-center justify-between text-sm">
         <span>This key was deleted externally</span>
-        <Button variant="secondary" size="sm" onclick={ondeleted}>
+        <Button variant="secondary" size="sm" onclick={ondeleted} class="cursor-pointer">
           Close
         </Button>
       </div>
     {:else if externallyModified}
       <div class="bg-accent/10 text-accent-foreground p-3 rounded flex items-center justify-between text-sm">
         <span>Modified externally</span>
-        <Button variant="secondary" size="sm" onclick={() => { loadKey(key); externallyModified = false }}>
+        <Button variant="secondary" size="sm" onclick={() => { loadKey(key); externallyModified = false }} class="cursor-pointer" title="Reload key data">
           Reload
         </Button>
       </div>
@@ -315,7 +315,7 @@
             placeholder="seconds"
             class="w-25"
           />
-          <Button variant="secondary" size="sm" onclick={updateTtl} disabled={updatingTtl}>
+          <Button variant="secondary" size="sm" onclick={updateTtl} disabled={updatingTtl} class="cursor-pointer" title="Update TTL">
             {updatingTtl ? 'Setting...' : 'Set'}
           </Button>
           <span class="text-muted-foreground text-sm">{formatTtl(liveTtl ?? keyInfo.ttl)}</span>
@@ -324,11 +324,11 @@
       {#if !readOnly}
         <div class="flex gap-2">
           {#if keyInfo.type === 'string'}
-            <Button size="sm" onclick={saveValue} disabled={saving}>
+            <Button size="sm" onclick={saveValue} disabled={saving} class="cursor-pointer" title="Save changes">
               {saving ? 'Saving...' : 'Save'}
             </Button>
           {/if}
-          <Button variant="destructive" size="sm" onclick={openDeleteDialog}>Delete</Button>
+          <Button variant="destructive" size="sm" onclick={openDeleteDialog} class="cursor-pointer" title="Delete this key">Delete</Button>
         </div>
       {/if}
     </div>
@@ -341,8 +341,8 @@
             <button
               type="button"
               onclick={() => prettyPrint = !prettyPrint}
-              class="px-2 py-1 text-xs rounded font-mono {prettyPrint ? 'bg-primary/10 text-primary' : 'bg-muted hover:bg-secondary'}"
-              title="Toggle JSON formatting"
+              class="px-2 py-1 text-xs rounded font-mono cursor-pointer {prettyPrint ? 'bg-primary/10 text-primary' : 'bg-muted hover:bg-secondary'}"
+              title={prettyPrint ? 'Disable JSON formatting' : 'Enable JSON formatting'}
             >
               {"{ }"}
             </button>
@@ -373,8 +373,8 @@
               <button
                 type="button"
                 onclick={() => prettyPrint = !prettyPrint}
-                class="px-2 py-1 text-xs rounded font-mono {prettyPrint ? 'bg-primary/10 text-primary' : 'bg-muted hover:bg-secondary'}"
-                title="Toggle JSON formatting"
+                class="px-2 py-1 text-xs rounded font-mono cursor-pointer {prettyPrint ? 'bg-primary/10 text-primary' : 'bg-muted hover:bg-secondary'}"
+                title={prettyPrint ? 'Disable JSON formatting' : 'Enable JSON formatting'}
               >
                 {"{ }"}
               </button>
@@ -382,7 +382,8 @@
             <button
               type="button"
               onclick={() => rawView = !rawView}
-              class="px-2 py-1 text-xs rounded bg-muted hover:bg-secondary"
+              class="px-2 py-1 text-xs rounded bg-muted hover:bg-secondary cursor-pointer"
+              title={rawView ? 'Show as table' : 'Show as raw JSON'}
             >
               {rawView ? 'View as table' : 'View as JSON'}
             </button>
@@ -422,7 +423,8 @@
           <button
             type="button"
             onclick={() => rawView = !rawView}
-            class="px-2 py-1 text-xs rounded bg-muted hover:bg-secondary"
+            class="px-2 py-1 text-xs rounded bg-muted hover:bg-secondary cursor-pointer"
+            title={rawView ? 'Show as list' : 'Show as raw JSON'}
           >
             {rawView ? 'View as list' : 'View as JSON'}
           </button>
@@ -450,7 +452,8 @@
           <button
             type="button"
             onclick={() => rawView = !rawView}
-            class="px-2 py-1 text-xs rounded bg-muted hover:bg-secondary"
+            class="px-2 py-1 text-xs rounded bg-muted hover:bg-secondary cursor-pointer"
+            title={rawView ? 'Show as table' : 'Show as raw JSON'}
           >
             {rawView ? 'View as table' : 'View as JSON'}
           </button>
@@ -489,7 +492,8 @@
           <button
             type="button"
             onclick={() => rawView = !rawView}
-            class="px-2 py-1 text-xs rounded bg-muted hover:bg-secondary"
+            class="px-2 py-1 text-xs rounded bg-muted hover:bg-secondary cursor-pointer"
+            title={rawView ? 'Show as table' : 'Show as raw JSON'}
           >
             {rawView ? 'View as table' : 'View as JSON'}
           </button>
@@ -528,7 +532,8 @@
           <button
             type="button"
             onclick={() => rawView = !rawView}
-            class="px-2 py-1 text-xs rounded bg-muted hover:bg-secondary"
+            class="px-2 py-1 text-xs rounded bg-muted hover:bg-secondary cursor-pointer"
+            title={rawView ? 'Show as cards' : 'Show as raw JSON'}
           >
             {rawView ? 'View as cards' : 'View as JSON'}
           </button>

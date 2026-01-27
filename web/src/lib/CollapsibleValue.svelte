@@ -6,13 +6,13 @@
   }
 
   let { value, maxLength = 200, highlight }: Props = $props()
-  
+
   let expanded = $state(false)
-  
+
   let needsCollapse = $derived(value.length > maxLength)
   let displayValue = $derived(
-    needsCollapse && !expanded 
-      ? value.slice(0, maxLength) 
+    needsCollapse && !expanded
+      ? value.slice(0, maxLength)
       : value
   )
 </script>
@@ -29,7 +29,8 @@
   <button
     type="button"
     onclick={() => expanded = !expanded}
-    class="ml-1 text-xs text-crayola-blue-500 hover:text-crayola-blue-700 hover:underline"
+    class="ml-1 text-xs text-primary hover:text-primary/80 hover:underline cursor-pointer"
+    title={expanded ? 'Collapse value' : `Expand to show full value (${value.length} characters)`}
   >
     {expanded ? 'Show less' : `Show all (${value.length} chars)`}
   </button>

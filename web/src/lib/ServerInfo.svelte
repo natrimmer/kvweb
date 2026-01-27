@@ -121,14 +121,14 @@
         {/each}
       </Select.Content>
     </Select.Root>
-    <Button variant="secondary" onclick={loadInfo} disabled={loading}>
+    <Button variant="secondary" onclick={loadInfo} disabled={loading} class="cursor-pointer" title="Refresh server info">
       Refresh
     </Button>
     {#if !readOnly && !disableFlush}
       <AlertDialog.Root bind:open={flushDialogOpen}>
         <AlertDialog.Trigger>
           {#snippet child({ props })}
-            <Button variant="destructive" {...props}>Flush Database</Button>
+            <Button variant="destructive" {...props} class="cursor-pointer" title="Delete all keys in database">Flush Database</Button>
           {/snippet}
         </AlertDialog.Trigger>
         <AlertDialog.Content>
@@ -146,7 +146,7 @@
       </AlertDialog.Root>
     {/if}
     {#if !readOnly && !notificationsEnabled}
-      <Button variant="secondary" onclick={enableNotifications} disabled={enablingNotifications}>
+      <Button variant="secondary" onclick={enableNotifications} disabled={enablingNotifications} class="cursor-pointer" title="Enable real-time key change notifications">
         {enablingNotifications ? 'Enabling...' : 'Enable Live Updates'}
       </Button>
     {/if}

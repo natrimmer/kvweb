@@ -226,8 +226,9 @@
               <span class="text-xs text-muted-foreground">Recent searches</span>
               <button
                 type="button"
-                class="text-xs text-muted-foreground hover:text-destructive"
+                class="text-xs text-muted-foreground hover:text-destructive cursor-pointer"
                 onmousedown={() => clearHistory()}
+                title="Clear search history"
               >
                 Clear all
               </button>
@@ -236,8 +237,9 @@
               <div class="flex items-center group hover:bg-muted">
                 <button
                   type="button"
-                  class="flex-1 px-3 py-2 text-left font-mono text-sm flex items-center gap-2"
+                  class="flex-1 px-3 py-2 text-left font-mono text-sm flex items-center gap-2 cursor-pointer"
                   onmousedown={() => selectHistory(h)}
+                  title="Use this search pattern"
                 >
                   <span class="flex-1 overflow-hidden text-ellipsis">{h.pattern}</span>
                   {#if h.regex}
@@ -246,8 +248,9 @@
                 </button>
                 <button
                   type="button"
-                  class="px-2 py-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100"
+                  class="px-2 py-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 cursor-pointer"
                   onmousedown={() => removeFromHistory(h)}
+                  title="Remove from history"
                 >
                   <X size={14}/>
                 </button>
@@ -259,7 +262,7 @@
       <button
         type="button"
         onclick={() => useRegex = !useRegex}
-        class="px-3 py-2 border rounded text-sm font-mono {useRegex ? 'bg-primary/10 border-primary text-primary' : 'border-border bg-card hover:bg-muted'}"
+        class="px-3 py-2 border rounded text-sm font-mono cursor-pointer {useRegex ? 'bg-primary/10 border-primary text-primary' : 'border-border bg-card hover:bg-muted'}"
         title={useRegex ? 'Regex mode (click for glob)' : 'Glob mode (click for regex)'}
       >
         <Regex size={18}/>
@@ -267,7 +270,7 @@
       <button
         type="button"
         onclick={() => viewMode = 'tree'}
-        class="px-3 py-2 border border-border rounded text-sm bg-card hover:bg-muted font-mono"
+        class="px-3 py-2 border border-border rounded text-sm bg-card hover:bg-muted font-mono cursor-pointer"
         title="Switch to tree view"
       >
         <ListTree size={18}/>
@@ -298,8 +301,8 @@
       <button
         type="button"
         onclick={() => sortAsc = !sortAsc}
-        class="px-3 py-2 border border-border rounded text-sm bg-card hover:bg-muted"
-        title={sortAsc ? 'Ascending' : 'Descending'}
+        class="px-3 py-2 border border-border rounded text-sm bg-card hover:bg-muted cursor-pointer"
+        title={sortAsc ? 'Sorting ascending (click for descending)' : 'Sorting descending (click for ascending)'}
       >
         {sortAsc ? '↑' : '↓'}
       </button>
@@ -335,8 +338,9 @@
         <li class={hasTtlBoundary ? 'border-b border-border mb-1 pb-1' : ''}>
           <Button
             variant="ghost"
-            class="w-full justify-start p-2 text-foreground font-mono text-sm rounded overflow-hidden text-ellipsis whitespace-nowrap hover:bg-primary/10 {item.key === selected ? 'bg-primary/20 hover:bg-primary/20' : ''}"
+            class="w-full justify-start p-2 text-foreground font-mono text-sm rounded overflow-hidden text-ellipsis whitespace-nowrap hover:bg-primary/10 cursor-pointer {item.key === selected ? 'bg-primary/20 hover:bg-primary/20' : ''}"
             onclick={() => onselect(item.key)}
+            title={`View key: ${item.key}`}
           >
             <span class="flex-1 overflow-hidden text-ellipsis text-left">{item.key}</span>
             <Badge variant="secondary" class="ml-2 text-xs opacity-60">{item.type}</Badge>

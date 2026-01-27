@@ -75,7 +75,8 @@
     <button
       type="button"
       onclick={resetToHome}
-      class="flex items-center gap-2 text-xl font-semibold text-foreground hover:text-primary transition-colors group"
+      class="flex items-center gap-2 text-xl font-semibold text-foreground hover:text-primary transition-colors group cursor-pointer"
+      title="Return to home"
     >
       <svg width="24" height="24" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" class="text-primary group-hover:text-primary transition-colors">
         <rect x="8" y="8" width="48" height="48" rx="6" fill="none" stroke="currentColor" stroke-width="3"/>
@@ -91,14 +92,16 @@
       <button
         type="button"
         onclick={() => view = 'keys'}
-        class="px-4 py-1.5 text-sm rounded transition-colors {view === 'keys' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}"
+        class="px-4 py-1.5 text-sm rounded transition-colors cursor-pointer {view === 'keys' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}"
+        title="View and manage keys"
       >
         Keys
       </button>
       <button
         type="button"
         onclick={() => view = 'info'}
-        class="px-4 py-1.5 text-sm rounded transition-colors {view === 'info' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}"
+        class="px-4 py-1.5 text-sm rounded transition-colors cursor-pointer {view === 'info' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}"
+        title="View server information"
       >
         Info
       </button>
@@ -115,7 +118,7 @@
         </div>
       {/if}
       <span
-        class="w-2 h-2 rounded-full {connected ? 'bg-green-500' : 'bg-destructive'}"
+        class="w-2 h-2 rounded-full cursor-help {connected ? 'bg-green-500' : 'bg-destructive'}"
         title={connected ? 'Connected to server' : 'Disconnected from server'}
       ></span>
     </div>

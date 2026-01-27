@@ -71,10 +71,10 @@
 <div class="flex flex-col h-full p-4 gap-3">
   <div class="flex items-center gap-2">
     {#if currentPrefix}
-      <Button variant="ghost" size="sm" onclick={navigateBack} class="px-2">
+      <Button variant="ghost" size="sm" onclick={navigateBack} class="px-2 cursor-pointer" title="Go back">
         <MoveLeft size={16}/>
       </Button>
-      <Button variant="ghost" size="sm" onclick={navigateToRoot} class="px-2">
+      <Button variant="ghost" size="sm" onclick={navigateToRoot} class="px-2 cursor-pointer" title="Go to root">
         <House size={16}/>
       </Button>
       <span class="font-mono text-sm text-muted-foreground truncate flex-1">{currentPrefix}</span>
@@ -84,7 +84,7 @@
     <button
       type="button"
       onclick={onclose}
-      class="px-3 py-1 border border-border rounded text-sm bg-card hover:bg-muted font-mono"
+      class="px-3 py-1 border border-border rounded text-sm bg-card hover:bg-muted font-mono cursor-pointer"
       title="Switch to list view"
     >
       <List size={18}/>
@@ -101,8 +101,9 @@
         <li>
           <Button
             variant="ghost"
-            class="w-full justify-start p-2 text-foreground font-mono text-sm rounded hover:bg-primary/10 {entry.isLeaf && entry.fullKey === selected ? 'bg-primary/20 hover:bg-primary/20' : ''}"
+            class="w-full justify-start p-2 text-foreground font-mono text-sm rounded hover:bg-primary/10 cursor-pointer {entry.isLeaf && entry.fullKey === selected ? 'bg-primary/20 hover:bg-primary/20' : ''}"
             onclick={() => handleClick(entry)}
+            title={entry.isLeaf ? `View key: ${entry.fullKey}` : `Navigate to: ${entry.prefix}`}
           >
             <span class="text-muted-foreground">
                 {#if entry.isLeaf}
