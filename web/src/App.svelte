@@ -3,6 +3,7 @@
   import { Button } from '$lib/components/ui/button';
   import * as Empty from '$lib/components/ui/empty';
   import * as Resizable from '$lib/components/ui/resizable';
+  import { Toaster } from '$lib/components/ui/sonner';
   import DatabaseIcon from '@lucide/svelte/icons/database';
   import { onMount } from 'svelte';
   import KeyEditor from './lib/KeyEditor.svelte';
@@ -145,3 +146,5 @@
     {/if}
   </main>
 </div>
+
+<Toaster />

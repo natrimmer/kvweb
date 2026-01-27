@@ -1,7 +1,9 @@
 <script lang="ts">
+  import * as AlertDialog from '$lib/components/ui/alert-dialog';
   import { Button } from '$lib/components/ui/button';
   import * as Select from '$lib/components/ui/select';
   import { onMount } from 'svelte';
+  import { toast } from 'svelte-sonner';
   import { api } from './api';
   import { ws, type Stats, type Status } from './ws';
 
@@ -17,6 +19,7 @@
   let section = $state('')
   let notificationsEnabled = $state(false)
   let enablingNotifications = $state(false)
+  let flushDialogOpen = $state(false)
 
   const sections = [
     { value: '', label: 'All Sections' },
@@ -79,12 +82,13 @@
   }
 
   async function flushDb() {
-    if (!confirm('Are you sure you want to delete ALL keys in the current database?')) return
     try {
       await api.flushDb()
-      alert('Database flushed successfully')
+      toast.success('Database flushed')
     } catch (e) {
-      alert('Failed to flush database')
+      toast.error('Failed to flush database')
+    } finally {
+      flushDialogOpen = false
     }
   }
 
@@ -94,10 +98,10 @@
       const result = await api.setNotifications(true)
       notificationsEnabled = result.enabled
       if (result.enabled) {
-        alert('Live updates enabled. The server will now broadcast key changes.')
+        toast.success('Live updates enabled')
       }
     } catch (e) {
-      alert('Failed to enable notifications')
+      toast.error('Failed to enable notifications')
     } finally {
       enablingNotifications = false
     }
@@ -120,9 +124,25 @@
       Refresh
     </Button>
     {#if !readOnly && !disableFlush}
-      <Button variant="destructive" onclick={flushDb}>
-        Flush Database
-      </Button>
+      <AlertDialog.Root bind:open={flushDialogOpen}>
+        <AlertDialog.Trigger>
+          {#snippet child({ props })}
+            <Button variant="destructive" {...props}>Flush Database</Button>
+          {/snippet}
+        </AlertDialog.Trigger>
+        <AlertDialog.Content>
+          <AlertDialog.Header>
+            <AlertDialog.Title>Flush Database</AlertDialog.Title>
+            <AlertDialog.Description>
+              This will delete ALL keys in the current database. This action cannot be undone.
+            </AlertDialog.Description>
+          </AlertDialog.Header>
+          <AlertDialog.Footer>
+            <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+            <AlertDialog.Action onclick={flushDb}>Flush Database</AlertDialog.Action>
+          </AlertDialog.Footer>
+        </AlertDialog.Content>
+      </AlertDialog.Root>
     {/if}
     {#if !readOnly && !notificationsEnabled}
       <Button variant="secondary" onclick={enableNotifications} disabled={enablingNotifications}>

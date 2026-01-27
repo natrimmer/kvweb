@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as AlertDialog from '$lib/components/ui/alert-dialog';
   import { Badge } from '$lib/components/ui/badge';
   import { Button } from '$lib/components/ui/button';
   import * as ButtonGroup from '$lib/components/ui/button-group';
@@ -6,6 +7,7 @@
   import { Textarea } from '$lib/components/ui/textarea';
   import CheckIcon from '@lucide/svelte/icons/check';
   import CopyIcon from '@lucide/svelte/icons/copy';
+  import { toast } from 'svelte-sonner';
   import CollapsibleValue from './CollapsibleValue.svelte';
   import { ws } from './ws';
 
@@ -44,6 +46,13 @@
   // Copy to clipboard state
   let copiedValue = $state(false)
   let copiedKey = $state(false)
+
+  // Delete confirmation dialog
+  let deleteDialogOpen = $state(false)
+
+  function openDeleteDialog() {
+    deleteDialogOpen = true
+  }
 
   async function copyValue() {
     if (!keyInfo) return
@@ -257,20 +266,23 @@
       const ttl = editTtl ? parseInt(editTtl, 10) : 0
       await api.setKey(key, editValue, ttl)
       await loadKey(key)
+      toast.success('Value saved')
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to save'
+      toast.error(e instanceof Error ? e.message : 'Failed to save')
     } finally {
       saving = false
     }
   }
 
   async function deleteKey() {
-    if (!confirm(`Delete key "${key}"?`)) return
     try {
       await api.deleteKey(key)
+      toast.success('Key deleted')
       ondeleted()
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to delete'
+      toast.error(e instanceof Error ? e.message : 'Failed to delete')
+    } finally {
+      deleteDialogOpen = false
     }
   }
 
@@ -280,8 +292,9 @@
       const ttl = editTtl ? parseInt(editTtl, 10) : 0
       await api.expireKey(key, ttl)
       await loadKey(key)
+      toast.success('TTL updated')
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to update TTL'
+      toast.error(e instanceof Error ? e.message : 'Failed to update TTL')
     }
   }
 
@@ -393,9 +406,7 @@
           <Button onclick={saveValue} disabled={saving}>
             {saving ? 'Saving...' : 'Save'}
           </Button>
-          <Button variant="destructive" onclick={deleteKey}>
-            Delete
-          </Button>
+          <Button variant="destructive" onclick={openDeleteDialog}>Delete</Button>
         </div>
       {/if}
     {:else if keyInfo.type === 'list'}
@@ -450,7 +461,7 @@
         {/if}
       </div>
       {#if !readOnly}
-        <Button variant="destructive" onclick={deleteKey}>Delete</Button>
+        <Button variant="destructive" onclick={openDeleteDialog}>Delete</Button>
       {/if}
     {:else if keyInfo.type === 'set'}
       <div class="flex-1 flex flex-col gap-2 overflow-auto">
@@ -481,7 +492,7 @@
         {/if}
       </div>
       {#if !readOnly}
-        <Button variant="destructive" onclick={deleteKey}>Delete</Button>
+        <Button variant="destructive" onclick={openDeleteDialog}>Delete</Button>
       {/if}
     {:else if keyInfo.type === 'hash'}
       <div class="flex-1 flex flex-col gap-2 overflow-auto">
@@ -523,7 +534,7 @@
         {/if}
       </div>
       {#if !readOnly}
-        <Button variant="destructive" onclick={deleteKey}>Delete</Button>
+        <Button variant="destructive" onclick={openDeleteDialog}>Delete</Button>
       {/if}
     {:else if keyInfo.type === 'zset'}
       <div class="flex-1 flex flex-col gap-2 overflow-auto">
@@ -565,7 +576,7 @@
         {/if}
       </div>
       {#if !readOnly}
-        <Button variant="destructive" onclick={deleteKey}>Delete</Button>
+        <Button variant="destructive" onclick={openDeleteDialog}>Delete</Button>
       {/if}
     {:else if keyInfo.type === 'stream'}
       <div class="flex-1 flex flex-col gap-2 overflow-auto">
@@ -604,19 +615,32 @@
         {/if}
       </div>
       {#if !readOnly}
-        <Button variant="destructive" onclick={deleteKey}>Delete</Button>
+        <Button variant="destructive" onclick={openDeleteDialog}>Delete</Button>
       {/if}
     {:else}
       <div class="flex flex-col gap-4">
         <p>Unknown type: {keyInfo.type}</p>
         <pre class="bg-alabaster-grey-50 p-4 rounded overflow-auto font-mono text-sm">{JSON.stringify(keyInfo.value, null, 2)}</pre>
         {#if !readOnly}
-          <Button variant="destructive" onclick={deleteKey}>
-            Delete
-          </Button>
+          <Button variant="destructive" onclick={openDeleteDialog}>Delete</Button>
         {/if}
       </div>
     {/if}
+
+    <AlertDialog.Root bind:open={deleteDialogOpen}>
+      <AlertDialog.Content>
+        <AlertDialog.Header>
+          <AlertDialog.Title>Delete Key</AlertDialog.Title>
+          <AlertDialog.Description>
+            Are you sure you want to delete <code class="font-mono bg-alabaster-grey-100 px-1 rounded">{key}</code>? This action cannot be undone.
+          </AlertDialog.Description>
+        </AlertDialog.Header>
+        <AlertDialog.Footer>
+          <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+          <AlertDialog.Action onclick={deleteKey}>Delete</AlertDialog.Action>
+        </AlertDialog.Footer>
+      </AlertDialog.Content>
+    </AlertDialog.Root>
   {/if}
 </div>
 
