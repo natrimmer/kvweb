@@ -4,11 +4,12 @@
   import * as Resizable from '$lib/components/ui/resizable';
   import { Toaster } from '$lib/components/ui/sonner';
   import DatabaseIcon from '@lucide/svelte/icons/database';
+  import RadioIcon from '@lucide/svelte/icons/radio';
   import { onMount } from 'svelte';
+  import { api } from './lib/api';
   import KeyEditor from './lib/KeyEditor.svelte';
   import KeyList from './lib/KeyList.svelte';
   import ServerInfo from './lib/ServerInfo.svelte';
-  import { api } from './lib/api';
   import { ws } from './lib/ws';
 
   let selectedKey = $state<string | null>(null)
@@ -107,10 +108,16 @@
       {#if readOnly}
         <Badge variant="default" class="bg-accent text-accent-foreground hover:bg-accent">READ-ONLY</Badge>
       {/if}
-      <div class="flex items-center gap-2 text-muted-foreground">
-        <span class="w-2 h-2 rounded-full {connected ? 'bg-primary' : 'bg-destructive'}"></span>
-        <span>{connected ? `${dbSize} keys` : 'Disconnected'}</span>
-      </div>
+      {#if liveUpdates}
+        <div class="flex items-center gap-1.5 text-primary text-xs" title="Receiving real-time updates from server">
+          <RadioIcon class="w-3.5 h-3.5 animate-pulse" />
+          <span>Live</span>
+        </div>
+      {/if}
+      <span
+        class="w-2 h-2 rounded-full {connected ? 'bg-green-500' : 'bg-destructive'}"
+        title={connected ? 'Connected to server' : 'Disconnected from server'}
+      ></span>
     </div>
   </header>
 
@@ -125,6 +132,7 @@
               oncreated={handleKeyCreated}
               {readOnly}
               {prefix}
+              {dbSize}
             />
           </div>
         </Resizable.Pane>

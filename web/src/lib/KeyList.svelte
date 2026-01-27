@@ -15,9 +15,10 @@
     oncreated: () => void
     readOnly: boolean
     prefix: string
+    dbSize: number
   }
 
-  let { selected, onselect, oncreated, readOnly, prefix }: Props = $props()
+  let { selected, onselect, oncreated, readOnly, prefix, dbSize }: Props = $props()
 
   let viewMode = $state<'list' | 'tree'>('list')
   let keys = $state<KeyMeta[]>([])
@@ -207,6 +208,9 @@
   <KeyTree {selected} {onselect} onclose={() => viewMode = 'list'} />
 {:else}
   <div class="flex flex-col h-full p-4 gap-3">
+    <div class="flex items-center justify-between">
+      <span class="text-xs text-muted-foreground">{dbSize} total keys</span>
+    </div>
     <div class="flex gap-2">
       <div class="relative flex-1">
         <Input
