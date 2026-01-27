@@ -6,6 +6,7 @@
   import { Textarea } from '$lib/components/ui/textarea';
   import CheckIcon from '@lucide/svelte/icons/check';
   import CopyIcon from '@lucide/svelte/icons/copy';
+  import CollapsibleValue from './CollapsibleValue.svelte';
   import { ws } from './ws';
 
   import { api, type KeyInfo, type StreamEntry, type ZSetMember } from './api';
@@ -439,14 +440,8 @@
               {#each asArray() as item, i}
                 <tr class="border-b border-alabaster-grey-100 hover:bg-alabaster-grey-50">
                   <td class="p-2 text-black-400 font-mono align-top">{i}</td>
-                  <td class="p-2 font-mono break-all">
-                    {#if listHighlights[i]}
-                      <div class="[&>pre]:p-0 [&>pre]:m-0 [&>pre]:bg-transparent [&>pre]:text-sm">
-                        {@html listHighlights[i]}
-                      </div>
-                    {:else}
-                      {item}
-                    {/if}
+                  <td class="p-2 font-mono">
+                    <CollapsibleValue value={item} highlight={listHighlights[i]} />
                   </td>
                 </tr>
               {/each}
@@ -476,9 +471,11 @@
             {@html rawJsonHtml}
           </div>
         {:else}
-          <div class="flex flex-wrap gap-2">
+          <div class="flex flex-col gap-1">
             {#each asArray() as member}
-              <span class="px-2 py-1 bg-alabaster-grey-100 rounded font-mono text-sm">{member}</span>
+              <div class="px-2 py-1 bg-alabaster-grey-100 rounded font-mono text-sm">
+                <CollapsibleValue value={member} maxLength={100} />
+              </div>
             {/each}
           </div>
         {/if}
@@ -516,14 +513,8 @@
               {#each Object.entries(asHash()) as [field, val]}
                 <tr class="border-b border-alabaster-grey-100 hover:bg-alabaster-grey-50">
                   <td class="p-2 font-mono text-black-600 align-top">{field}</td>
-                  <td class="p-2 font-mono break-all">
-                    {#if isJson(val)}
-                      <div class="[&>pre]:p-0 [&>pre]:m-0 [&>pre]:bg-transparent [&>pre]:text-sm">
-                        {@html highlight(val, false)}
-                      </div>
-                    {:else}
-                      {val}
-                    {/if}
+                  <td class="p-2 font-mono">
+                    <CollapsibleValue value={val} highlight={isJson(val) ? highlight(val, false) : undefined} />
                   </td>
                 </tr>
               {/each}
@@ -563,7 +554,9 @@
             <tbody>
               {#each asZSet() as zitem}
                 <tr class="border-b border-alabaster-grey-100 hover:bg-alabaster-grey-50">
-                  <td class="p-2 font-mono break-all">{zitem.member}</td>
+                  <td class="p-2 font-mono">
+                    <CollapsibleValue value={zitem.member} />
+                  </td>
                   <td class="p-2 font-mono text-black-600">{zitem.score}</td>
                 </tr>
               {/each}
@@ -600,7 +593,9 @@
                 <div class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
                   {#each Object.entries(entry.fields) as [field, val]}
                     <span class="font-mono text-black-600">{field}</span>
-                    <span class="font-mono break-all">{val}</span>
+                    <span class="font-mono">
+                      <CollapsibleValue value={val} maxLength={150} />
+                    </span>
                   {/each}
                 </div>
               </div>
