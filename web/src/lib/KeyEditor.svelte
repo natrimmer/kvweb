@@ -8,10 +8,10 @@
   import CheckIcon from '@lucide/svelte/icons/check';
   import CopyIcon from '@lucide/svelte/icons/copy';
   import { toast } from 'svelte-sonner';
-  import CollapsibleValue from './CollapsibleValue.svelte';
-  import { ws } from './ws';
-
   import { api, type KeyInfo, type StreamEntry, type ZSetMember } from './api';
+  import CollapsibleValue from './CollapsibleValue.svelte';
+  import { copyToClipboard, deleteOps, formatTtl, highlightJson, modifyOps } from './utils';
+  import { ws } from './ws';
 
   interface Props {
     key: string
@@ -57,15 +57,11 @@
   async function copyValue() {
     if (!keyInfo) return
     const text = typeof keyInfo.value === 'string' ? keyInfo.value : JSON.stringify(keyInfo.value, null, 2)
-    await navigator.clipboard.writeText(text)
-    copiedValue = true
-    setTimeout(() => copiedValue = false, 2000)
+    await copyToClipboard(text, (v) => copiedValue = v)
   }
 
   async function copyKeyName() {
-    await navigator.clipboard.writeText(key)
-    copiedKey = true
-    setTimeout(() => copiedKey = false, 2000)
+    await copyToClipboard(key, (v) => copiedKey = v)
   }
 
   function startTtlCountdown(ttl: number) {
@@ -128,37 +124,10 @@
     }
   }
 
-  // Lightweight JSON syntax highlighter (no dependencies)
-  function highlight(str: string, format: boolean): string {
-    try {
-      const code = format ? JSON.stringify(JSON.parse(str), null, 2) : str
-      // Escape HTML and apply syntax highlighting
-      const escaped = code
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-
-      // Apply highlighting with regex
-      const highlighted = escaped
-        // Strings (including keys)
-        .replace(/"([^"\\]|\\.)*"/g, (match) => {
-          return `<span class="json-string">${match}</span>`
-        })
-        // Numbers
-        .replace(/\b(-?\d+\.?\d*(?:[eE][+-]?\d+)?)\b/g, '<span class="json-number">$1</span>')
-        // Booleans and null
-        .replace(/\b(true|false|null)\b/g, '<span class="json-keyword">$1</span>')
-
-      return `<pre class="json-highlight">${highlighted}</pre>`
-    } catch {
-      return ''
-    }
-  }
-
   // Highlight string value when it changes or prettyPrint toggles
   $effect(() => {
     if (keyInfo?.type === 'string' && isJson(editValue)) {
-      highlightedHtml = highlight(editValue, prettyPrint)
+      highlightedHtml = highlightJson(editValue, prettyPrint)
     } else {
       highlightedHtml = ''
     }
@@ -171,7 +140,7 @@
       const highlights: Record<number, string> = {}
       for (let i = 0; i < items.length; i++) {
         if (isJson(items[i])) {
-          highlights[i] = highlight(items[i], prettyPrint)
+          highlights[i] = highlightJson(items[i], prettyPrint)
         }
       }
       listHighlights = highlights
@@ -194,7 +163,7 @@
   // Generate highlighted raw JSON for complex types
   let rawJsonHtml = $derived.by(() => {
     if (!keyInfo || !isComplexType || !rawView) return ''
-    return highlight(JSON.stringify(keyInfo.value, null, 2), true)
+    return highlightJson(JSON.stringify(keyInfo.value, null, 2), true)
   })
 
   $effect(() => {
@@ -206,20 +175,6 @@
   })
 
   // Subscribe to WebSocket key events for external modification detection
-  // Operations that indicate a key was deleted
-  const deleteOps = new Set(['del', 'expired'])
-  // Operations that indicate a key was modified
-  const modifyOps = new Set([
-    'set',           // string
-    'lpush', 'rpush', 'lpop', 'rpop', 'lset', 'ltrim',  // list
-    'hset', 'hdel', 'hincrby', 'hincrbyfloat',          // hash
-    'sadd', 'srem', 'spop',                              // set
-    'zadd', 'zrem', 'zincrby',                           // sorted set
-    'xadd', 'xtrim',                                     // stream
-    'append', 'incr', 'decr', 'incrby', 'decrby',       // string modifications
-    'setex', 'psetex', 'setnx',                          // string variants
-  ])
-
   $effect(() => {
     if (!key) return
 
@@ -295,13 +250,6 @@
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to update TTL')
     }
-  }
-
-  function formatTtl(seconds: number): string {
-    if (seconds < 0) return 'No expiry'
-    if (seconds < 60) return `${seconds}s`
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${seconds % 60}s`
-    return `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`
   }
 </script>
 
@@ -517,7 +465,7 @@
                 <tr class="border-b border-alabaster-grey-100 hover:bg-alabaster-grey-50">
                   <td class="p-2 font-mono text-black-600 align-top">{field}</td>
                   <td class="p-2 font-mono">
-                    <CollapsibleValue value={val} highlight={isJson(val) ? highlight(val, false) : undefined} />
+                    <CollapsibleValue value={val} highlight={isJson(val) ? highlightJson(val, false) : undefined} />
                   </td>
                 </tr>
               {/each}

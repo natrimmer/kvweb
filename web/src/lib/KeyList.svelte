@@ -6,6 +6,7 @@
   import { onMount } from 'svelte';
   import { api, type KeyMeta } from './api';
   import KeyTree from './KeyTree.svelte';
+  import { deleteOps, modifyOps } from './utils';
   import { ws } from './ws';
 
   interface Props {
@@ -122,20 +123,6 @@
   loadHistory()
 
   // Subscribe to WebSocket key events for live updates
-  // Operations that indicate a key was deleted or expired
-  const deleteOps = new Set(['del', 'expired'])
-  // Operations that indicate a key was created or modified
-  const modifyOps = new Set([
-    'set',           // string
-    'lpush', 'rpush', 'lpop', 'rpop', 'lset', 'ltrim',  // list
-    'hset', 'hdel', 'hincrby', 'hincrbyfloat',          // hash
-    'sadd', 'srem', 'spop',                              // set
-    'zadd', 'zrem', 'zincrby',                           // sorted set
-    'xadd', 'xtrim',                                     // stream
-    'append', 'incr', 'decr', 'incrby', 'decrby',       // string modifications
-    'setex', 'psetex', 'setnx',                          // string variants
-  ])
-
   onMount(() => {
     return ws.onKeyEvent((event) => {
       if (deleteOps.has(event.op)) {
