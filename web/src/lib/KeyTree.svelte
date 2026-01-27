@@ -77,14 +77,14 @@
       <Button variant="ghost" size="sm" onclick={navigateToRoot} class="px-2">
         <House size={16}/>
       </Button>
-      <span class="font-mono text-sm text-black-600 truncate flex-1">{currentPrefix}</span>
+      <span class="font-mono text-sm text-muted-foreground truncate flex-1">{currentPrefix}</span>
     {:else}
-      <span class="text-sm text-black-600 flex-1">Tree View</span>
+      <span class="text-sm text-muted-foreground flex-1">Tree View</span>
     {/if}
     <button
       type="button"
       onclick={onclose}
-      class="px-3 py-1 border border-alabaster-grey-200 rounded text-sm bg-white hover:bg-alabaster-grey-50 font-mono"
+      class="px-3 py-1 border border-border rounded text-sm bg-card hover:bg-muted font-mono"
       title="Switch to list view"
     >
       <List size={18}/>
@@ -92,19 +92,19 @@
   </div>
 
   {#if loading}
-    <div class="flex items-center justify-center flex-1 text-black-400">Loading...</div>
+    <div class="flex items-center justify-center flex-1 text-muted-foreground">Loading...</div>
   {:else if error}
-    <div class="flex items-center justify-center flex-1 text-scarlet-rush-400">{error}</div>
+    <div class="flex items-center justify-center flex-1 text-destructive">{error}</div>
   {:else}
     <ul class="flex-1 overflow-y-auto list-none">
       {#each entries as entry (entry.prefix)}
         <li>
           <Button
             variant="ghost"
-            class="w-full justify-start p-2 text-black-950 font-mono text-sm rounded hover:bg-crayola-blue-200 {entry.isLeaf && entry.fullKey === selected ? 'bg-crayola-blue-100 hover:bg-crayola-blue-100' : ''}"
+            class="w-full justify-start p-2 text-foreground font-mono text-sm rounded hover:bg-primary/10 {entry.isLeaf && entry.fullKey === selected ? 'bg-primary/20 hover:bg-primary/20' : ''}"
             onclick={() => handleClick(entry)}
           >
-            <span class="text-black-400">
+            <span class="text-muted-foreground">
                 {#if entry.isLeaf}
                     <Dot size={16}/>
                 {:else if !entry.isLeaf}
@@ -115,7 +115,7 @@
             {#if entry.isLeaf && entry.type}
               <Badge variant="secondary" class="ml-2 text-xs opacity-60">{entry.type}</Badge>
             {:else if !entry.isLeaf}
-              <span class="ml-2 text-xs text-black-400">({entry.count})</span>
+              <span class="ml-2 text-xs text-muted-foreground">({entry.count})</span>
             {/if}
           </Button>
         </li>
@@ -123,7 +123,7 @@
     </ul>
 
     {#if entries.length === 0}
-      <div class="text-center text-black-400 py-8">No keys found</div>
+      <div class="text-center text-muted-foreground py-8">No keys found</div>
     {/if}
   {/if}
 </div>

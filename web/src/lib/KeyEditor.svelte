@@ -260,9 +260,9 @@
 
 <div class="p-6 h-full flex flex-col gap-4">
   {#if loading}
-    <div class="flex items-center justify-center h-full text-black-400">Loading...</div>
+    <div class="flex items-center justify-center h-full text-muted-foreground">Loading...</div>
   {:else if error}
-    <div class="flex items-center justify-center h-full text-scarlet-rush-400">{error}</div>
+    <div class="flex items-center justify-center h-full text-destructive">{error}</div>
   {:else if keyInfo}
     <div class="flex items-center gap-4">
       <h2 class="font-mono text-xl break-all flex-1">{key}</h2>
@@ -270,7 +270,7 @@
       <ButtonGroup.Root>
         <Button variant="outline" size="sm" onclick={copyKeyName} title="Copy key name">
           {#if copiedKey}
-            <CheckIcon class="w-4 h-4 text-crayola-blue-500" />
+            <CheckIcon class="w-4 h-4 text-primary" />
           {:else}
             <CopyIcon class="w-4 h-4" />
           {/if}
@@ -278,7 +278,7 @@
         </Button>
         <Button variant="outline" size="sm" onclick={copyValue} title="Copy value">
           {#if copiedValue}
-            <CheckIcon class="w-4 h-4 text-crayola-blue-500" />
+            <CheckIcon class="w-4 h-4 text-primary" />
           {:else}
             <CopyIcon class="w-4 h-4" />
           {/if}
@@ -288,14 +288,14 @@
     </div>
 
     {#if keyDeleted}
-      <div class="bg-scarlet-rush-100 text-scarlet-rush-800 p-3 rounded flex items-center justify-between text-sm">
+      <div class="bg-destructive/10 text-destructive p-3 rounded flex items-center justify-between text-sm">
         <span>This key was deleted externally</span>
         <Button variant="secondary" size="sm" onclick={ondeleted}>
           Close
         </Button>
       </div>
     {:else if externallyModified}
-      <div class="bg-golden-pollen-100 text-golden-pollen-800 p-3 rounded flex items-center justify-between text-sm">
+      <div class="bg-accent/10 text-accent-foreground p-3 rounded flex items-center justify-between text-sm">
         <span>Modified externally</span>
         <Button variant="secondary" size="sm" onclick={() => { loadKey(key); externallyModified = false }}>
           Reload
@@ -303,11 +303,11 @@
       </div>
     {/if}
 
-    <div class="p-3 bg-alabaster-grey-50 rounded flex items-center justify-between gap-4">
+    <div class="p-3 bg-muted rounded flex items-center justify-between gap-4">
       <label class="flex items-center gap-2">
         <span class="text-sm">TTL:</span>
         {#if readOnly}
-          <span class="text-black-400 text-sm">{formatTtl(liveTtl ?? keyInfo.ttl)}</span>
+          <span class="text-muted-foreground text-sm">{formatTtl(liveTtl ?? keyInfo.ttl)}</span>
         {:else}
           <Input
             type="number"
@@ -318,7 +318,7 @@
           <Button variant="secondary" size="sm" onclick={updateTtl} disabled={updatingTtl}>
             {updatingTtl ? 'Setting...' : 'Set'}
           </Button>
-          <span class="text-black-400 text-sm">{formatTtl(liveTtl ?? keyInfo.ttl)}</span>
+          <span class="text-muted-foreground text-sm">{formatTtl(liveTtl ?? keyInfo.ttl)}</span>
         {/if}
       </label>
       {#if !readOnly}
@@ -341,7 +341,7 @@
             <button
               type="button"
               onclick={() => prettyPrint = !prettyPrint}
-              class="px-2 py-1 text-xs rounded font-mono {prettyPrint ? 'bg-crayola-blue-100 text-crayola-blue-700' : 'bg-alabaster-grey-100 hover:bg-alabaster-grey-200'}"
+              class="px-2 py-1 text-xs rounded font-mono {prettyPrint ? 'bg-primary/10 text-primary' : 'bg-muted hover:bg-secondary'}"
               title="Toggle JSON formatting"
             >
               {"{ }"}
@@ -350,7 +350,7 @@
         </div>
 
         {#if isJsonValue && highlightedHtml}
-          <div class="flex-1 overflow-auto rounded border border-alabaster-grey-200 min-h-75 [&>pre]:p-4 [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:text-sm">
+          <div class="flex-1 overflow-auto rounded border border-border min-h-75 [&>pre]:p-4 [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:text-sm">
             {@html highlightedHtml}
           </div>
         {:else}
@@ -365,7 +365,7 @@
     {:else if keyInfo.type === 'list'}
       <div class="flex-1 flex flex-col gap-2 overflow-auto">
         <div class="flex items-center justify-between">
-          <span class="text-sm text-black-400">
+          <span class="text-sm text-muted-foreground">
             {keyInfo.length} items{keyInfo.length && keyInfo.length > 100 ? ' (showing first 100)' : ''}
           </span>
           <div class="flex gap-1">
@@ -373,7 +373,7 @@
               <button
                 type="button"
                 onclick={() => prettyPrint = !prettyPrint}
-                class="px-2 py-1 text-xs rounded font-mono {prettyPrint ? 'bg-crayola-blue-100 text-crayola-blue-700' : 'bg-alabaster-grey-100 hover:bg-alabaster-grey-200'}"
+                class="px-2 py-1 text-xs rounded font-mono {prettyPrint ? 'bg-primary/10 text-primary' : 'bg-muted hover:bg-secondary'}"
                 title="Toggle JSON formatting"
               >
                 {"{ }"}
@@ -382,14 +382,14 @@
             <button
               type="button"
               onclick={() => rawView = !rawView}
-              class="px-2 py-1 text-xs rounded bg-alabaster-grey-100 hover:bg-alabaster-grey-200"
+              class="px-2 py-1 text-xs rounded bg-muted hover:bg-secondary"
             >
               {rawView ? 'View as table' : 'View as JSON'}
             </button>
           </div>
         </div>
         {#if rawView && rawJsonHtml}
-          <div class="flex-1 overflow-auto rounded border border-alabaster-grey-200 [&>pre]:p-4 [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:text-sm">
+          <div class="flex-1 overflow-auto rounded border border-border [&>pre]:p-4 [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:text-sm">
             {@html rawJsonHtml}
           </div>
         {:else}
@@ -416,25 +416,25 @@
     {:else if keyInfo.type === 'set'}
       <div class="flex-1 flex flex-col gap-2 overflow-auto">
         <div class="flex items-center justify-between">
-          <span class="text-sm text-black-400">
+          <span class="text-sm text-muted-foreground">
             {keyInfo.length} members{keyInfo.length && keyInfo.length > 100 ? ' (showing first 100)' : ''}
           </span>
           <button
             type="button"
             onclick={() => rawView = !rawView}
-            class="px-2 py-1 text-xs rounded bg-alabaster-grey-100 hover:bg-alabaster-grey-200"
+            class="px-2 py-1 text-xs rounded bg-muted hover:bg-secondary"
           >
             {rawView ? 'View as list' : 'View as JSON'}
           </button>
         </div>
         {#if rawView && rawJsonHtml}
-          <div class="flex-1 overflow-auto rounded border border-alabaster-grey-200 [&>pre]:p-4 [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:text-sm">
+          <div class="flex-1 overflow-auto rounded border border-border [&>pre]:p-4 [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:text-sm">
             {@html rawJsonHtml}
           </div>
         {:else}
           <div class="flex flex-col gap-1">
             {#each asArray() as member}
-              <div class="px-2 py-1 bg-alabaster-grey-100 rounded font-mono text-sm">
+              <div class="px-2 py-1 bg-muted rounded font-mono text-sm">
                 <CollapsibleValue value={member} maxLength={100} />
               </div>
             {/each}
@@ -444,19 +444,19 @@
     {:else if keyInfo.type === 'hash'}
       <div class="flex-1 flex flex-col gap-2 overflow-auto">
         <div class="flex items-center justify-between">
-          <span class="text-sm text-black-400">
+          <span class="text-sm text-muted-foreground">
             {keyInfo.length} fields{keyInfo.length && keyInfo.length > 100 ? ' (showing first 100)' : ''}
           </span>
           <button
             type="button"
             onclick={() => rawView = !rawView}
-            class="px-2 py-1 text-xs rounded bg-alabaster-grey-100 hover:bg-alabaster-grey-200"
+            class="px-2 py-1 text-xs rounded bg-muted hover:bg-secondary"
           >
             {rawView ? 'View as table' : 'View as JSON'}
           </button>
         </div>
         {#if rawView && rawJsonHtml}
-          <div class="flex-1 overflow-auto rounded border border-alabaster-grey-200 [&>pre]:p-4 [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:text-sm">
+          <div class="flex-1 overflow-auto rounded border border-border [&>pre]:p-4 [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:text-sm">
             {@html rawJsonHtml}
           </div>
         {:else}
@@ -483,19 +483,19 @@
     {:else if keyInfo.type === 'zset'}
       <div class="flex-1 flex flex-col gap-2 overflow-auto">
         <div class="flex items-center justify-between">
-          <span class="text-sm text-black-400">
+          <span class="text-sm text-muted-foreground">
             {keyInfo.length} members{keyInfo.length && keyInfo.length > 100 ? ' (showing first 100)' : ''}
           </span>
           <button
             type="button"
             onclick={() => rawView = !rawView}
-            class="px-2 py-1 text-xs rounded bg-alabaster-grey-100 hover:bg-alabaster-grey-200"
+            class="px-2 py-1 text-xs rounded bg-muted hover:bg-secondary"
           >
             {rawView ? 'View as table' : 'View as JSON'}
           </button>
         </div>
         {#if rawView && rawJsonHtml}
-          <div class="flex-1 overflow-auto rounded border border-alabaster-grey-200 [&>pre]:p-4 [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:text-sm">
+          <div class="flex-1 overflow-auto rounded border border-border [&>pre]:p-4 [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:text-sm">
             {@html rawJsonHtml}
           </div>
         {:else}
@@ -522,29 +522,29 @@
     {:else if keyInfo.type === 'stream'}
       <div class="flex-1 flex flex-col gap-2 overflow-auto">
         <div class="flex items-center justify-between">
-          <span class="text-sm text-black-400">
+          <span class="text-sm text-muted-foreground">
             {keyInfo.length} entries{keyInfo.length && keyInfo.length > 100 ? ' (showing first 100)' : ''}
           </span>
           <button
             type="button"
             onclick={() => rawView = !rawView}
-            class="px-2 py-1 text-xs rounded bg-alabaster-grey-100 hover:bg-alabaster-grey-200"
+            class="px-2 py-1 text-xs rounded bg-muted hover:bg-secondary"
           >
             {rawView ? 'View as cards' : 'View as JSON'}
           </button>
         </div>
         {#if rawView && rawJsonHtml}
-          <div class="flex-1 overflow-auto rounded border border-alabaster-grey-200 [&>pre]:p-4 [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:text-sm">
+          <div class="flex-1 overflow-auto rounded border border-border [&>pre]:p-4 [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:text-sm">
             {@html rawJsonHtml}
           </div>
         {:else}
           <div class="flex flex-col gap-2">
             {#each asStream() as entry}
-              <div class="border border-alabaster-grey-200 rounded p-3">
-                <div class="font-mono text-xs text-black-400 mb-2">{entry.id}</div>
+              <div class="border border-border rounded p-3">
+                <div class="font-mono text-xs text-muted-foreground mb-2">{entry.id}</div>
                 <div class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
                   {#each Object.entries(entry.fields) as [field, val]}
-                    <span class="font-mono text-black-600">{field}</span>
+                    <span class="font-mono text-muted-foreground">{field}</span>
                     <span class="font-mono">
                       <CollapsibleValue value={val} maxLength={150} />
                     </span>
@@ -558,7 +558,7 @@
     {:else}
       <div class="flex flex-col gap-4">
         <p>Unknown type: {keyInfo.type}</p>
-        <pre class="bg-alabaster-grey-50 p-4 rounded overflow-auto font-mono text-sm">{JSON.stringify(keyInfo.value, null, 2)}</pre>
+        <pre class="bg-muted p-4 rounded overflow-auto font-mono text-sm">{JSON.stringify(keyInfo.value, null, 2)}</pre>
       </div>
     {/if}
 
@@ -567,7 +567,7 @@
         <AlertDialog.Header>
           <AlertDialog.Title>Delete Key</AlertDialog.Title>
           <AlertDialog.Description>
-            Are you sure you want to delete <code class="font-mono bg-alabaster-grey-100 px-1 rounded">{key}</code>? This action cannot be undone.
+            Are you sure you want to delete <code class="font-mono bg-muted px-1 rounded">{key}</code>? This action cannot be undone.
           </AlertDialog.Description>
         </AlertDialog.Header>
         <AlertDialog.Footer>

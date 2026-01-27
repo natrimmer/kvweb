@@ -217,19 +217,19 @@
           onblur={() => setTimeout(() => showHistory = false, 150)}
         />
         {#if showHistory && searchHistory.length > 0}
-          <div class="absolute top-full left-0 right-0 mt-1 bg-white border border-alabaster-grey-200 rounded shadow-lg z-10 max-h-60 overflow-auto">
-            <div class="flex items-center justify-between px-3 py-2 border-b border-alabaster-grey-100">
-              <span class="text-xs text-black-400">Recent searches</span>
+          <div class="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded shadow-lg z-10 max-h-60 overflow-auto">
+            <div class="flex items-center justify-between px-3 py-2 border-b border-border">
+              <span class="text-xs text-muted-foreground">Recent searches</span>
               <button
                 type="button"
-                class="text-xs text-black-400 hover:text-scarlet-rush-500"
+                class="text-xs text-muted-foreground hover:text-destructive"
                 onmousedown={() => clearHistory()}
               >
                 Clear all
               </button>
             </div>
             {#each searchHistory as h}
-              <div class="flex items-center group hover:bg-alabaster-grey-50">
+              <div class="flex items-center group hover:bg-muted">
                 <button
                   type="button"
                   class="flex-1 px-3 py-2 text-left font-mono text-sm flex items-center gap-2"
@@ -237,12 +237,12 @@
                 >
                   <span class="flex-1 overflow-hidden text-ellipsis">{h.pattern}</span>
                   {#if h.regex}
-                    <span class="text-xs text-crayola-blue-600 opacity-70">.*</span>
+                    <span class="text-xs text-primary opacity-70">.*</span>
                   {/if}
                 </button>
                 <button
                   type="button"
-                  class="px-2 py-1 text-black-300 hover:text-scarlet-rush-500 opacity-0 group-hover:opacity-100"
+                  class="px-2 py-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100"
                   onmousedown={() => removeFromHistory(h)}
                 >
                   <X size={14}/>
@@ -255,7 +255,7 @@
       <button
         type="button"
         onclick={() => useRegex = !useRegex}
-        class="px-3 py-2 border rounded text-sm font-mono {useRegex ? 'bg-crayola-blue-100 border-crayola-blue-300 text-crayola-blue-700' : 'border-alabaster-grey-200 bg-white hover:bg-alabaster-grey-50'}"
+        class="px-3 py-2 border rounded text-sm font-mono {useRegex ? 'bg-primary/10 border-primary text-primary' : 'border-border bg-card hover:bg-muted'}"
         title={useRegex ? 'Regex mode (click for glob)' : 'Glob mode (click for regex)'}
       >
         <Regex size={18}/>
@@ -263,20 +263,20 @@
       <button
         type="button"
         onclick={() => viewMode = 'tree'}
-        class="px-3 py-2 border border-alabaster-grey-200 rounded text-sm bg-white hover:bg-alabaster-grey-50 font-mono"
+        class="px-3 py-2 border border-border rounded text-sm bg-card hover:bg-muted font-mono"
         title="Switch to tree view"
       >
         <ListTree size={18}/>
       </button>
     </div>
     {#if regexError}
-      <div class="text-sm text-scarlet-rush-500">{regexError}</div>
+      <div class="text-sm text-destructive">{regexError}</div>
     {/if}
 
     <div class="flex gap-2">
       <select
         bind:value={typeFilter}
-        class="flex-1 px-3 py-2 border border-alabaster-grey-200 rounded text-sm bg-white"
+        class="flex-1 px-3 py-2 border border-border rounded text-sm bg-card"
       >
         <option value="">All types</option>
         {#each keyTypes.slice(1) as t}
@@ -285,7 +285,7 @@
       </select>
       <select
         bind:value={sortBy}
-        class="px-3 py-2 border border-alabaster-grey-200 rounded text-sm bg-white"
+        class="px-3 py-2 border border-border rounded text-sm bg-card"
       >
         {#each sortOptions as opt}
           <option value={opt.value}>Sort: {opt.label}</option>
@@ -294,7 +294,7 @@
       <button
         type="button"
         onclick={() => sortAsc = !sortAsc}
-        class="px-3 py-2 border border-alabaster-grey-200 rounded text-sm bg-white hover:bg-alabaster-grey-50"
+        class="px-3 py-2 border border-border rounded text-sm bg-card hover:bg-muted"
         title={sortAsc ? 'Ascending' : 'Descending'}
       >
         {sortAsc ? '↑' : '↓'}
@@ -310,9 +310,9 @@
     {/if}
 
     {#if showNewKey && !readOnly}
-      <div class="flex gap-2 p-2 bg-black-800 rounded">
+      <div class="flex gap-2 p-2 bg-muted rounded">
         {#if prefix}
-          <Badge variant="secondary" class="text-black-400 font-mono">{prefix}</Badge>
+          <Badge variant="secondary" class="text-muted-foreground font-mono">{prefix}</Badge>
         {/if}
         <Input
           type="text"
@@ -328,10 +328,10 @@
     <ul class="flex-1 overflow-y-auto list-none">
       {#each sortedKeys as item, i (item.key)}
         {@const hasTtlBoundary = sortBy === 'ttl' && i < sortedKeys.length - 1 && (item.ttl >= 0) !== (sortedKeys[i + 1].ttl >= 0)}
-        <li class={hasTtlBoundary ? 'border-b border-alabaster-grey-300 mb-1 pb-1' : ''}>
+        <li class={hasTtlBoundary ? 'border-b border-border mb-1 pb-1' : ''}>
           <Button
             variant="ghost"
-            class="w-full justify-start p-2 text-black-950 font-mono text-sm rounded overflow-hidden text-ellipsis whitespace-nowrap hover:bg-crayola-blue-200 {item.key === selected ? 'bg-crayola-blue-100 hover:bg-crayola-blue-100' : ''}"
+            class="w-full justify-start p-2 text-foreground font-mono text-sm rounded overflow-hidden text-ellipsis whitespace-nowrap hover:bg-primary/10 {item.key === selected ? 'bg-primary/20 hover:bg-primary/20' : ''}"
             onclick={() => onselect(item.key)}
           >
             <span class="flex-1 overflow-hidden text-ellipsis text-left">{item.key}</span>
@@ -353,7 +353,7 @@
     {/if}
 
     {#if sortedKeys.length === 0 && !loading}
-      <div class="text-center text-black-400 py-8">No keys found</div>
+      <div class="text-center text-muted-foreground py-8">No keys found</div>
     {/if}
   </div>
 {/if}

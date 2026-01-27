@@ -152,5 +152,5 @@
     {/if}
   </div>
 
-  <pre class="flex-1 bg-alabaster-grey-50 p-4 rounded overflow-auto font-mono text-sm whitespace-pre-wrap break-all">{loading ? 'Loading...' : info}</pre>
+  <pre class="flex-1 bg-muted p-4 rounded overflow-auto font-mono text-sm whitespace-pre-wrap break-all">{loading ? 'Loading...' : info}</pre>
 </div>
