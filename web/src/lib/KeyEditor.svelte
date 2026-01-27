@@ -33,6 +33,9 @@
   let highlightedHtml = $state('')
   let listHighlights = $state<Record<number, string>>({})
 
+  // Raw view toggle for complex types
+  let rawView = $state(false)
+
   // External modification detection
   let externallyModified = $state(false)
   let keyDeleted = $state(false)
@@ -169,11 +172,27 @@
 
   let isJsonValue = $derived(keyInfo?.type === 'string' && isJson(editValue))
 
+  // Check if current type is a complex type that supports raw view
+  let isComplexType = $derived(
+    keyInfo?.type === 'list' ||
+    keyInfo?.type === 'set' ||
+    keyInfo?.type === 'hash' ||
+    keyInfo?.type === 'zset' ||
+    keyInfo?.type === 'stream'
+  )
+
+  // Generate highlighted raw JSON for complex types
+  let rawJsonHtml = $derived.by(() => {
+    if (!keyInfo || !isComplexType || !rawView) return ''
+    return highlight(JSON.stringify(keyInfo.value, null, 2), true)
+  })
+
   $effect(() => {
     loadKey(key)
     // Reset external modification state when key changes
     externallyModified = false
     keyDeleted = false
+    rawView = false
     return () => stopTtlCountdown()
   })
 
@@ -384,127 +403,210 @@
           <span class="text-sm text-black-400">
             {keyInfo.length} items{keyInfo.length && keyInfo.length > 100 ? ' (showing first 100)' : ''}
           </span>
-          {#if Object.keys(listHighlights).length > 0}
+          <div class="flex gap-1">
+            {#if !rawView && Object.keys(listHighlights).length > 0}
+              <button
+                type="button"
+                onclick={() => prettyPrint = !prettyPrint}
+                class="px-2 py-1 text-xs rounded font-mono {prettyPrint ? 'bg-crayola-blue-100 text-crayola-blue-700' : 'bg-alabaster-grey-100 hover:bg-alabaster-grey-200'}"
+                title="Toggle JSON formatting"
+              >
+                {"{ }"}
+              </button>
+            {/if}
             <button
               type="button"
-              onclick={() => prettyPrint = !prettyPrint}
-              class="px-2 py-1 text-xs rounded font-mono {prettyPrint ? 'bg-crayola-blue-100 text-crayola-blue-700' : 'bg-alabaster-grey-100 hover:bg-alabaster-grey-200'}"
-              title="Toggle JSON formatting"
+              onclick={() => rawView = !rawView}
+              class="px-2 py-1 text-xs rounded bg-alabaster-grey-100 hover:bg-alabaster-grey-200"
             >
-              {"{ }"}
+              {rawView ? 'View as table' : 'View as JSON'}
             </button>
-          {/if}
+          </div>
         </div>
-        <table class="w-full text-sm border-collapse">
-          <thead class="bg-alabaster-grey-50 sticky top-0">
-            <tr>
-              <th class="text-left p-2 border-b w-16">Index</th>
-              <th class="text-left p-2 border-b">Value</th>
-            </tr>
-          </thead>
-          <tbody>
-            {#each asArray() as item, i}
-              <tr class="border-b border-alabaster-grey-100 hover:bg-alabaster-grey-50">
-                <td class="p-2 text-black-400 font-mono align-top">{i}</td>
-                <td class="p-2 font-mono break-all">
-                  {#if listHighlights[i]}
-                    <div class="[&>pre]:p-0 [&>pre]:m-0 [&>pre]:bg-transparent [&>pre]:text-sm">
-                      {@html listHighlights[i]}
-                    </div>
-                  {:else}
-                    {item}
-                  {/if}
-                </td>
+        {#if rawView && rawJsonHtml}
+          <div class="flex-1 overflow-auto rounded border border-alabaster-grey-200 [&>pre]:p-4 [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:text-sm">
+            {@html rawJsonHtml}
+          </div>
+        {:else}
+          <table class="w-full text-sm border-collapse">
+            <thead class="bg-alabaster-grey-50 sticky top-0">
+              <tr>
+                <th class="text-left p-2 border-b w-16">Index</th>
+                <th class="text-left p-2 border-b">Value</th>
               </tr>
-            {/each}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {#each asArray() as item, i}
+                <tr class="border-b border-alabaster-grey-100 hover:bg-alabaster-grey-50">
+                  <td class="p-2 text-black-400 font-mono align-top">{i}</td>
+                  <td class="p-2 font-mono break-all">
+                    {#if listHighlights[i]}
+                      <div class="[&>pre]:p-0 [&>pre]:m-0 [&>pre]:bg-transparent [&>pre]:text-sm">
+                        {@html listHighlights[i]}
+                      </div>
+                    {:else}
+                      {item}
+                    {/if}
+                  </td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        {/if}
       </div>
       {#if !readOnly}
         <Button variant="destructive" onclick={deleteKey}>Delete</Button>
       {/if}
     {:else if keyInfo.type === 'set'}
       <div class="flex-1 flex flex-col gap-2 overflow-auto">
-        <div class="text-sm text-black-400">
-          {keyInfo.length} members{keyInfo.length && keyInfo.length > 100 ? ' (showing first 100)' : ''}
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-black-400">
+            {keyInfo.length} members{keyInfo.length && keyInfo.length > 100 ? ' (showing first 100)' : ''}
+          </span>
+          <button
+            type="button"
+            onclick={() => rawView = !rawView}
+            class="px-2 py-1 text-xs rounded bg-alabaster-grey-100 hover:bg-alabaster-grey-200"
+          >
+            {rawView ? 'View as list' : 'View as JSON'}
+          </button>
         </div>
-        <div class="flex flex-wrap gap-2">
-          {#each asArray() as member}
-            <span class="px-2 py-1 bg-alabaster-grey-100 rounded font-mono text-sm">{member}</span>
-          {/each}
-        </div>
+        {#if rawView && rawJsonHtml}
+          <div class="flex-1 overflow-auto rounded border border-alabaster-grey-200 [&>pre]:p-4 [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:text-sm">
+            {@html rawJsonHtml}
+          </div>
+        {:else}
+          <div class="flex flex-wrap gap-2">
+            {#each asArray() as member}
+              <span class="px-2 py-1 bg-alabaster-grey-100 rounded font-mono text-sm">{member}</span>
+            {/each}
+          </div>
+        {/if}
       </div>
       {#if !readOnly}
         <Button variant="destructive" onclick={deleteKey}>Delete</Button>
       {/if}
     {:else if keyInfo.type === 'hash'}
       <div class="flex-1 flex flex-col gap-2 overflow-auto">
-        <div class="text-sm text-black-400">
-          {keyInfo.length} fields{keyInfo.length && keyInfo.length > 100 ? ' (showing first 100)' : ''}
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-black-400">
+            {keyInfo.length} fields{keyInfo.length && keyInfo.length > 100 ? ' (showing first 100)' : ''}
+          </span>
+          <button
+            type="button"
+            onclick={() => rawView = !rawView}
+            class="px-2 py-1 text-xs rounded bg-alabaster-grey-100 hover:bg-alabaster-grey-200"
+          >
+            {rawView ? 'View as table' : 'View as JSON'}
+          </button>
         </div>
-        <table class="w-full text-sm border-collapse">
-          <thead class="bg-alabaster-grey-50 sticky top-0">
-            <tr>
-              <th class="text-left p-2 border-b">Field</th>
-              <th class="text-left p-2 border-b">Value</th>
-            </tr>
-          </thead>
-          <tbody>
-            {#each Object.entries(asHash()) as [field, val]}
-              <tr class="border-b border-alabaster-grey-100 hover:bg-alabaster-grey-50">
-                <td class="p-2 font-mono text-black-600">{field}</td>
-                <td class="p-2 font-mono break-all">{val}</td>
+        {#if rawView && rawJsonHtml}
+          <div class="flex-1 overflow-auto rounded border border-alabaster-grey-200 [&>pre]:p-4 [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:text-sm">
+            {@html rawJsonHtml}
+          </div>
+        {:else}
+          <table class="w-full text-sm border-collapse">
+            <thead class="bg-alabaster-grey-50 sticky top-0">
+              <tr>
+                <th class="text-left p-2 border-b">Field</th>
+                <th class="text-left p-2 border-b">Value</th>
               </tr>
-            {/each}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {#each Object.entries(asHash()) as [field, val]}
+                <tr class="border-b border-alabaster-grey-100 hover:bg-alabaster-grey-50">
+                  <td class="p-2 font-mono text-black-600 align-top">{field}</td>
+                  <td class="p-2 font-mono break-all">
+                    {#if isJson(val)}
+                      <div class="[&>pre]:p-0 [&>pre]:m-0 [&>pre]:bg-transparent [&>pre]:text-sm">
+                        {@html highlight(val, false)}
+                      </div>
+                    {:else}
+                      {val}
+                    {/if}
+                  </td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        {/if}
       </div>
       {#if !readOnly}
         <Button variant="destructive" onclick={deleteKey}>Delete</Button>
       {/if}
     {:else if keyInfo.type === 'zset'}
       <div class="flex-1 flex flex-col gap-2 overflow-auto">
-        <div class="text-sm text-black-400">
-          {keyInfo.length} members{keyInfo.length && keyInfo.length > 100 ? ' (showing first 100)' : ''}
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-black-400">
+            {keyInfo.length} members{keyInfo.length && keyInfo.length > 100 ? ' (showing first 100)' : ''}
+          </span>
+          <button
+            type="button"
+            onclick={() => rawView = !rawView}
+            class="px-2 py-1 text-xs rounded bg-alabaster-grey-100 hover:bg-alabaster-grey-200"
+          >
+            {rawView ? 'View as table' : 'View as JSON'}
+          </button>
         </div>
-        <table class="w-full text-sm border-collapse">
-          <thead class="bg-alabaster-grey-50 sticky top-0">
-            <tr>
-              <th class="text-left p-2 border-b">Member</th>
-              <th class="text-left p-2 border-b w-24">Score</th>
-            </tr>
-          </thead>
-          <tbody>
-            {#each asZSet() as zitem}
-              <tr class="border-b border-alabaster-grey-100 hover:bg-alabaster-grey-50">
-                <td class="p-2 font-mono break-all">{zitem.member}</td>
-                <td class="p-2 font-mono text-black-600">{zitem.score}</td>
+        {#if rawView && rawJsonHtml}
+          <div class="flex-1 overflow-auto rounded border border-alabaster-grey-200 [&>pre]:p-4 [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:text-sm">
+            {@html rawJsonHtml}
+          </div>
+        {:else}
+          <table class="w-full text-sm border-collapse">
+            <thead class="bg-alabaster-grey-50 sticky top-0">
+              <tr>
+                <th class="text-left p-2 border-b">Member</th>
+                <th class="text-left p-2 border-b w-24">Score</th>
               </tr>
-            {/each}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {#each asZSet() as zitem}
+                <tr class="border-b border-alabaster-grey-100 hover:bg-alabaster-grey-50">
+                  <td class="p-2 font-mono break-all">{zitem.member}</td>
+                  <td class="p-2 font-mono text-black-600">{zitem.score}</td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        {/if}
       </div>
       {#if !readOnly}
         <Button variant="destructive" onclick={deleteKey}>Delete</Button>
       {/if}
     {:else if keyInfo.type === 'stream'}
       <div class="flex-1 flex flex-col gap-2 overflow-auto">
-        <div class="text-sm text-black-400">
-          {keyInfo.length} entries{keyInfo.length && keyInfo.length > 100 ? ' (showing first 100)' : ''}
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-black-400">
+            {keyInfo.length} entries{keyInfo.length && keyInfo.length > 100 ? ' (showing first 100)' : ''}
+          </span>
+          <button
+            type="button"
+            onclick={() => rawView = !rawView}
+            class="px-2 py-1 text-xs rounded bg-alabaster-grey-100 hover:bg-alabaster-grey-200"
+          >
+            {rawView ? 'View as cards' : 'View as JSON'}
+          </button>
         </div>
-        <div class="flex flex-col gap-2">
-          {#each asStream() as entry}
-            <div class="border border-alabaster-grey-200 rounded p-3">
-              <div class="font-mono text-xs text-black-400 mb-2">{entry.id}</div>
-              <div class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-                {#each Object.entries(entry.fields) as [field, val]}
-                  <span class="font-mono text-black-600">{field}</span>
-                  <span class="font-mono break-all">{val}</span>
-                {/each}
+        {#if rawView && rawJsonHtml}
+          <div class="flex-1 overflow-auto rounded border border-alabaster-grey-200 [&>pre]:p-4 [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:text-sm">
+            {@html rawJsonHtml}
+          </div>
+        {:else}
+          <div class="flex flex-col gap-2">
+            {#each asStream() as entry}
+              <div class="border border-alabaster-grey-200 rounded p-3">
+                <div class="font-mono text-xs text-black-400 mb-2">{entry.id}</div>
+                <div class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+                  {#each Object.entries(entry.fields) as [field, val]}
+                    <span class="font-mono text-black-600">{field}</span>
+                    <span class="font-mono break-all">{val}</span>
+                  {/each}
+                </div>
               </div>
-            </div>
-          {/each}
-        </div>
+            {/each}
+          </div>
+        {/if}
       </div>
       {#if !readOnly}
         <Button variant="destructive" onclick={deleteKey}>Delete</Button>
