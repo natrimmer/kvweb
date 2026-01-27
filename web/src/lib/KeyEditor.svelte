@@ -4,6 +4,7 @@
   import { Button } from '$lib/components/ui/button';
   import * as ButtonGroup from '$lib/components/ui/button-group';
   import { Input } from '$lib/components/ui/input';
+  import * as Table from '$lib/components/ui/table';
   import { Textarea } from '$lib/components/ui/textarea';
   import CheckIcon from '@lucide/svelte/icons/check';
   import CopyIcon from '@lucide/svelte/icons/copy';
@@ -392,24 +393,24 @@
             {@html rawJsonHtml}
           </div>
         {:else}
-          <table class="w-full text-sm border-collapse">
-            <thead class="bg-alabaster-grey-50 sticky top-0">
-              <tr>
-                <th class="text-left p-2 border-b w-16">Index</th>
-                <th class="text-left p-2 border-b">Value</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table.Root>
+            <Table.Header>
+              <Table.Row>
+                <Table.Head class="w-16">Index</Table.Head>
+                <Table.Head>Value</Table.Head>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
               {#each asArray() as item, i}
-                <tr class="border-b border-alabaster-grey-100 hover:bg-alabaster-grey-50">
-                  <td class="p-2 text-black-400 font-mono align-top">{i}</td>
-                  <td class="p-2 font-mono">
+                <Table.Row>
+                  <Table.Cell class="text-muted-foreground font-mono align-top">{i}</Table.Cell>
+                  <Table.Cell class="font-mono">
                     <CollapsibleValue value={item} highlight={listHighlights[i]} />
-                  </td>
-                </tr>
+                  </Table.Cell>
+                </Table.Row>
               {/each}
-            </tbody>
-          </table>
+            </Table.Body>
+          </Table.Root>
         {/if}
       </div>
     {:else if keyInfo.type === 'set'}
@@ -459,24 +460,24 @@
             {@html rawJsonHtml}
           </div>
         {:else}
-          <table class="w-full text-sm border-collapse">
-            <thead class="bg-alabaster-grey-50 sticky top-0">
-              <tr>
-                <th class="text-left p-2 border-b">Field</th>
-                <th class="text-left p-2 border-b">Value</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table.Root>
+            <Table.Header>
+              <Table.Row>
+                <Table.Head>Field</Table.Head>
+                <Table.Head>Value</Table.Head>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
               {#each Object.entries(asHash()) as [field, val]}
-                <tr class="border-b border-alabaster-grey-100 hover:bg-alabaster-grey-50">
-                  <td class="p-2 font-mono text-black-600 align-top">{field}</td>
-                  <td class="p-2 font-mono">
+                <Table.Row>
+                  <Table.Cell class="font-mono text-muted-foreground align-top">{field}</Table.Cell>
+                  <Table.Cell class="font-mono">
                     <CollapsibleValue value={val} highlight={isJson(val) ? highlightJson(val, false) : undefined} />
-                  </td>
-                </tr>
+                  </Table.Cell>
+                </Table.Row>
               {/each}
-            </tbody>
-          </table>
+            </Table.Body>
+          </Table.Root>
         {/if}
       </div>
     {:else if keyInfo.type === 'zset'}
@@ -498,24 +499,24 @@
             {@html rawJsonHtml}
           </div>
         {:else}
-          <table class="w-full text-sm border-collapse">
-            <thead class="bg-alabaster-grey-50 sticky top-0">
-              <tr>
-                <th class="text-left p-2 border-b">Member</th>
-                <th class="text-left p-2 border-b w-24">Score</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table.Root>
+            <Table.Header>
+              <Table.Row>
+                <Table.Head>Member</Table.Head>
+                <Table.Head class="w-24">Score</Table.Head>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
               {#each asZSet() as zitem}
-                <tr class="border-b border-alabaster-grey-100 hover:bg-alabaster-grey-50">
-                  <td class="p-2 font-mono">
+                <Table.Row>
+                  <Table.Cell class="font-mono">
                     <CollapsibleValue value={zitem.member} />
-                  </td>
-                  <td class="p-2 font-mono text-black-600">{zitem.score}</td>
-                </tr>
+                  </Table.Cell>
+                  <Table.Cell class="font-mono text-muted-foreground">{zitem.score}</Table.Cell>
+                </Table.Row>
               {/each}
-            </tbody>
-          </table>
+            </Table.Body>
+          </Table.Root>
         {/if}
       </div>
     {:else if keyInfo.type === 'stream'}
