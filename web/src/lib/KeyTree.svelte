@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Badge } from '$lib/components/ui/badge';
   import { Button } from '$lib/components/ui/button';
+  import { Dot, Folder, House, List, MoveLeft } from '@lucide/svelte';
   import { api, type PrefixEntry } from './api';
 
   interface Props {
@@ -70,10 +71,10 @@
   <div class="flex items-center gap-2">
     {#if currentPrefix}
       <Button variant="ghost" size="sm" onclick={navigateBack} class="px-2">
-        ←
+        <MoveLeft size={16}/>
       </Button>
       <Button variant="ghost" size="sm" onclick={navigateToRoot} class="px-2">
-        ⌂
+        <House size={16}/>
       </Button>
       <span class="font-mono text-sm text-black-600 truncate flex-1">{currentPrefix}</span>
     {:else}
@@ -83,9 +84,9 @@
       type="button"
       onclick={onclose}
       class="px-3 py-1 border border-alabaster-grey-200 rounded text-sm bg-white hover:bg-alabaster-grey-50 font-mono"
-      title="List view"
+      title="Switch to list view"
     >
-      ≡
+      <List size={18}/>
     </button>
   </div>
 
@@ -102,7 +103,13 @@
             class="w-full justify-start p-2 text-black-950 font-mono text-sm rounded hover:bg-crayola-blue-200 {entry.isLeaf && entry.fullKey === selected ? 'bg-crayola-blue-100 hover:bg-crayola-blue-100' : ''}"
             onclick={() => handleClick(entry)}
           >
-            <span class="mr-2 text-black-400">{entry.isLeaf ? '─' : '▸'}</span>
+            <span class="text-black-400">
+                {#if entry.isLeaf}
+                    <Dot size={16}/>
+                {:else if !entry.isLeaf}
+                    <Folder size={16}/>
+                {/if}
+            </span>
             <span class="flex-1 overflow-hidden text-ellipsis text-left">{displayName(entry)}</span>
             {#if entry.isLeaf && entry.type}
               <Badge variant="secondary" class="ml-2 text-xs opacity-60">{entry.type}</Badge>

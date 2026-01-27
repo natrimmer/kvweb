@@ -2,6 +2,7 @@
   import { Badge } from '$lib/components/ui/badge';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
+  import { ListTree, Regex, X } from "@lucide/svelte";
   import { onMount } from 'svelte';
   import { api, type KeyMeta } from './api';
   import KeyTree from './KeyTree.svelte';
@@ -257,7 +258,7 @@
                   class="px-2 py-1 text-black-300 hover:text-scarlet-rush-500 opacity-0 group-hover:opacity-100"
                   onmousedown={() => removeFromHistory(h)}
                 >
-                  ×
+                  <X size={14}/>
                 </button>
               </div>
             {/each}
@@ -270,15 +271,15 @@
         class="px-3 py-2 border rounded text-sm font-mono {useRegex ? 'bg-crayola-blue-100 border-crayola-blue-300 text-crayola-blue-700' : 'border-alabaster-grey-200 bg-white hover:bg-alabaster-grey-50'}"
         title={useRegex ? 'Regex mode (click for glob)' : 'Glob mode (click for regex)'}
       >
-        .*
+        <Regex size={18}/>
       </button>
       <button
         type="button"
         onclick={() => viewMode = 'tree'}
         class="px-3 py-2 border border-alabaster-grey-200 rounded text-sm bg-white hover:bg-alabaster-grey-50 font-mono"
-        title="Tree view"
+        title="Switch to tree view"
       >
-        ▸
+        <ListTree size={18}/>
       </button>
     </div>
     {#if regexError}
