@@ -10,14 +10,27 @@ export interface StreamEntry {
   fields: Record<string, string>
 }
 
+export interface HashPair {
+  field: string
+  value: string
+}
+
+export interface PaginationInfo {
+  page: number
+  pageSize: number
+  total: number
+  hasMore: boolean
+}
+
 export type KeyType = 'string' | 'list' | 'set' | 'hash' | 'zset' | 'stream'
 
 export interface KeyInfo {
   key: string
   type: KeyType
-  value: string | string[] | Record<string, string> | ZSetMember[] | StreamEntry[]
+  value: string | string[] | HashPair[] | Record<string, string> | ZSetMember[] | StreamEntry[]
   ttl: number
   length?: number
+  pagination?: PaginationInfo
 }
 
 export interface ServerInfo {
@@ -94,8 +107,13 @@ export const api = {
     return request(`/prefixes?prefix=${encodeURIComponent(prefix)}&delimiter=${encodeURIComponent(delimiter)}`)
   },
 
-  getKey(key: string): Promise<KeyInfo> {
-    return request(`/key/${encodeURIComponent(key)}`)
+  getKey(key: string, page?: number, pageSize?: number): Promise<KeyInfo> {
+    let url = `/key/${encodeURIComponent(key)}`
+    const params = new URLSearchParams()
+    if (page !== undefined) params.set('page', page.toString())
+    if (pageSize !== undefined) params.set('pageSize', pageSize.toString())
+    if (params.toString()) url += `?${params.toString()}`
+    return request(url)
   },
 
   setKey(key: string, value: string, ttl = 0): Promise<void> {

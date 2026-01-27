@@ -337,12 +337,29 @@ func (h *Handler) handlePrefixes(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-const maxItems = 100 // limit items returned for large collections
+const defaultPageSize = 100 // default page size for collections
 
 func (h *Handler) handleGetKey(w http.ResponseWriter, r *http.Request) {
 	key := r.PathValue("key")
 	if h.checkKeyPrefix(w, key) {
 		return
+	}
+
+	// Parse pagination params
+	pageStr := r.URL.Query().Get("page")
+	page := int64(1)
+	if pageStr != "" {
+		if p, err := strconv.ParseInt(pageStr, 10, 64); err == nil && p > 0 {
+			page = p
+		}
+	}
+
+	pageSizeStr := r.URL.Query().Get("pageSize")
+	pageSize := int64(defaultPageSize)
+	if pageSizeStr != "" {
+		if ps, err := strconv.ParseInt(pageSizeStr, 10, 64); err == nil && ps > 0 && ps <= 1000 {
+			pageSize = ps
+		}
 	}
 
 	keyType, err := h.client.Type(r.Context(), key)
@@ -361,25 +378,148 @@ func (h *Handler) handleGetKey(w http.ResponseWriter, r *http.Request) {
 
 	var value any
 	var length int64
+	var pagination map[string]any
 
 	switch keyType {
 	case "string":
 		value, err = h.client.Get(ctx, key)
 	case "list":
 		length, _ = h.client.LLen(ctx, key)
-		value, err = h.client.LRange(ctx, key, 0, maxItems-1)
+		start := (page - 1) * pageSize
+		stop := start + pageSize - 1
+		value, err = h.client.LRange(ctx, key, start, stop)
+		if err == nil {
+			pagination = map[string]any{
+				"page":     page,
+				"pageSize": pageSize,
+				"total":    length,
+				"hasMore":  stop < length-1,
+			}
+		}
 	case "set":
 		length, _ = h.client.SCard(ctx, key)
-		value, err = h.client.SMembers(ctx, key)
+		// For sets, we use cursor-based pagination
+		// We need to scan through pages to get to the requested page
+		cursor := uint64(0)
+		var allMembers []string
+		membersNeeded := page * pageSize
+
+		for {
+			members, nextCursor, scanErr := h.client.SScan(ctx, key, cursor, pageSize)
+			if scanErr != nil {
+				err = scanErr
+				break
+			}
+			allMembers = append(allMembers, members...)
+			cursor = nextCursor
+
+			// Stop if we have enough members or reached the end
+			if int64(len(allMembers)) >= membersNeeded || cursor == 0 {
+				break
+			}
+		}
+
+		if err == nil {
+			start := (page - 1) * pageSize
+			end := start + pageSize
+			if start < int64(len(allMembers)) {
+				if end > int64(len(allMembers)) {
+					end = int64(len(allMembers))
+				}
+				value = allMembers[start:end]
+			} else {
+				value = []string{}
+			}
+			pagination = map[string]any{
+				"page":     page,
+				"pageSize": pageSize,
+				"total":    length,
+				"hasMore":  cursor != 0 || end < int64(len(allMembers)),
+			}
+		}
 	case "hash":
 		length, _ = h.client.HLen(ctx, key)
-		value, err = h.client.HGetAll(ctx, key)
+		// For hashes, we use cursor-based pagination similar to sets
+		cursor := uint64(0)
+		allFields := make(map[string]string)
+		fieldsNeeded := page * pageSize
+
+		for {
+			fields, nextCursor, scanErr := h.client.HScan(ctx, key, cursor, pageSize)
+			if scanErr != nil {
+				err = scanErr
+				break
+			}
+			for k, v := range fields {
+				allFields[k] = v
+			}
+			cursor = nextCursor
+
+			// Stop if we have enough fields or reached the end
+			if int64(len(allFields)) >= fieldsNeeded || cursor == 0 {
+				break
+			}
+		}
+
+		if err == nil {
+			// Convert to slice of key-value pairs for pagination
+			type hashPair struct {
+				Field string `json:"field"`
+				Value string `json:"value"`
+			}
+			var allPairs []hashPair
+			for field, val := range allFields {
+				allPairs = append(allPairs, hashPair{Field: field, Value: val})
+			}
+			// Sort by field name for consistent ordering
+			sort.Slice(allPairs, func(i, j int) bool {
+				return allPairs[i].Field < allPairs[j].Field
+			})
+
+			start := (page - 1) * pageSize
+			end := start + pageSize
+			if start < int64(len(allPairs)) {
+				if end > int64(len(allPairs)) {
+					end = int64(len(allPairs))
+				}
+				value = allPairs[start:end]
+			} else {
+				value = []hashPair{}
+			}
+			pagination = map[string]any{
+				"page":     page,
+				"pageSize": pageSize,
+				"total":    length,
+				"hasMore":  cursor != 0 || end < int64(len(allPairs)),
+			}
+		}
 	case "zset":
 		length, _ = h.client.ZCard(ctx, key)
-		value, err = h.client.ZRangeWithScores(ctx, key, 0, maxItems-1)
+		start := (page - 1) * pageSize
+		stop := start + pageSize - 1
+		value, err = h.client.ZRangeWithScores(ctx, key, start, stop)
+		if err == nil {
+			pagination = map[string]any{
+				"page":     page,
+				"pageSize": pageSize,
+				"total":    length,
+				"hasMore":  stop < length-1,
+			}
+		}
 	case "stream":
 		length, _ = h.client.XLen(ctx, key)
-		value, err = h.client.XRange(ctx, key, "-", "+", maxItems)
+		// Streams are append-only and ordered by ID, we use count for pagination
+		// For now, we'll just use the count parameter (simple pagination)
+		// A more sophisticated approach would track stream IDs for cursor-based pagination
+		value, err = h.client.XRange(ctx, key, "-", "+", pageSize)
+		if err == nil {
+			pagination = map[string]any{
+				"page":     page,
+				"pageSize": pageSize,
+				"total":    length,
+				"hasMore":  length > pageSize,
+			}
+		}
 	default:
 		value = "(unsupported type)"
 	}
@@ -398,6 +538,10 @@ func (h *Handler) handleGetKey(w http.ResponseWriter, r *http.Request) {
 
 	if length > 0 {
 		resp["length"] = length
+	}
+
+	if pagination != nil {
+		resp["pagination"] = pagination
 	}
 
 	jsonResponse(w, resp)

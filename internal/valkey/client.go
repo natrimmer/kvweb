@@ -164,6 +164,16 @@ func (c *Client) SMembers(ctx context.Context, key string) ([]string, error) {
 	return c.client.Do(ctx, c.client.B().Smembers().Key(key).Build()).AsStrSlice()
 }
 
+// SScan returns members of a set using cursor-based pagination
+func (c *Client) SScan(ctx context.Context, key string, cursor uint64, count int64) ([]string, uint64, error) {
+	result := c.client.Do(ctx, c.client.B().Sscan().Key(key).Cursor(cursor).Count(count).Build())
+	entry, err := result.AsScanEntry()
+	if err != nil {
+		return nil, 0, err
+	}
+	return entry.Elements, entry.Cursor, nil
+}
+
 // Hash operations
 
 // HLen returns the number of fields in a hash
@@ -174,6 +184,23 @@ func (c *Client) HLen(ctx context.Context, key string) (int64, error) {
 // HGetAll returns all fields and values in a hash
 func (c *Client) HGetAll(ctx context.Context, key string) (map[string]string, error) {
 	return c.client.Do(ctx, c.client.B().Hgetall().Key(key).Build()).AsStrMap()
+}
+
+// HScan returns fields and values of a hash using cursor-based pagination
+func (c *Client) HScan(ctx context.Context, key string, cursor uint64, count int64) (map[string]string, uint64, error) {
+	result := c.client.Do(ctx, c.client.B().Hscan().Key(key).Cursor(cursor).Count(count).Build())
+	entry, err := result.AsScanEntry()
+	if err != nil {
+		return nil, 0, err
+	}
+	// Convert flat slice [field1, value1, field2, value2, ...] to map
+	m := make(map[string]string)
+	for i := 0; i < len(entry.Elements); i += 2 {
+		if i+1 < len(entry.Elements) {
+			m[entry.Elements[i]] = entry.Elements[i+1]
+		}
+	}
+	return m, entry.Cursor, nil
 }
 
 // Sorted set operations

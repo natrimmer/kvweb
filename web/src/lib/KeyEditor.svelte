@@ -7,9 +7,13 @@
   import * as Table from '$lib/components/ui/table';
   import { Textarea } from '$lib/components/ui/textarea';
   import CheckIcon from '@lucide/svelte/icons/check';
+  import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
+  import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
+  import ChevronsLeftIcon from '@lucide/svelte/icons/chevrons-left';
+  import ChevronsRightIcon from '@lucide/svelte/icons/chevrons-right';
   import CopyIcon from '@lucide/svelte/icons/copy';
   import { toast } from 'svelte-sonner';
-  import { api, type KeyInfo, type StreamEntry, type ZSetMember } from './api';
+  import { api, type HashPair, type KeyInfo, type StreamEntry, type ZSetMember } from './api';
   import CollapsibleValue from './CollapsibleValue.svelte';
   import { copyToClipboard, deleteOps, formatTtl, getErrorMessage, highlightJson, modifyOps, toastError } from './utils';
   import { ws } from './ws';
@@ -40,6 +44,10 @@
 
   // Raw view toggle for complex types
   let rawView = $state(false)
+
+  // Pagination state
+  let currentPage = $state(1)
+  let pageSize = $state(100)
 
   // External modification detection
   let externallyModified = $state(false)
@@ -99,10 +107,9 @@
   function asArray(): string[] {
     return Array.isArray(keyInfo?.value) ? keyInfo.value as string[] : []
   }
-  function asHash(): Record<string, string> {
-    return keyInfo?.value && typeof keyInfo.value === 'object' && !Array.isArray(keyInfo.value)
-      ? keyInfo.value as Record<string, string>
-      : {}
+  function asHash(): HashPair[] {
+    // Backend now returns array of {field, value} pairs for pagination
+    return Array.isArray(keyInfo?.value) ? keyInfo.value as HashPair[] : []
   }
   function asZSet(): ZSetMember[] {
     return Array.isArray(keyInfo?.value) ? keyInfo.value as ZSetMember[] : []
@@ -168,7 +175,14 @@
     return highlightJson(JSON.stringify(keyInfo.value, null, 2), true)
   })
 
+  let previousKey = $state<string | null>(null)
+
   $effect(() => {
+    // Reset to page 1 only when key changes (not on pagination)
+    if (previousKey !== key) {
+      currentPage = 1
+      previousKey = key
+    }
     loadKey(key)
     // Reset external modification state when key changes
     externallyModified = false
@@ -202,7 +216,8 @@
     error = ''
     stopTtlCountdown()
     try {
-      keyInfo = await api.getKey(k)
+      // Always fetch with pagination params - backend will add metadata only for complex types
+      keyInfo = await api.getKey(k, currentPage, pageSize)
       editValue = typeof keyInfo.value === 'string' ? keyInfo.value : JSON.stringify(keyInfo.value, null, 2)
       editTtl = keyInfo.ttl > 0 ? String(keyInfo.ttl) : ''
       startTtlCountdown(keyInfo.ttl)
@@ -213,6 +228,28 @@
       loading = false
     }
   }
+
+  function goToPage(page: number) {
+    currentPage = page
+    loadKey(key)
+  }
+
+  function changePageSize(newSize: number) {
+    pageSize = newSize
+    currentPage = 1 // Reset to first page when changing page size
+    loadKey(key)
+  }
+
+  // Computed pagination info
+  let totalPages = $derived(
+    keyInfo?.pagination ? Math.ceil(keyInfo.pagination.total / keyInfo.pagination.pageSize) : 0
+  )
+  let showingStart = $derived(
+    keyInfo?.pagination ? (keyInfo.pagination.page - 1) * keyInfo.pagination.pageSize + 1 : 0
+  )
+  let showingEnd = $derived(
+    keyInfo?.pagination ? Math.min(keyInfo.pagination.page * keyInfo.pagination.pageSize, keyInfo.pagination.total) : 0
+  )
 
   async function saveValue() {
     if (!keyInfo) return
@@ -364,9 +401,78 @@
       </div>
     {:else if keyInfo.type === 'list'}
       <div class="flex-1 flex flex-col gap-2 overflow-auto">
+        {#if keyInfo.pagination}
+          <div class="flex items-center justify-between gap-4 pb-2 border-b border-border">
+            <span class="text-sm text-muted-foreground">
+              Showing {showingStart}–{showingEnd} of {keyInfo.pagination.total} items
+            </span>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-muted-foreground">Page size:</span>
+              <select
+                bind:value={pageSize}
+                onchange={(e) => changePageSize(Number(e.currentTarget.value))}
+                class="px-2 py-1 text-xs rounded border border-border bg-background cursor-pointer"
+              >
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+                <option value={200}>200</option>
+                <option value={500}>500</option>
+              </select>
+              <div class="flex gap-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onclick={() => goToPage(1)}
+                  disabled={currentPage === 1}
+                  class="cursor-pointer h-8 w-8 p-0"
+                  title="First page"
+                >
+                  <ChevronsLeftIcon class="w-4 h-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onclick={() => goToPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  class="cursor-pointer h-8 w-8 p-0"
+                  title="Previous page"
+                >
+                  <ChevronLeftIcon class="w-4 h-4" />
+                </Button>
+                <span class="px-3 py-1 text-sm flex items-center">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onclick={() => goToPage(currentPage + 1)}
+                  disabled={currentPage >= totalPages}
+                  class="cursor-pointer h-8 w-8 p-0"
+                  title="Next page"
+                >
+                  <ChevronRightIcon class="w-4 h-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onclick={() => goToPage(totalPages)}
+                  disabled={currentPage >= totalPages}
+                  class="cursor-pointer h-8 w-8 p-0"
+                  title="Last page"
+                >
+                  <ChevronsRightIcon class="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        {/if}
         <div class="flex items-center justify-between">
           <span class="text-sm text-muted-foreground">
-            {keyInfo.length} items{keyInfo.length && keyInfo.length > 100 ? ' (showing first 100)' : ''}
+            {#if keyInfo.pagination}
+              {keyInfo.pagination.total} items total
+            {:else}
+              {keyInfo.length} items
+            {/if}
           </span>
           <div class="flex gap-1 items-center">
             {#if !rawView && Object.keys(listHighlights).length > 0}
@@ -416,9 +522,48 @@
       </div>
     {:else if keyInfo.type === 'set'}
       <div class="flex-1 flex flex-col gap-2 overflow-auto">
+        {#if keyInfo.pagination}
+          <div class="flex items-center justify-between gap-4 pb-2 border-b border-border">
+            <span class="text-sm text-muted-foreground">
+              Showing {showingStart}–{showingEnd} of {keyInfo.pagination.total} members
+            </span>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-muted-foreground">Page size:</span>
+              <select
+                bind:value={pageSize}
+                onchange={(e) => changePageSize(Number(e.currentTarget.value))}
+                class="px-2 py-1 text-xs rounded border border-border bg-background cursor-pointer"
+              >
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+                <option value={200}>200</option>
+                <option value={500}>500</option>
+              </select>
+              <div class="flex gap-1">
+                <Button size="sm" variant="outline" onclick={() => goToPage(1)} disabled={currentPage === 1} class="cursor-pointer h-8 w-8 p-0" title="First page">
+                  <ChevronsLeftIcon class="w-4 h-4" />
+                </Button>
+                <Button size="sm" variant="outline" onclick={() => goToPage(currentPage - 1)} disabled={currentPage === 1} class="cursor-pointer h-8 w-8 p-0" title="Previous page">
+                  <ChevronLeftIcon class="w-4 h-4" />
+                </Button>
+                <span class="px-3 py-1 text-sm flex items-center">Page {currentPage} of {totalPages}</span>
+                <Button size="sm" variant="outline" onclick={() => goToPage(currentPage + 1)} disabled={currentPage >= totalPages} class="cursor-pointer h-8 w-8 p-0" title="Next page">
+                  <ChevronRightIcon class="w-4 h-4" />
+                </Button>
+                <Button size="sm" variant="outline" onclick={() => goToPage(totalPages)} disabled={currentPage >= totalPages} class="cursor-pointer h-8 w-8 p-0" title="Last page">
+                  <ChevronsRightIcon class="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        {/if}
         <div class="flex items-center justify-between">
           <span class="text-sm text-muted-foreground">
-            {keyInfo.length} members{keyInfo.length && keyInfo.length > 100 ? ' (showing first 100)' : ''}
+            {#if keyInfo.pagination}
+              {keyInfo.pagination.total} members total
+            {:else}
+              {keyInfo.length} members
+            {/if}
           </span>
           <div class="flex gap-1 items-center">
             <button
@@ -447,9 +592,48 @@
       </div>
     {:else if keyInfo.type === 'hash'}
       <div class="flex-1 flex flex-col gap-2 overflow-auto">
+        {#if keyInfo.pagination}
+          <div class="flex items-center justify-between gap-4 pb-2 border-b border-border">
+            <span class="text-sm text-muted-foreground">
+              Showing {showingStart}–{showingEnd} of {keyInfo.pagination.total} fields
+            </span>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-muted-foreground">Page size:</span>
+              <select
+                bind:value={pageSize}
+                onchange={(e) => changePageSize(Number(e.currentTarget.value))}
+                class="px-2 py-1 text-xs rounded border border-border bg-background cursor-pointer"
+              >
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+                <option value={200}>200</option>
+                <option value={500}>500</option>
+              </select>
+              <div class="flex gap-1">
+                <Button size="sm" variant="outline" onclick={() => goToPage(1)} disabled={currentPage === 1} class="cursor-pointer h-8 w-8 p-0" title="First page">
+                  <ChevronsLeftIcon class="w-4 h-4" />
+                </Button>
+                <Button size="sm" variant="outline" onclick={() => goToPage(currentPage - 1)} disabled={currentPage === 1} class="cursor-pointer h-8 w-8 p-0" title="Previous page">
+                  <ChevronLeftIcon class="w-4 h-4" />
+                </Button>
+                <span class="px-3 py-1 text-sm flex items-center">Page {currentPage} of {totalPages}</span>
+                <Button size="sm" variant="outline" onclick={() => goToPage(currentPage + 1)} disabled={currentPage >= totalPages} class="cursor-pointer h-8 w-8 p-0" title="Next page">
+                  <ChevronRightIcon class="w-4 h-4" />
+                </Button>
+                <Button size="sm" variant="outline" onclick={() => goToPage(totalPages)} disabled={currentPage >= totalPages} class="cursor-pointer h-8 w-8 p-0" title="Last page">
+                  <ChevronsRightIcon class="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        {/if}
         <div class="flex items-center justify-between">
           <span class="text-sm text-muted-foreground">
-            {keyInfo.length} fields{keyInfo.length && keyInfo.length > 100 ? ' (showing first 100)' : ''}
+            {#if keyInfo.pagination}
+              {keyInfo.pagination.total} fields total
+            {:else}
+              {keyInfo.length} fields
+            {/if}
           </span>
           <div class="flex gap-1 items-center">
             <button
@@ -475,11 +659,11 @@
               </Table.Row>
             </Table.Header>
             <Table.Body>
-              {#each Object.entries(asHash()) as [field, val]}
+              {#each asHash() as { field, value }}
                 <Table.Row>
                   <Table.Cell class="font-mono text-muted-foreground align-top">{field}</Table.Cell>
                   <Table.Cell class="font-mono">
-                    <CollapsibleValue value={val} highlight={isJson(val) ? highlightJson(val, false) : undefined} />
+                    <CollapsibleValue value={value} highlight={isJson(value) ? highlightJson(value, false) : undefined} />
                   </Table.Cell>
                 </Table.Row>
               {/each}
@@ -489,9 +673,48 @@
       </div>
     {:else if keyInfo.type === 'zset'}
       <div class="flex-1 flex flex-col gap-2 overflow-auto">
+        {#if keyInfo.pagination}
+          <div class="flex items-center justify-between gap-4 pb-2 border-b border-border">
+            <span class="text-sm text-muted-foreground">
+              Showing {showingStart}–{showingEnd} of {keyInfo.pagination.total} members
+            </span>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-muted-foreground">Page size:</span>
+              <select
+                bind:value={pageSize}
+                onchange={(e) => changePageSize(Number(e.currentTarget.value))}
+                class="px-2 py-1 text-xs rounded border border-border bg-background cursor-pointer"
+              >
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                  <option value={200}>200</option>
+                  <option value={500}>500</option>
+              </select>
+              <div class="flex gap-1">
+                <Button size="sm" variant="outline" onclick={() => goToPage(1)} disabled={currentPage === 1} class="cursor-pointer h-8 w-8 p-0" title="First page">
+                  <ChevronsLeftIcon class="w-4 h-4" />
+                </Button>
+                <Button size="sm" variant="outline" onclick={() => goToPage(currentPage - 1)} disabled={currentPage === 1} class="cursor-pointer h-8 w-8 p-0" title="Previous page">
+                  <ChevronLeftIcon class="w-4 h-4" />
+                </Button>
+                <span class="px-3 py-1 text-sm flex items-center">Page {currentPage} of {totalPages}</span>
+                <Button size="sm" variant="outline" onclick={() => goToPage(currentPage + 1)} disabled={currentPage >= totalPages} class="cursor-pointer h-8 w-8 p-0" title="Next page">
+                  <ChevronRightIcon class="w-4 h-4" />
+                </Button>
+                <Button size="sm" variant="outline" onclick={() => goToPage(totalPages)} disabled={currentPage >= totalPages} class="cursor-pointer h-8 w-8 p-0" title="Last page">
+                  <ChevronsRightIcon class="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        {/if}
         <div class="flex items-center justify-between">
           <span class="text-sm text-muted-foreground">
-            {keyInfo.length} members{keyInfo.length && keyInfo.length > 100 ? ' (showing first 100)' : ''}
+            {#if keyInfo.pagination}
+              {keyInfo.pagination.total} members total
+            {:else}
+              {keyInfo.length} members
+            {/if}
           </span>
           <div class="flex gap-1 items-center">
             <button
@@ -531,9 +754,48 @@
       </div>
     {:else if keyInfo.type === 'stream'}
       <div class="flex-1 flex flex-col gap-2 overflow-auto">
+        {#if keyInfo.pagination}
+          <div class="flex items-center justify-between gap-4 pb-2 border-b border-border">
+            <span class="text-sm text-muted-foreground">
+              Showing {showingStart}–{showingEnd} of {keyInfo.pagination.total} entries
+            </span>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-muted-foreground">Page size:</span>
+              <select
+                bind:value={pageSize}
+                onchange={(e) => changePageSize(Number(e.currentTarget.value))}
+                class="px-2 py-1 text-xs rounded border border-border bg-background cursor-pointer"
+              >
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+                <option value={200}>200</option>
+                <option value={500}>500</option>
+              </select>
+              <div class="flex gap-1">
+                <Button size="sm" variant="outline" onclick={() => goToPage(1)} disabled={currentPage === 1} class="cursor-pointer h-8 w-8 p-0" title="First page">
+                  <ChevronsLeftIcon class="w-4 h-4" />
+                </Button>
+                <Button size="sm" variant="outline" onclick={() => goToPage(currentPage - 1)} disabled={currentPage === 1} class="cursor-pointer h-8 w-8 p-0" title="Previous page">
+                  <ChevronLeftIcon class="w-4 h-4" />
+                </Button>
+                <span class="px-3 py-1 text-sm flex items-center">Page {currentPage} of {totalPages}</span>
+                <Button size="sm" variant="outline" onclick={() => goToPage(currentPage + 1)} disabled={currentPage >= totalPages} class="cursor-pointer h-8 w-8 p-0" title="Next page">
+                  <ChevronRightIcon class="w-4 h-4" />
+                </Button>
+                <Button size="sm" variant="outline" onclick={() => goToPage(totalPages)} disabled={currentPage >= totalPages} class="cursor-pointer h-8 w-8 p-0" title="Last page">
+                  <ChevronsRightIcon class="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        {/if}
         <div class="flex items-center justify-between">
           <span class="text-sm text-muted-foreground">
-            {keyInfo.length} entries{keyInfo.length && keyInfo.length > 100 ? ' (showing first 100)' : ''}
+            {#if keyInfo.pagination}
+              {keyInfo.pagination.total} entries total
+            {:else}
+              {keyInfo.length} entries
+            {/if}
           </span>
           <div class="flex gap-1 items-center">
             <button
