@@ -33,7 +33,9 @@ func NewClient(hub *Hub, conn *websocket.Conn) *Client {
 
 // WritePump pumps messages from the hub to the WebSocket connection
 func (c *Client) WritePump(ctx context.Context) {
-	defer c.conn.CloseNow()
+	defer func() {
+		_ = c.conn.CloseNow()
+	}()
 
 	for {
 		select {

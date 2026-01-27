@@ -70,13 +70,17 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func jsonResponse(w http.ResponseWriter, data any) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(data)
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+	}
 }
 
 func jsonError(w http.ResponseWriter, message string, code int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
-	json.NewEncoder(w).Encode(map[string]string{"error": message})
+	if err := json.NewEncoder(w).Encode(map[string]string{"error": message}); err != nil {
+		http.Error(w, "Failed to encode error response", http.StatusInternalServerError)
+	}
 }
 
 // checkReadOnly returns true and sends an error response if in readonly mode
@@ -238,11 +242,11 @@ func (h *Handler) handleKeys(w http.ResponseWriter, r *http.Request) {
 }
 
 type prefixEntry struct {
-	Prefix   string `json:"prefix"`
-	Count    int    `json:"count"`
-	IsLeaf   bool   `json:"isLeaf"`
-	FullKey  string `json:"fullKey,omitempty"`
-	KeyType  string `json:"type,omitempty"`
+	Prefix  string `json:"prefix"`
+	Count   int    `json:"count"`
+	IsLeaf  bool   `json:"isLeaf"`
+	FullKey string `json:"fullKey,omitempty"`
+	KeyType string `json:"type,omitempty"`
 }
 
 func (h *Handler) handlePrefixes(w http.ResponseWriter, r *http.Request) {

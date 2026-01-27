@@ -58,7 +58,9 @@ func main() {
 	go func() {
 		<-stop
 		log.Println("Shutting down...")
-		srv.Shutdown()
+		if err := srv.Shutdown(); err != nil {
+			log.Fatalf("Error during shutdown: %v", err)
+		}
 	}()
 
 	log.Printf("Connected to Valkey at %s", cfg.ValkeyURL)
