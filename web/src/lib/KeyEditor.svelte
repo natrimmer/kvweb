@@ -351,24 +351,32 @@
       </div>
     {/if}
 
-    <div class="p-4 bg-alabaster-grey-50 rounded">
-      <div class="flex items-center gap-4">
-        <label class="flex items-center gap-2">
-          TTL:
-          {#if readOnly}
-            <span class="text-black-400 text-sm">{formatTtl(liveTtl ?? keyInfo.ttl)}</span>
-          {:else}
-            <Input
-              type="number"
-              bind:value={editTtl}
-              placeholder="seconds (empty = no expiry)"
-              class="w-37.5"
-            />
-            <Button variant="secondary" onclick={updateTtl}>Set TTL</Button>
-            <span class="text-black-400 text-sm">{formatTtl(liveTtl ?? keyInfo.ttl)}</span>
+    <div class="p-3 bg-alabaster-grey-50 rounded flex items-center justify-between gap-4">
+      <label class="flex items-center gap-2">
+        <span class="text-sm">TTL:</span>
+        {#if readOnly}
+          <span class="text-black-400 text-sm">{formatTtl(liveTtl ?? keyInfo.ttl)}</span>
+        {:else}
+          <Input
+            type="number"
+            bind:value={editTtl}
+            placeholder="seconds"
+            class="w-25"
+          />
+          <Button variant="secondary" size="sm" onclick={updateTtl}>Set</Button>
+          <span class="text-black-400 text-sm">{formatTtl(liveTtl ?? keyInfo.ttl)}</span>
+        {/if}
+      </label>
+      {#if !readOnly}
+        <div class="flex gap-2">
+          {#if keyInfo.type === 'string'}
+            <Button size="sm" onclick={saveValue} disabled={saving}>
+              {saving ? 'Saving...' : 'Save'}
+            </Button>
           {/if}
-        </label>
-      </div>
+          <Button variant="destructive" size="sm" onclick={openDeleteDialog}>Delete</Button>
+        </div>
+      {/if}
     </div>
 
     {#if keyInfo.type === 'string'}
@@ -400,15 +408,6 @@
           />
         {/if}
       </div>
-
-      {#if !readOnly}
-        <div class="flex gap-2">
-          <Button onclick={saveValue} disabled={saving}>
-            {saving ? 'Saving...' : 'Save'}
-          </Button>
-          <Button variant="destructive" onclick={openDeleteDialog}>Delete</Button>
-        </div>
-      {/if}
     {:else if keyInfo.type === 'list'}
       <div class="flex-1 flex flex-col gap-2 overflow-auto">
         <div class="flex items-center justify-between">
@@ -460,9 +459,6 @@
           </table>
         {/if}
       </div>
-      {#if !readOnly}
-        <Button variant="destructive" onclick={openDeleteDialog}>Delete</Button>
-      {/if}
     {:else if keyInfo.type === 'set'}
       <div class="flex-1 flex flex-col gap-2 overflow-auto">
         <div class="flex items-center justify-between">
@@ -491,9 +487,6 @@
           </div>
         {/if}
       </div>
-      {#if !readOnly}
-        <Button variant="destructive" onclick={openDeleteDialog}>Delete</Button>
-      {/if}
     {:else if keyInfo.type === 'hash'}
       <div class="flex-1 flex flex-col gap-2 overflow-auto">
         <div class="flex items-center justify-between">
@@ -533,9 +526,6 @@
           </table>
         {/if}
       </div>
-      {#if !readOnly}
-        <Button variant="destructive" onclick={openDeleteDialog}>Delete</Button>
-      {/if}
     {:else if keyInfo.type === 'zset'}
       <div class="flex-1 flex flex-col gap-2 overflow-auto">
         <div class="flex items-center justify-between">
@@ -575,9 +565,6 @@
           </table>
         {/if}
       </div>
-      {#if !readOnly}
-        <Button variant="destructive" onclick={openDeleteDialog}>Delete</Button>
-      {/if}
     {:else if keyInfo.type === 'stream'}
       <div class="flex-1 flex flex-col gap-2 overflow-auto">
         <div class="flex items-center justify-between">
@@ -614,16 +601,10 @@
           </div>
         {/if}
       </div>
-      {#if !readOnly}
-        <Button variant="destructive" onclick={openDeleteDialog}>Delete</Button>
-      {/if}
     {:else}
       <div class="flex flex-col gap-4">
         <p>Unknown type: {keyInfo.type}</p>
         <pre class="bg-alabaster-grey-50 p-4 rounded overflow-auto font-mono text-sm">{JSON.stringify(keyInfo.value, null, 2)}</pre>
-        {#if !readOnly}
-          <Button variant="destructive" onclick={openDeleteDialog}>Delete</Button>
-        {/if}
       </div>
     {/if}
 
