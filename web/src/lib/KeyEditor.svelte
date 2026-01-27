@@ -341,10 +341,10 @@
             <button
               type="button"
               onclick={() => prettyPrint = !prettyPrint}
-              class="px-2 py-1 text-xs rounded font-mono cursor-pointer {prettyPrint ? 'bg-primary/10 text-primary' : 'bg-muted hover:bg-secondary'}"
-              title={prettyPrint ? 'Disable JSON formatting' : 'Enable JSON formatting'}
+              class="px-2 py-1 text-xs rounded cursor-pointer bg-muted hover:bg-secondary text-foreground"
+              title={prettyPrint ? 'Compact JSON formatting' : 'Pretty-print JSON formatting'}
             >
-              {"{ }"}
+              {prettyPrint ? 'Compact JSON' : 'Format JSON'}
             </button>
           {/if}
         </div>
@@ -368,24 +368,24 @@
           <span class="text-sm text-muted-foreground">
             {keyInfo.length} items{keyInfo.length && keyInfo.length > 100 ? ' (showing first 100)' : ''}
           </span>
-          <div class="flex gap-1">
+          <div class="flex gap-1 items-center">
             {#if !rawView && Object.keys(listHighlights).length > 0}
               <button
                 type="button"
                 onclick={() => prettyPrint = !prettyPrint}
-                class="px-2 py-1 text-xs rounded font-mono cursor-pointer {prettyPrint ? 'bg-primary/10 text-primary' : 'bg-muted hover:bg-secondary'}"
-                title={prettyPrint ? 'Disable JSON formatting' : 'Enable JSON formatting'}
+                class="px-2 py-1 text-xs rounded cursor-pointer bg-muted hover:bg-secondary text-foreground"
+                title={prettyPrint ? 'Compact JSON formatting' : 'Pretty-print JSON formatting'}
               >
-                {"{ }"}
+                {prettyPrint ? 'Compact JSON' : 'Format JSON'}
               </button>
             {/if}
             <button
               type="button"
               onclick={() => rawView = !rawView}
-              class="px-2 py-1 text-xs rounded bg-muted hover:bg-secondary cursor-pointer"
-              title={rawView ? 'Show as table' : 'Show as raw JSON'}
+              class="px-2 py-1 text-xs rounded cursor-pointer bg-muted hover:bg-secondary text-foreground"
+              title={rawView ? 'View as structured table' : 'View as raw JSON document'}
             >
-              {rawView ? 'View as table' : 'View as JSON'}
+              {rawView ? 'Show as Table' : 'Show as Raw JSON'}
             </button>
           </div>
         </div>
@@ -420,14 +420,16 @@
           <span class="text-sm text-muted-foreground">
             {keyInfo.length} members{keyInfo.length && keyInfo.length > 100 ? ' (showing first 100)' : ''}
           </span>
-          <button
-            type="button"
-            onclick={() => rawView = !rawView}
-            class="px-2 py-1 text-xs rounded bg-muted hover:bg-secondary cursor-pointer"
-            title={rawView ? 'Show as list' : 'Show as raw JSON'}
-          >
-            {rawView ? 'View as list' : 'View as JSON'}
-          </button>
+          <div class="flex gap-1 items-center">
+            <button
+              type="button"
+              onclick={() => rawView = !rawView}
+              class="px-2 py-1 text-xs rounded cursor-pointer bg-muted hover:bg-secondary text-foreground"
+              title={rawView ? 'View as list of members' : 'View as raw JSON document'}
+            >
+              {rawView ? 'Show as List' : 'Show as Raw JSON'}
+            </button>
+          </div>
         </div>
         {#if rawView && rawJsonHtml}
           <div class="flex-1 overflow-auto rounded border border-border [&>pre]:p-4 [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:text-sm">
@@ -449,14 +451,16 @@
           <span class="text-sm text-muted-foreground">
             {keyInfo.length} fields{keyInfo.length && keyInfo.length > 100 ? ' (showing first 100)' : ''}
           </span>
-          <button
-            type="button"
-            onclick={() => rawView = !rawView}
-            class="px-2 py-1 text-xs rounded bg-muted hover:bg-secondary cursor-pointer"
-            title={rawView ? 'Show as table' : 'Show as raw JSON'}
-          >
-            {rawView ? 'View as table' : 'View as JSON'}
-          </button>
+          <div class="flex gap-1 items-center">
+            <button
+              type="button"
+              onclick={() => rawView = !rawView}
+              class="px-2 py-1 text-xs rounded cursor-pointer bg-muted hover:bg-secondary text-foreground"
+              title={rawView ? 'View as field/value table' : 'View as raw JSON document'}
+            >
+              {rawView ? 'Show as Table' : 'Show as Raw JSON'}
+            </button>
+          </div>
         </div>
         {#if rawView && rawJsonHtml}
           <div class="flex-1 overflow-auto rounded border border-border [&>pre]:p-4 [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:text-sm">
@@ -489,14 +493,16 @@
           <span class="text-sm text-muted-foreground">
             {keyInfo.length} members{keyInfo.length && keyInfo.length > 100 ? ' (showing first 100)' : ''}
           </span>
-          <button
-            type="button"
-            onclick={() => rawView = !rawView}
-            class="px-2 py-1 text-xs rounded bg-muted hover:bg-secondary cursor-pointer"
-            title={rawView ? 'Show as table' : 'Show as raw JSON'}
-          >
-            {rawView ? 'View as table' : 'View as JSON'}
-          </button>
+          <div class="flex gap-1 items-center">
+            <button
+              type="button"
+              onclick={() => rawView = !rawView}
+              class="px-2 py-1 text-xs rounded cursor-pointer bg-muted hover:bg-secondary text-foreground"
+              title={rawView ? 'View as member/score table' : 'View as raw JSON document'}
+            >
+              {rawView ? 'Show as Table' : 'Show as Raw JSON'}
+            </button>
+          </div>
         </div>
         {#if rawView && rawJsonHtml}
           <div class="flex-1 overflow-auto rounded border border-border [&>pre]:p-4 [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:text-sm">
@@ -529,14 +535,16 @@
           <span class="text-sm text-muted-foreground">
             {keyInfo.length} entries{keyInfo.length && keyInfo.length > 100 ? ' (showing first 100)' : ''}
           </span>
-          <button
-            type="button"
-            onclick={() => rawView = !rawView}
-            class="px-2 py-1 text-xs rounded bg-muted hover:bg-secondary cursor-pointer"
-            title={rawView ? 'Show as cards' : 'Show as raw JSON'}
-          >
-            {rawView ? 'View as cards' : 'View as JSON'}
-          </button>
+          <div class="flex gap-1 items-center">
+            <button
+              type="button"
+              onclick={() => rawView = !rawView}
+              class="px-2 py-1 text-xs rounded cursor-pointer bg-muted hover:bg-secondary text-foreground"
+              title={rawView ? 'View as entry cards' : 'View as raw JSON document'}
+            >
+              {rawView ? 'Show as Cards' : 'Show as Raw JSON'}
+            </button>
+          </div>
         </div>
         {#if rawView && rawJsonHtml}
           <div class="flex-1 overflow-auto rounded border border-border [&>pre]:p-4 [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:text-sm">

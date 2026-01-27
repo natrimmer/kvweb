@@ -17,10 +17,16 @@
   )
 </script>
 
-{#if highlight && expanded}
-  <div class="[&>pre]:p-0 [&>pre]:m-0 [&>pre]:bg-transparent [&>pre]:text-sm">
-    {@html highlight}
-  </div>
+{#if highlight}
+  {#if expanded}
+    <div class="[&>pre]:p-0 [&>pre]:m-0 [&>pre]:bg-transparent [&>pre]:text-sm">
+      {@html highlight}
+    </div>
+  {:else}
+    <div class="[&>pre]:p-0 [&>pre]:m-0 [&>pre]:bg-transparent [&>pre]:text-sm [&>pre]:overflow-hidden [&>pre]:text-ellipsis [&>pre]:whitespace-nowrap">
+      {@html highlight}
+    </div>
+  {/if}
 {:else}
   <span class="break-all">{displayValue}{#if needsCollapse && !expanded}…{/if}</span>
 {/if}
