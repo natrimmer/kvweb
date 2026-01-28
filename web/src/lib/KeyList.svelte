@@ -2,6 +2,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
+	import * as Select from '$lib/components/ui/select';
 	import { ListTree, Regex, X } from '@lucide/svelte';
 	import { onMount } from 'svelte';
 	import { api, type KeyMeta } from './api';
@@ -42,12 +43,37 @@
 	}
 	let searchHistory = $state<HistoryEntry[]>([]);
 
-	const keyTypes = ['', 'string', 'hash', 'list', 'set', 'zset', 'stream'] as const;
+	const keyTypes = [
+		{ value: '', label: 'All types' },
+		{ value: 'string', label: 'string' },
+		{ value: 'hash', label: 'hash' },
+		{ value: 'list', label: 'list' },
+		{ value: 'set', label: 'set' },
+		{ value: 'zset', label: 'zset' },
+		{ value: 'stream', label: 'stream' }
+	] as const;
 	const sortOptions = [
 		{ value: 'key', label: 'Name' },
 		{ value: 'type', label: 'Type' },
 		{ value: 'ttl', label: 'TTL' }
 	] as const;
+
+	let typeFilterLabel = $derived(
+		keyTypes.find((t) => t.value === typeFilter)?.label ?? 'All types'
+	);
+	let sortByLabel = $derived(sortOptions.find((s) => s.value === sortBy)?.label ?? 'Name');
+
+	function handleTypeFilterChange(value: string | undefined) {
+		if (value !== undefined) {
+			typeFilter = value;
+		}
+	}
+
+	function handleSortByChange(value: string | undefined) {
+		if (value === 'key' || value === 'type' || value === 'ttl') {
+			sortBy = value;
+		}
+	}
 
 	function sortKeys(items: KeyMeta[]): KeyMeta[] {
 		const sorted = [...items].sort((a, b) => {
@@ -290,20 +316,26 @@
 		{/if}
 
 		<div class="flex gap-2">
-			<select
-				bind:value={typeFilter}
-				class="flex-1 rounded border border-border bg-card px-3 py-2 text-sm"
-			>
-				<option value="">All types</option>
-				{#each keyTypes.slice(1) as t}
-					<option value={t}>{t}</option>
-				{/each}
-			</select>
-			<select bind:value={sortBy} class="rounded border border-border bg-card px-3 py-2 text-sm">
-				{#each sortOptions as opt}
-					<option value={opt.value}>Sort: {opt.label}</option>
-				{/each}
-			</select>
+			<Select.Root type="single" value={typeFilter} onValueChange={handleTypeFilterChange}>
+				<Select.Trigger class="flex-1">
+					{typeFilterLabel}
+				</Select.Trigger>
+				<Select.Content>
+					{#each keyTypes as t}
+						<Select.Item value={t.value}>{t.label}</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
+			<Select.Root type="single" value={sortBy} onValueChange={handleSortByChange}>
+				<Select.Trigger class="w-32">
+					Sort: {sortByLabel}
+				</Select.Trigger>
+				<Select.Content>
+					{#each sortOptions as opt}
+						<Select.Item value={opt.value}>{opt.label}</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
 			<button
 				type="button"
 				onclick={() => (sortAsc = !sortAsc)}

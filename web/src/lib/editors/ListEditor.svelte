@@ -4,6 +4,7 @@
 	import CollapsibleValue from '$lib/CollapsibleValue.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
+	import * as Select from '$lib/components/ui/select';
 	import * as Table from '$lib/components/ui/table';
 	import DeleteItemDialog from '$lib/DeleteItemDialog.svelte';
 	import InlineEditor from '$lib/InlineEditor.svelte';
@@ -55,6 +56,21 @@
 	// Delete state
 	let deleteDialogOpen = $state(false);
 	let deleteTarget = $state<{ index: number; display: string } | null>(null);
+
+	const positionOptions = [
+		{ value: 'tail', label: 'Append (tail)' },
+		{ value: 'head', label: 'Prepend (head)' }
+	] as const;
+
+	let positionLabel = $derived(
+		positionOptions.find((p) => p.value === addPosition)?.label ?? 'Append (tail)'
+	);
+
+	function handlePositionChange(value: string | undefined) {
+		if (value === 'head' || value === 'tail') {
+			addPosition = value;
+		}
+	}
 
 	// JSON highlighting
 	let listHighlights = $derived.by(() => {
@@ -210,13 +226,16 @@
 				class="flex-1"
 				onkeydown={(e) => e.key === 'Enter' && addItem()}
 			/>
-			<select
-				bind:value={addPosition}
-				class="cursor-pointer rounded border border-border bg-background px-2 py-2 text-sm"
-			>
-				<option value="tail">Append (tail)</option>
-				<option value="head">Prepend (head)</option>
-			</select>
+			<Select.Root type="single" value={addPosition} onValueChange={handlePositionChange}>
+				<Select.Trigger class="w-36">
+					{positionLabel}
+				</Select.Trigger>
+				<Select.Content>
+					{#each positionOptions as opt}
+						<Select.Item value={opt.value}>{opt.label}</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
 		</AddItemForm>
 	{/if}
 

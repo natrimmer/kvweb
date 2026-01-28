@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
+	import * as Select from '$lib/components/ui/select';
 	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import ChevronsLeftIcon from '@lucide/svelte/icons/chevrons-left';
@@ -26,6 +27,14 @@
 	let totalPages = $derived(Math.ceil(total / pageSize));
 	let showingStart = $derived((page - 1) * pageSize + 1);
 	let showingEnd = $derived(Math.min(page * pageSize, total));
+
+	const pageSizes = [50, 100, 200, 500] as const;
+
+	function handlePageSizeChange(value: string | undefined) {
+		if (value !== undefined) {
+			onPageSizeChange(Number(value));
+		}
+	}
 </script>
 
 <div class="flex items-center justify-between gap-4 border-b border-border pb-2">
@@ -35,16 +44,16 @@
 	</span>
 	<div class="flex items-center gap-2">
 		<span class="text-xs text-muted-foreground">Page size:</span>
-		<select
-			value={pageSize}
-			onchange={(e) => onPageSizeChange(Number(e.currentTarget.value))}
-			class="cursor-pointer rounded border border-border bg-background px-2 py-1 text-xs"
-		>
-			<option value={50}>50</option>
-			<option value={100}>100</option>
-			<option value={200}>200</option>
-			<option value={500}>500</option>
-		</select>
+		<Select.Root type="single" value={String(pageSize)} onValueChange={handlePageSizeChange}>
+			<Select.Trigger class="h-8 w-20 text-xs">
+				{pageSize}
+			</Select.Trigger>
+			<Select.Content>
+				{#each pageSizes as size}
+					<Select.Item value={String(size)}>{size}</Select.Item>
+				{/each}
+			</Select.Content>
+		</Select.Root>
 		<div class="flex gap-1">
 			<Button
 				size="sm"
