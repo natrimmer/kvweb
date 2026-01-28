@@ -1,19 +1,14 @@
 <script lang="ts">
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
-	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
-	import * as ButtonGroup from '$lib/components/ui/button-group';
-	import { Input } from '$lib/components/ui/input';
 	import { Textarea } from '$lib/components/ui/textarea';
-	import CheckIcon from '@lucide/svelte/icons/check';
-	import CopyIcon from '@lucide/svelte/icons/copy';
 	import { toast } from 'svelte-sonner';
 	import { api, type HashPair, type KeyInfo, type StreamEntry, type ZSetMember } from './api';
 	import { HashEditor, ListEditor, SetEditor, StreamEditor, ZSetEditor } from './editors';
+	import KeyHeader from './KeyHeader.svelte';
 	import {
 		copyToClipboard,
 		deleteOps,
-		formatTtl,
 		getErrorMessage,
 		highlightJson,
 		modifyOps,
@@ -36,7 +31,6 @@
 	let saving = $state(false);
 	let updatingTtl = $state(false);
 	let editValue = $state('');
-	let editTtl = $state('');
 	let error = $state('');
 	let liveTtl = $state<number | null>(null);
 	let ttlInterval: ReturnType<typeof setInterval> | null = null;
@@ -54,10 +48,6 @@
 	let externallyModified = $state(false);
 	let keyDeleted = $state(false);
 
-	// Copy to clipboard state
-	let copiedValue = $state(false);
-	let copiedKey = $state(false);
-
 	// Delete confirmation dialog
 	let deleteDialogOpen = $state(false);
 
@@ -69,11 +59,7 @@
 		if (!keyInfo) return;
 		const text =
 			typeof keyInfo.value === 'string' ? keyInfo.value : JSON.stringify(keyInfo.value, null, 2);
-		await copyToClipboard(text, (v) => (copiedValue = v));
-	}
-
-	async function copyKeyName() {
-		await copyToClipboard(key, (v) => (copiedKey = v));
+		await copyToClipboard(text, () => {});
 	}
 
 	function startTtlCountdown(ttl: number) {
@@ -203,7 +189,6 @@
 				typeof keyInfo.value === 'string' ? keyInfo.value : JSON.stringify(keyInfo.value, null, 2);
 			editValue = value;
 			originalValue = value;
-			editTtl = keyInfo.ttl > 0 ? String(keyInfo.ttl) : '';
 			startTtlCountdown(keyInfo.ttl);
 		} catch (e) {
 			error = getErrorMessage(e, 'Failed to load key');
@@ -234,8 +219,7 @@
 		saving = true;
 		error = '';
 		try {
-			const ttl = editTtl ? parseInt(editTtl, 10) : 0;
-			await api.setKey(key, editValue, ttl);
+			await api.setKey(key, editValue, liveTtl ?? 0);
 			await loadKey(key);
 			toast.success('Value saved');
 		} catch (e) {
@@ -257,11 +241,10 @@
 		}
 	}
 
-	async function updateTtl() {
+	async function updateTtl(ttl: number) {
 		if (!keyInfo) return;
 		updatingTtl = true;
 		try {
-			const ttl = editTtl ? parseInt(editTtl, 10) : 0;
 			await api.expireKey(key, ttl);
 			await loadKey(key);
 			toast.success('TTL updated');
@@ -283,117 +266,38 @@
 	{:else if error}
 		<div class="flex h-full items-center justify-center text-destructive">{error}</div>
 	{:else if keyInfo}
-		<div class="flex items-center gap-4">
-			<h2 class="flex-1 font-mono text-xl break-all">{key}</h2>
-			<Badge variant="secondary" class="uppercase">{keyInfo.type}</Badge>
-			<ButtonGroup.Root>
-				<Button
-					variant="outline"
-					size="sm"
-					onclick={copyKeyName}
-					title="Copy key name to clipboard"
-					class="cursor-pointer"
-				>
-					{#if copiedKey}
-						<CheckIcon class="h-4 w-4 text-primary" />
-					{:else}
-						<CopyIcon class="h-4 w-4" />
-					{/if}
-					Key
-				</Button>
-				<Button
-					variant="outline"
-					size="sm"
-					onclick={copyValue}
-					title="Copy value to clipboard"
-					class="cursor-pointer"
-				>
-					{#if copiedValue}
-						<CheckIcon class="h-4 w-4 text-primary" />
-					{:else}
-						<CopyIcon class="h-4 w-4" />
-					{/if}
-					Value
-				</Button>
-			</ButtonGroup.Root>
-		</div>
+		<KeyHeader
+			keyName={key}
+			keyType={keyInfo.type}
+			{liveTtl}
+			{readOnly}
+			{externallyModified}
+			{keyDeleted}
+			{updatingTtl}
+			onDelete={openDeleteDialog}
+			onReload={() => {
+				loadKey(key);
+				externallyModified = false;
+			}}
+			onClose={ondeleted}
+			onTtlChange={updateTtl}
+			onCopyValue={copyValue}
+		/>
 
-		{#if keyDeleted}
-			<div
-				class="flex items-center justify-between rounded bg-destructive/10 p-3 text-sm text-destructive"
-			>
-				<span>This key was deleted externally</span>
-				<Button variant="secondary" size="sm" onclick={ondeleted} class="cursor-pointer">
-					Close
-				</Button>
-			</div>
-		{:else if externallyModified}
-			<div
-				class="flex items-center justify-between rounded bg-accent/10 p-3 text-sm text-accent-foreground"
-			>
-				<span>Modified externally</span>
-				<Button
-					variant="secondary"
-					size="sm"
-					onclick={() => {
-						loadKey(key);
-						externallyModified = false;
-					}}
-					class="cursor-pointer"
-					title="Reload key data"
-				>
-					Reload
-				</Button>
-			</div>
-		{/if}
-
-		<div class="flex items-center justify-between gap-4 rounded bg-muted p-3">
-			<label class="flex items-center gap-2">
-				<span class="text-sm">TTL:</span>
-				{#if readOnly}
-					<span class="text-sm text-muted-foreground">{formatTtl(liveTtl ?? keyInfo.ttl)}</span>
-				{:else}
-					<Input type="number" bind:value={editTtl} placeholder="seconds" class="w-25" />
+		{#if keyInfo.type === 'string'}
+			{#if !readOnly && hasChanges}
+				<div class="flex justify-end">
 					<Button
-						variant="secondary"
 						size="sm"
-						onclick={updateTtl}
-						disabled={updatingTtl}
+						onclick={saveValue}
+						disabled={saving}
 						class="cursor-pointer"
-						title="Update TTL"
+						title="Save changes"
 					>
-						{updatingTtl ? 'Setting...' : 'Set'}
-					</Button>
-					<span class="text-sm text-muted-foreground">{formatTtl(liveTtl ?? keyInfo.ttl)}</span>
-				{/if}
-			</label>
-			{#if !readOnly}
-				<div class="flex gap-2">
-					{#if keyInfo.type === 'string' && hasChanges}
-						<Button
-							size="sm"
-							onclick={saveValue}
-							disabled={saving}
-							class="cursor-pointer"
-							title="Save changes"
-						>
-							{saving ? 'Saving...' : 'Save'}
-						</Button>
-					{/if}
-					<Button
-						variant="destructive"
-						size="sm"
-						onclick={openDeleteDialog}
-						class="cursor-pointer"
-						title="Delete this key"
-					>
-						Delete
+						{saving ? 'Saving...' : 'Save'}
 					</Button>
 				</div>
 			{/if}
-		</div>
-
-		{#if keyInfo.type === 'string'}
 			<div class="flex flex-1 flex-col gap-2">
 				<div class="flex items-center justify-between">
 					<label for="value-textarea">Value:</label>
