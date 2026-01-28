@@ -16,10 +16,16 @@ export function getErrorMessage(e: unknown, fallback = 'An error occurred'): str
 }
 
 /**
- * Shows a toast error notification with a consistent format.
+ * Shows a toast error notification with a consistent format and a copy button.
  */
 export function toastError(e: unknown, fallback = 'An error occurred'): void {
-	toast.error(getErrorMessage(e, fallback));
+	const message = getErrorMessage(e, fallback);
+	toast.error(message, {
+		action: {
+			label: 'Copy',
+			onClick: () => navigator.clipboard.writeText(message)
+		}
+	});
 }
 
 /**
