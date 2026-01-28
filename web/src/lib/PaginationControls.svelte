@@ -45,7 +45,7 @@
 	<div class="flex items-center gap-2">
 		<span class="text-xs text-muted-foreground">Page size:</span>
 		<Select.Root type="single" value={String(pageSize)} onValueChange={handlePageSizeChange}>
-			<Select.Trigger class="h-8 w-20 text-xs">
+			<Select.Trigger class="h-9 w-20 text-xs">
 				{pageSize}
 			</Select.Trigger>
 			<Select.Content>
@@ -60,7 +60,7 @@
 				variant="outline"
 				onclick={() => onPageChange(1)}
 				disabled={page === 1}
-				class="h-8 w-8 cursor-pointer p-0"
+				class="size-9 cursor-pointer p-0"
 				title="First page"
 			>
 				<ChevronsLeftIcon class="h-4 w-4" />
@@ -70,7 +70,7 @@
 				variant="outline"
 				onclick={() => onPageChange(page - 1)}
 				disabled={page === 1}
-				class="h-8 w-8 cursor-pointer p-0"
+				class="size-9 cursor-pointer p-0"
 				title="Previous page"
 			>
 				<ChevronLeftIcon class="h-4 w-4" />
@@ -83,7 +83,7 @@
 				variant="outline"
 				onclick={() => onPageChange(page + 1)}
 				disabled={page >= totalPages}
-				class="h-8 w-8 cursor-pointer p-0"
+				class="size-9 cursor-pointer p-0"
 				title="Next page"
 			>
 				<ChevronRightIcon class="h-4 w-4" />
@@ -93,7 +93,7 @@
 				variant="outline"
 				onclick={() => onPageChange(totalPages)}
 				disabled={page >= totalPages}
-				class="h-8 w-8 cursor-pointer p-0"
+				class="size-9 cursor-pointer p-0"
 				title="Last page"
 			>
 				<ChevronsRightIcon class="h-4 w-4" />
