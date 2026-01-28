@@ -1,0 +1,162 @@
+#!/usr/bin/env bash
+echo "Seeding valkey with sample data..."
+CLI="valkey-cli -p $PORT_VALKEY"
+
+# Short strings
+$CLI SET "string:short:empty" ""
+$CLI SET "string:short:char" "x"
+$CLI SET "string:short:word" "hello"
+$CLI SET "string:short:number" "42"
+$CLI SET "string:short:flag" "true"
+
+# Long strings
+$CLI SET "string:long:paragraph" "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+$CLI SET "string:long:multiline" "Line 1: Introduction to the system architecture
+Line 2: The backend service handles API requests
+Line 3: Data is persisted in the key-value store
+Line 4: The frontend renders the user interface
+Line 5: Authentication uses JWT tokens
+Line 6: Rate limiting prevents abuse
+Line 7: Caching improves response times
+Line 8: Logs are aggregated for monitoring
+Line 9: Metrics track system health
+Line 10: Alerts notify on-call engineers"
+$CLI SET "string:long:code" "function processData(input) {\n  const validated = validateInput(input);\n  if (!validated.success) {\n    throw new Error(validated.error);\n  }\n  const transformed = transform(validated.data);\n  const result = aggregate(transformed);\n  return {\n    status: 'complete',\n    data: result,\n    timestamp: Date.now()\n  };\n}"
+
+# JSON strings
+$CLI SET "string:json:simple" '{"name":"test","value":123}'
+$CLI SET "string:json:nested" '{"user":{"id":1,"profile":{"name":"Alice","settings":{"theme":"dark","notifications":{"email":true,"push":false}}}}}'
+$CLI SET "string:json:array" '[{"id":1,"name":"first"},{"id":2,"name":"second"},{"id":3,"name":"third"}]'
+$CLI SET "string:json:complex" '{"apiVersion":"v1","kind":"Deployment","metadata":{"name":"web-app","namespace":"production","labels":{"app":"web","tier":"frontend"},"annotations":{"deployment.kubernetes.io/revision":"3"}},"spec":{"replicas":3,"selector":{"matchLabels":{"app":"web"}},"template":{"metadata":{"labels":{"app":"web"}},"spec":{"containers":[{"name":"web","image":"nginx:1.21","ports":[{"containerPort":80}],"resources":{"limits":{"cpu":"500m","memory":"128Mi"},"requests":{"cpu":"250m","memory":"64Mi"}},"livenessProbe":{"httpGet":{"path":"/healthz","port":80},"initialDelaySeconds":3,"periodSeconds":10},"env":[{"name":"ENV","value":"production"},{"name":"LOG_LEVEL","value":"info"}]}]}}}}'
+
+# ===================
+# HASH
+# ===================
+
+# Single field
+$CLI HSET "hash:single" only "value"
+
+# Few fields (simple)
+$CLI HSET "hash:few" name "Alice" email "alice@example.com" age "28"
+
+# Few fields with JSON values
+$CLI HSET "hash:json" \
+    config '{"timeout":30,"retries":3}' \
+    users '[{"id":1},{"id":2}]' \
+    simple "plain text"
+
+# Many fields (600)
+for i in $(seq 1 600); do
+    $CLI HSET "hash:many" "field_$(printf '%03d' "$i")" "value_$i"
+done
+
+# ===================
+# LIST
+# ===================
+
+# Single item
+$CLI RPUSH "list:single" "only item"
+
+# Few items
+$CLI RPUSH "list:few" "first" "second" "third"
+
+# Many items (600)
+for i in $(seq 1 600); do
+    $CLI RPUSH "list:many" "item-$(printf '%03d' "$i")"
+done
+
+# JSON items
+$CLI RPUSH "list:json" \
+    '{"id":1,"type":"task","title":"Review PR"}' \
+    '{"id":2,"type":"bug","title":"Fix login"}' \
+    '{"id":3,"type":"feature","title":"Add export"}'
+
+# ===================
+# SET
+# ===================
+
+# Single member
+$CLI SADD "set:single" "only member"
+
+# Few members
+$CLI SADD "set:few" "alpha" "beta" "gamma"
+
+# Many members (600)
+for i in $(seq 1 600); do
+    $CLI SADD "set:many" "member-$(printf '%03d' "$i")"
+done
+
+# JSON members
+$CLI SADD "set:json" \
+    '{"id":"a","name":"first"}' \
+    '{"id":"b","name":"second"}' \
+    '{"id":"c","name":"third"}'
+
+# ===================
+# SORTED SET (ZSET)
+# ===================
+
+# Single member
+$CLI ZADD "zset:single" 100 "only member"
+
+# Few members
+$CLI ZADD "zset:few" 1 "first" 2 "second" 3 "third"
+
+# Many members (600)
+for i in $(seq 1 600); do
+    $CLI ZADD "zset:many" "$i" "member-$(printf '%03d' "$i")"
+done
+
+# Negative and zero scores
+$CLI ZADD "zset:negative" -100 "very-low" -50 "low" 0 "zero" 50 "high" 100 "very-high"
+
+# Same scores (tests ordering)
+$CLI ZADD "zset:same-scores" 100 "alpha" 100 "beta" 100 "gamma" 100 "delta"
+
+# Float scores
+$CLI ZADD "zset:floats" 1.1 "a" 1.11 "b" 1.111 "c" 2.5 "d" 99.99 "e"
+
+# JSON members
+$CLI ZADD "zset:json" \
+    1705312200 '{"type":"post","content":"Hello world"}' \
+    1705315800 '{"type":"comment","content":"Nice!"}' \
+    1705319400 '{"type":"share","content":"Check this out"}'
+
+# ===================
+# STREAM
+# ===================
+
+# Single entry with few fields
+$CLI XADD "stream:single" "*" event "ping"
+
+# Few entries
+$CLI XADD "stream:few" "*" action "start" status "ok"
+$CLI XADD "stream:few" "*" action "process" status "ok"
+$CLI XADD "stream:few" "*" action "complete" status "ok"
+
+# Entry with many fields
+$CLI XADD "stream:wide" "*" \
+    field_01 "val01" field_02 "val02" field_03 "val03" field_04 "val04" field_05 "val05" \
+    field_06 "val06" field_07 "val07" field_08 "val08" field_09 "val09" field_10 "val10"
+
+# Many entries (600)
+for i in $(seq 1 600); do
+    $CLI XADD "stream:many" "*" n "$i" data "entry-$(printf '%03d' "$i")"
+done
+
+# JSON field values
+$CLI XADD "stream:json" "*" \
+    event "user.created" \
+    payload '{"userId":123,"email":"test@example.com"}'
+
+# ===================
+# TTL examples
+# ===================
+
+$CLI SET "ttl:short" "expires soon" EX 60
+$CLI SET "ttl:medium" "expires later" EX 3600
+$CLI SET "ttl:long" "expires much later" EX 86400
+
+echo ""
+echo "Seeded $(valkey-cli -p "$PORT_VALKEY" DBSIZE | cut -d' ' -f2) keys"
+echo "Run 'valkey-cli -p $PORT_VALKEY KEYS \"*\"' to see all keys"
