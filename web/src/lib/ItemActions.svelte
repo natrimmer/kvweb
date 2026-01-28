@@ -1,0 +1,36 @@
+<script lang="ts">
+	import { Button } from '$lib/components/ui/button';
+	import PencilIcon from '@lucide/svelte/icons/pencil';
+	import Trash2Icon from '@lucide/svelte/icons/trash-2';
+
+	interface Props {
+		showEdit?: boolean;
+		onEdit?: () => void;
+		onDelete: () => void;
+	}
+
+	let { showEdit = true, onEdit, onDelete }: Props = $props();
+</script>
+
+<div class="flex gap-1">
+	{#if showEdit && onEdit}
+		<Button
+			size="sm"
+			variant="ghost"
+			onclick={onEdit}
+			class="h-8 w-8 cursor-pointer p-0"
+			title="Edit"
+		>
+			<PencilIcon class="h-4 w-4" />
+		</Button>
+	{/if}
+	<Button
+		size="sm"
+		variant="ghost"
+		onclick={onDelete}
+		class="h-8 w-8 cursor-pointer p-0 text-destructive hover:text-destructive"
+		title="Delete"
+	>
+		<Trash2Icon class="h-4 w-4" />
+	</Button>
+</div>

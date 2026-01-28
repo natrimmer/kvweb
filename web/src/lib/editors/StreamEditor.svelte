@@ -1,0 +1,210 @@
+<script lang="ts">
+	import { api, type PaginationInfo, type StreamEntry } from '$lib/api';
+	import CollapsibleValue from '$lib/CollapsibleValue.svelte';
+	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
+	import PaginationControls from '$lib/PaginationControls.svelte';
+	import { highlightJson, isNonEmpty, toastError } from '$lib/utils';
+	import PlusIcon from '@lucide/svelte/icons/plus';
+	import XIcon from '@lucide/svelte/icons/x';
+	import { toast } from 'svelte-sonner';
+
+	interface Props {
+		keyName: string;
+		entries: StreamEntry[];
+		pagination: PaginationInfo | undefined;
+		currentPage: number;
+		pageSize: number;
+		readOnly: boolean;
+		onPageChange: (page: number) => void;
+		onPageSizeChange: (size: number) => void;
+		onDataChange: () => void;
+	}
+
+	let {
+		keyName,
+		entries,
+		pagination,
+		currentPage,
+		pageSize,
+		readOnly,
+		onPageChange,
+		onPageSizeChange,
+		onDataChange
+	}: Props = $props();
+
+	// View state
+	let rawView = $state(false);
+
+	// Add form state
+	let showAddForm = $state(false);
+	let streamFields = $state<{ key: string; value: string }[]>([{ key: '', value: '' }]);
+	let adding = $state(false);
+
+	let rawJsonHtml = $derived(rawView ? highlightJson(JSON.stringify(entries, null, 2), true) : '');
+
+	function addField() {
+		streamFields = [...streamFields, { key: '', value: '' }];
+	}
+
+	function removeField(index: number) {
+		if (streamFields.length > 1) {
+			streamFields = streamFields.filter((_, i) => i !== index);
+		}
+	}
+
+	function resetForm() {
+		streamFields = [{ key: '', value: '' }];
+	}
+
+	async function addItem() {
+		const fields: Record<string, string> = {};
+		for (const f of streamFields) {
+			if (!isNonEmpty(f.key)) {
+				toast.error('Field name cannot be empty');
+				return;
+			}
+			if (!isNonEmpty(f.value)) {
+				toast.error('Field value cannot be empty');
+				return;
+			}
+			fields[f.key] = f.value;
+		}
+		if (Object.keys(fields).length === 0) {
+			toast.error('At least one field is required');
+			return;
+		}
+		adding = true;
+		try {
+			const result = await api.streamAdd(keyName, fields);
+			toast.success(`Entry added: ${result.id}`);
+			resetForm();
+			onDataChange();
+		} catch (e) {
+			toastError(e, 'Failed to add entry');
+		} finally {
+			adding = false;
+		}
+	}
+</script>
+
+<div class="flex flex-1 flex-col gap-2 overflow-auto">
+	{#if pagination}
+		<PaginationControls
+			page={currentPage}
+			{pageSize}
+			total={pagination.total}
+			itemLabel="entries"
+			{onPageChange}
+			{onPageSizeChange}
+		/>
+	{/if}
+
+	<div class="flex items-center justify-between">
+		<span class="text-sm text-muted-foreground">
+			{pagination?.total ?? entries.length} entries total
+		</span>
+		<div class="flex items-center gap-2">
+			{#if !readOnly}
+				<Button
+					size="sm"
+					variant="outline"
+					onclick={() => (showAddForm = true)}
+					class="cursor-pointer"
+					title="Add entry to stream"
+				>
+					<PlusIcon class="mr-1 h-4 w-4" />
+					Add Entry
+				</Button>
+			{/if}
+			<button
+				type="button"
+				onclick={() => (rawView = !rawView)}
+				class="cursor-pointer rounded bg-muted px-2 py-1 text-xs text-foreground hover:bg-secondary"
+			>
+				{rawView ? 'Show as Cards' : 'Show as Raw JSON'}
+			</button>
+		</div>
+	</div>
+
+	{#if showAddForm}
+		<div class="flex flex-col gap-2 rounded border border-border bg-muted/50 p-3">
+			<div class="text-sm text-muted-foreground">Add stream entry (append-only)</div>
+			{#each streamFields as field, i}
+				<div class="flex items-center gap-2">
+					<Input bind:value={field.key} placeholder="Field name" class="w-48" />
+					<Input bind:value={field.value} placeholder="Value" class="flex-1" />
+					{#if streamFields.length > 1}
+						<Button
+							size="sm"
+							variant="ghost"
+							onclick={() => removeField(i)}
+							class="h-8 w-8 cursor-pointer p-0"
+							title="Remove field"
+						>
+							<XIcon class="h-4 w-4" />
+						</Button>
+					{/if}
+				</div>
+			{/each}
+			<div class="flex items-center gap-2">
+				<Button
+					size="sm"
+					variant="outline"
+					onclick={addField}
+					class="cursor-pointer"
+					title="Add another field"
+				>
+					<PlusIcon class="mr-1 h-4 w-4" />
+					Add Field
+				</Button>
+				<div class="flex-1"></div>
+				<Button
+					size="sm"
+					onclick={addItem}
+					disabled={adding}
+					class="cursor-pointer"
+					title="Add entry"
+				>
+					{adding ? 'Adding...' : 'Add Entry'}
+				</Button>
+				<Button
+					size="sm"
+					variant="ghost"
+					onclick={() => {
+						showAddForm = false;
+						resetForm();
+					}}
+					class="cursor-pointer"
+					title="Cancel"
+				>
+					<XIcon class="h-4 w-4" />
+				</Button>
+			</div>
+		</div>
+	{/if}
+
+	{#if rawView && rawJsonHtml}
+		<div
+			class="flex-1 overflow-auto rounded border border-border [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:p-4 [&>pre]:text-sm"
+		>
+			{@html rawJsonHtml}
+		</div>
+	{:else}
+		<div class="flex flex-col gap-2">
+			{#each entries as entry}
+				<div class="rounded border border-border p-3">
+					<div class="mb-2 font-mono text-xs text-muted-foreground">{entry.id}</div>
+					<div class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+						{#each Object.entries(entry.fields) as [field, val]}
+							<span class="font-mono text-muted-foreground">{field}</span>
+							<span class="font-mono">
+								<CollapsibleValue value={val} maxLength={150} />
+							</span>
+						{/each}
+					</div>
+				</div>
+			{/each}
+		</div>
+	{/if}
+</div>
