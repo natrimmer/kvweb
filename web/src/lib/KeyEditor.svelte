@@ -31,6 +31,8 @@
 
 	let keyInfo = $state<KeyInfo | null>(null);
 	let loading = $state(false);
+	let showLoading = $state(false);
+	let loadingTimeout: ReturnType<typeof setTimeout> | null = null;
 	let saving = $state(false);
 	let updatingTtl = $state(false);
 	let editValue = $state('');
@@ -187,6 +189,10 @@
 		loading = true;
 		error = '';
 		stopTtlCountdown();
+		// Only show loading indicator after 500ms delay to avoid flash
+		loadingTimeout = setTimeout(() => {
+			if (loading) showLoading = true;
+		}, 300);
 		try {
 			keyInfo = await api.getKey(k, currentPage, pageSize);
 			editValue =
@@ -198,6 +204,11 @@
 			keyInfo = null;
 		} finally {
 			loading = false;
+			showLoading = false;
+			if (loadingTimeout) {
+				clearTimeout(loadingTimeout);
+				loadingTimeout = null;
+			}
 		}
 	}
 
@@ -261,7 +272,7 @@
 </script>
 
 <div class="flex h-full flex-col gap-4 p-6">
-	{#if loading}
+	{#if showLoading}
 		<div class="flex h-full items-center justify-center text-muted-foreground">Loading...</div>
 	{:else if error}
 		<div class="flex h-full items-center justify-center text-destructive">{error}</div>
