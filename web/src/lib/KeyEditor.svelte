@@ -258,6 +258,25 @@
 	function handleDataChange() {
 		loadKey(key);
 	}
+
+	let renamingKey = $state(false);
+
+	function renameKey(newKey: string) {
+		renamingKey = true;
+		api
+			.renameKey(key, newKey)
+			.then(() => {
+				toast.success('Key renamed');
+				key = newKey;
+				loadKey(key);
+			})
+			.catch((e) => {
+				toastError(e, 'Failed to rename key');
+			})
+			.finally(() => {
+				renamingKey = false;
+			});
+	}
 </script>
 
 <div class="flex h-full flex-col gap-4 p-6">
@@ -274,6 +293,7 @@
 			{externallyModified}
 			{keyDeleted}
 			{updatingTtl}
+			{renamingKey}
 			onDelete={openDeleteDialog}
 			onReload={() => {
 				loadKey(key);
@@ -282,6 +302,7 @@
 			onClose={ondeleted}
 			onTtlChange={updateTtl}
 			onCopyValue={copyValue}
+			onRename={renameKey}
 		/>
 
 		{#if keyInfo.type === 'string'}

@@ -18,11 +18,13 @@
 		externallyModified: boolean;
 		keyDeleted: boolean;
 		updatingTtl: boolean;
+		renamingKey: boolean;
 		onDelete: () => void;
 		onReload: () => void;
 		onClose: () => void;
 		onTtlChange: (ttl: number) => void;
 		onCopyValue: () => void;
+		onRename: (newKey: string) => void;
 	}
 
 	let {
@@ -33,18 +35,22 @@
 		externallyModified,
 		keyDeleted,
 		updatingTtl,
+		renamingKey,
 		onDelete,
 		onReload,
 		onClose,
 		onTtlChange,
-		onCopyValue
+		onCopyValue,
+		onRename
 	}: Props = $props();
 
 	let editTtl = $state('');
+	let editKeyName = $state('');
 	let copiedKey = $state(false);
 	let copiedValue = $state(false);
 	let lastKeyName = $state('');
 	let editingTtl = $state(false);
+	let editingKeyName = $state(false);
 
 	// Sync editTtl only when key changes (not on every liveTtl countdown tick)
 	$effect(() => {
@@ -86,13 +92,70 @@
 	function cancelEditingTtl() {
 		editingTtl = false;
 	}
+
+	function handleRenameClick() {
+		editingKeyName = !editingKeyName;
+		if (editingKeyName) {
+			editKeyName = keyName;
+		}
+	}
+
+	function cancelEditingKeyName() {
+		editingKeyName = false;
+	}
+
+	function handleKeyRename() {
+		const newKey = editKeyName.trim();
+		if (newKey && newKey !== keyName) {
+			onRename(newKey);
+		}
+		editingKeyName = false;
+	}
 </script>
 
 <div class="flex flex-col gap-2">
 	<!-- Row 1: Key name, type badge, TTL, copy buttons, delete -->
 	<div class="flex items-center gap-3">
 		<div class="flex min-w-0 flex-1 items-center gap-2">
-			<h2 class="min-w-0 font-mono text-lg leading-none break-all">{keyName}</h2>
+			{#if editingKeyName}
+				<span class="flex items-center gap-1">
+					<Input
+						type="text"
+						bind:value={editKeyName}
+						placeholder="Key name"
+						class="h-8 w-48 text-sm"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') handleKeyRename();
+							if (e.key === 'Escape') cancelEditingKeyName();
+						}}
+					/>
+					<Button
+						variant="default"
+						size="sm"
+						onclick={handleKeyRename}
+						class="h-8 cursor-pointer"
+						title="Save key name"
+					>
+						{#if renamingKey}
+							...
+						{:else}
+							<CheckIcon class="size-4" />
+						{/if}
+					</Button>
+					<Button
+						variant="destructive"
+						size="sm"
+						onclick={cancelEditingKeyName}
+						class="h-8 cursor-pointer"
+						title="Cancel"
+						disabled={renamingKey}
+					>
+						<XIcon class="size-4" />
+					</Button>
+				</span>
+			{:else}
+				<h2 class="min-w-0 font-mono text-lg leading-none break-all">{keyName}</h2>
+			{/if}
 			<Badge variant="secondary" class="shrink-0 uppercase">{keyType}</Badge>
 			{#if !editingTtl}
 				<span class="shrink-0 text-sm text-muted-foreground">
@@ -178,15 +241,26 @@
 			</Button>
 		</ButtonGroup.Root>
 		{#if !readOnly}
-			<Button
-				variant="destructive"
-				size="sm"
-				onclick={onDelete}
-				class="shrink-0 cursor-pointer"
-				title="Delete this key"
-			>
-				Delete
-			</Button>
+			<ButtonGroup.Root class="shrink-0">
+				<Button
+					variant="outline"
+					size="sm"
+					onclick={handleRenameClick}
+					title="Rename this key"
+					class="shrink-0 cursor-pointer"
+				>
+					Rename
+				</Button>
+				<Button
+					variant="destructive"
+					size="sm"
+					onclick={onDelete}
+					class="shrink-0 cursor-pointer"
+					title="Delete this key"
+				>
+					Delete
+				</Button>
+			</ButtonGroup.Root>
 		{/if}
 	</div>
 
