@@ -149,6 +149,10 @@
 
 	let isJsonValue = $derived(keyInfo?.type === 'string' && isJson(editValue));
 
+	// Track original value for dirty checking
+	let originalValue = $state('');
+	let hasChanges = $derived(editValue !== originalValue);
+
 	let previousKey = $state<string | null>(null);
 
 	$effect(() => {
@@ -195,8 +199,10 @@
 		}, 300);
 		try {
 			keyInfo = await api.getKey(k, currentPage, pageSize);
-			editValue =
+			const value =
 				typeof keyInfo.value === 'string' ? keyInfo.value : JSON.stringify(keyInfo.value, null, 2);
+			editValue = value;
+			originalValue = value;
 			editTtl = keyInfo.ttl > 0 ? String(keyInfo.ttl) : '';
 			startTtlCountdown(keyInfo.ttl);
 		} catch (e) {
@@ -363,7 +369,7 @@
 			</label>
 			{#if !readOnly}
 				<div class="flex gap-2">
-					{#if keyInfo.type === 'string'}
+					{#if keyInfo.type === 'string' && hasChanges}
 						<Button
 							size="sm"
 							onclick={saveValue}
