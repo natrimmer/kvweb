@@ -265,7 +265,6 @@
 							{#if editingIndex === realIndex}
 								<InlineEditor
 									bind:value={editingValue}
-									{saving}
 									onSave={saveEdit}
 									onCancel={cancelEditing}
 								/>
@@ -275,12 +274,14 @@
 						</Table.Cell>
 						{#if !readOnly}
 							<Table.Cell class="align-top">
-								{#if editingIndex !== realIndex}
-									<ItemActions
-										onEdit={() => startEditing(realIndex, item)}
-										onDelete={() => openDeleteDialog(realIndex, item)}
-									/>
-								{/if}
+								<ItemActions
+									editing={editingIndex === realIndex}
+									{saving}
+									onEdit={() => startEditing(realIndex, item)}
+									onSave={() => saveEdit(editingValue)}
+									onCancel={cancelEditing}
+									onDelete={() => openDeleteDialog(realIndex, item)}
+								/>
 							</Table.Cell>
 						{/if}
 					</Table.Row>

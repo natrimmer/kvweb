@@ -228,7 +228,6 @@
 							{#if editingField === field}
 								<InlineEditor
 									bind:value={editingValue}
-									{saving}
 									onSave={saveEdit}
 									onCancel={cancelEditing}
 								/>
@@ -241,12 +240,14 @@
 						</Table.Cell>
 						{#if !readOnly}
 							<Table.Cell class="align-top">
-								{#if editingField !== field}
-									<ItemActions
-										onEdit={() => startEditing(field, value)}
-										onDelete={() => openDeleteDialog(field)}
-									/>
-								{/if}
+								<ItemActions
+									editing={editingField === field}
+									{saving}
+									onEdit={() => startEditing(field, value)}
+									onSave={() => saveEdit(editingValue)}
+									onCancel={cancelEditing}
+									onDelete={() => openDeleteDialog(field)}
+								/>
 							</Table.Cell>
 						{/if}
 					</Table.Row>

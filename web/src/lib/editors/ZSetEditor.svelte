@@ -217,7 +217,6 @@
 							{#if editingMember === member}
 								<InlineEditor
 									bind:value={editingValue}
-									{saving}
 									type="number"
 									inputClass="w-24"
 									onSave={saveEdit}
@@ -229,12 +228,14 @@
 						</Table.Cell>
 						{#if !readOnly}
 							<Table.Cell class="align-top">
-								{#if editingMember !== member}
-									<ItemActions
-										onEdit={() => startEditing(member, score)}
-										onDelete={() => openDeleteDialog(member)}
-									/>
-								{/if}
+								<ItemActions
+									editing={editingMember === member}
+									{saving}
+									onEdit={() => startEditing(member, score)}
+									onSave={() => saveEdit(editingValue)}
+									onCancel={cancelEditing}
+									onDelete={() => openDeleteDialog(member)}
+								/>
 							</Table.Cell>
 						{/if}
 					</Table.Row>
