@@ -41,9 +41,9 @@ func (c *Client) SubscribeKeyspace(ctx context.Context, db int) (<-chan KeyEvent
 					return
 				}
 			})
-		if err != nil && ctx.Err() == nil {
-			// Connection error - channel will be closed
-		}
+		// On error, channel closes via defer; err is intentionally ignored
+		// when context is cancelled (normal shutdown)
+		_ = err
 	}()
 
 	return events, nil

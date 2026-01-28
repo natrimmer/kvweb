@@ -165,5 +165,76 @@ export const api = {
 			method: 'POST',
 			body: JSON.stringify({ enabled })
 		});
+	},
+
+	// List operations
+	listPush(key: string, value: string, position: 'head' | 'tail'): Promise<void> {
+		return request(`/key/${encodeURIComponent(key)}/list`, {
+			method: 'POST',
+			body: JSON.stringify({ value, position })
+		});
+	},
+
+	listSet(key: string, index: number, value: string): Promise<void> {
+		return request(`/key/${encodeURIComponent(key)}/list/${index}`, {
+			method: 'PUT',
+			body: JSON.stringify({ value })
+		});
+	},
+
+	listRemove(key: string, index: number): Promise<void> {
+		return request(`/key/${encodeURIComponent(key)}/list/${index}`, {
+			method: 'DELETE'
+		});
+	},
+
+	// Set operations
+	setAdd(key: string, member: string): Promise<void> {
+		return request(`/key/${encodeURIComponent(key)}/set`, {
+			method: 'POST',
+			body: JSON.stringify({ member })
+		});
+	},
+
+	setRemove(key: string, member: string): Promise<void> {
+		return request(`/key/${encodeURIComponent(key)}/set/${encodeURIComponent(member)}`, {
+			method: 'DELETE'
+		});
+	},
+
+	// Hash operations
+	hashSet(key: string, field: string, value: string): Promise<void> {
+		return request(`/key/${encodeURIComponent(key)}/hash`, {
+			method: 'POST',
+			body: JSON.stringify({ field, value })
+		});
+	},
+
+	hashRemove(key: string, field: string): Promise<void> {
+		return request(`/key/${encodeURIComponent(key)}/hash/${encodeURIComponent(field)}`, {
+			method: 'DELETE'
+		});
+	},
+
+	// ZSet operations
+	zsetAdd(key: string, member: string, score: number): Promise<void> {
+		return request(`/key/${encodeURIComponent(key)}/zset`, {
+			method: 'POST',
+			body: JSON.stringify({ member, score })
+		});
+	},
+
+	zsetRemove(key: string, member: string): Promise<void> {
+		return request(`/key/${encodeURIComponent(key)}/zset/${encodeURIComponent(member)}`, {
+			method: 'DELETE'
+		});
+	},
+
+	// Stream operations
+	streamAdd(key: string, fields: Record<string, string>): Promise<{ id: string }> {
+		return request(`/key/${encodeURIComponent(key)}/stream`, {
+			method: 'POST',
+			body: JSON.stringify({ fields })
+		});
 	}
 };

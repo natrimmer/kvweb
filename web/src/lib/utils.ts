@@ -121,3 +121,42 @@ export type WithoutChildrenOrChild<T> = WithoutChildren<WithoutChild<T>>;
 export type WithElementRef<T, U extends HTMLElement = HTMLElement> = T & {
 	ref?: U | null;
 };
+
+// Validation helpers for complex data type editing
+
+/**
+ * Validates that a value is non-empty after trimming.
+ */
+export function isNonEmpty(value: string | undefined | null): boolean {
+	if (value == null) return false;
+	return value.trim().length > 0;
+}
+
+/**
+ * Validates that a value is a valid number (for zset scores).
+ * Handles both string and number inputs.
+ */
+export function isValidScore(value: string | number | undefined | null): boolean {
+	if (value == null) return false;
+	if (typeof value === 'number') return isFinite(value);
+	if (value.trim() === '') return false;
+	const num = Number(value);
+	return !isNaN(num) && isFinite(num);
+}
+
+/**
+ * Parses a score value to a number. Returns NaN if invalid.
+ * Handles both string and number inputs.
+ */
+export function parseScore(value: string | number | undefined | null): number {
+	if (value == null) return NaN;
+	if (typeof value === 'number') return value;
+	return Number(value.trim());
+}
+
+/**
+ * Checks if a value exceeds the recommended size limit (1MB).
+ */
+export function isLargeValue(value: string, limitBytes = 1024 * 1024): boolean {
+	return new Blob([value]).size > limitBytes;
+}

@@ -43,6 +43,27 @@ func New(cfg *config.Config, client *valkey.Client) *Handler {
 	h.mux.HandleFunc("GET /api/notifications", h.handleGetNotifications)
 	h.mux.HandleFunc("POST /api/notifications", h.handleSetNotifications)
 
+	// Complex type CRUD endpoints
+	// List operations
+	h.mux.HandleFunc("POST /api/key/{key}/list", h.handleListAdd)
+	h.mux.HandleFunc("PUT /api/key/{key}/list/{index}", h.handleListSet)
+	h.mux.HandleFunc("DELETE /api/key/{key}/list/{index}", h.handleListRemove)
+
+	// Set operations
+	h.mux.HandleFunc("POST /api/key/{key}/set", h.handleSetAdd)
+	h.mux.HandleFunc("DELETE /api/key/{key}/set/{member}", h.handleSetRemove)
+
+	// Hash operations
+	h.mux.HandleFunc("POST /api/key/{key}/hash", h.handleHashSet)
+	h.mux.HandleFunc("DELETE /api/key/{key}/hash/{field}", h.handleHashRemove)
+
+	// ZSet operations
+	h.mux.HandleFunc("POST /api/key/{key}/zset", h.handleZSetAdd)
+	h.mux.HandleFunc("DELETE /api/key/{key}/zset/{member}", h.handleZSetRemove)
+
+	// Stream operations
+	h.mux.HandleFunc("POST /api/key/{key}/stream", h.handleStreamAdd)
+
 	return h
 }
 
@@ -744,4 +765,334 @@ func (h *Handler) handleSetNotifications(w http.ResponseWriter, r *http.Request)
 		"ok":      true,
 		"enabled": body.Enabled,
 	})
+}
+
+// List operation handlers
+
+func (h *Handler) handleListAdd(w http.ResponseWriter, r *http.Request) {
+	if h.checkReadOnly(w) {
+		return
+	}
+
+	key := r.PathValue("key")
+	if h.checkKeyPrefix(w, key) {
+		return
+	}
+
+	var body struct {
+		Value    string `json:"value"`
+		Position string `json:"position"` // "head" or "tail"
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		jsonError(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	var err error
+	if body.Position == "head" {
+		err = h.client.LPush(r.Context(), key, body.Value)
+	} else {
+		err = h.client.RPush(r.Context(), key, body.Value)
+	}
+
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	jsonResponse(w, map[string]string{"status": "ok"})
+}
+
+func (h *Handler) handleListSet(w http.ResponseWriter, r *http.Request) {
+	if h.checkReadOnly(w) {
+		return
+	}
+
+	key := r.PathValue("key")
+	if h.checkKeyPrefix(w, key) {
+		return
+	}
+
+	indexStr := r.PathValue("index")
+	index, err := strconv.ParseInt(indexStr, 10, 64)
+	if err != nil {
+		jsonError(w, "Invalid index", http.StatusBadRequest)
+		return
+	}
+
+	var body struct {
+		Value string `json:"value"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		jsonError(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.client.LSet(r.Context(), key, index, body.Value); err != nil {
+		jsonError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	jsonResponse(w, map[string]string{"status": "ok"})
+}
+
+func (h *Handler) handleListRemove(w http.ResponseWriter, r *http.Request) {
+	if h.checkReadOnly(w) {
+		return
+	}
+
+	key := r.PathValue("key")
+	if h.checkKeyPrefix(w, key) {
+		return
+	}
+
+	indexStr := r.PathValue("index")
+	index, err := strconv.ParseInt(indexStr, 10, 64)
+	if err != nil {
+		jsonError(w, "Invalid index", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.client.LRemByIndex(r.Context(), key, index); err != nil {
+		jsonError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	jsonResponse(w, map[string]string{"status": "ok"})
+}
+
+// Set operation handlers
+
+func (h *Handler) handleSetAdd(w http.ResponseWriter, r *http.Request) {
+	if h.checkReadOnly(w) {
+		return
+	}
+
+	key := r.PathValue("key")
+	if h.checkKeyPrefix(w, key) {
+		return
+	}
+
+	var body struct {
+		Member string `json:"member"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		jsonError(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if body.Member == "" {
+		jsonError(w, "Member cannot be empty", http.StatusBadRequest)
+		return
+	}
+
+	// Check for duplicate
+	exists, err := h.client.SIsMember(r.Context(), key, body.Member)
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if exists {
+		jsonError(w, "Member already exists in set", http.StatusConflict)
+		return
+	}
+
+	if err := h.client.SAdd(r.Context(), key, body.Member); err != nil {
+		jsonError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	jsonResponse(w, map[string]string{"status": "ok"})
+}
+
+func (h *Handler) handleSetRemove(w http.ResponseWriter, r *http.Request) {
+	if h.checkReadOnly(w) {
+		return
+	}
+
+	key := r.PathValue("key")
+	if h.checkKeyPrefix(w, key) {
+		return
+	}
+
+	member := r.PathValue("member")
+	if member == "" {
+		jsonError(w, "Member cannot be empty", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.client.SRem(r.Context(), key, member); err != nil {
+		jsonError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	jsonResponse(w, map[string]string{"status": "ok"})
+}
+
+// Hash operation handlers
+
+func (h *Handler) handleHashSet(w http.ResponseWriter, r *http.Request) {
+	if h.checkReadOnly(w) {
+		return
+	}
+
+	key := r.PathValue("key")
+	if h.checkKeyPrefix(w, key) {
+		return
+	}
+
+	var body struct {
+		Field string `json:"field"`
+		Value string `json:"value"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		jsonError(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if body.Field == "" {
+		jsonError(w, "Field name cannot be empty", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.client.HSet(r.Context(), key, body.Field, body.Value); err != nil {
+		jsonError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	jsonResponse(w, map[string]string{"status": "ok"})
+}
+
+func (h *Handler) handleHashRemove(w http.ResponseWriter, r *http.Request) {
+	if h.checkReadOnly(w) {
+		return
+	}
+
+	key := r.PathValue("key")
+	if h.checkKeyPrefix(w, key) {
+		return
+	}
+
+	field := r.PathValue("field")
+	if field == "" {
+		jsonError(w, "Field name cannot be empty", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.client.HDel(r.Context(), key, field); err != nil {
+		jsonError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	jsonResponse(w, map[string]string{"status": "ok"})
+}
+
+// ZSet operation handlers
+
+func (h *Handler) handleZSetAdd(w http.ResponseWriter, r *http.Request) {
+	if h.checkReadOnly(w) {
+		return
+	}
+
+	key := r.PathValue("key")
+	if h.checkKeyPrefix(w, key) {
+		return
+	}
+
+	var body struct {
+		Member string  `json:"member"`
+		Score  float64 `json:"score"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		jsonError(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if body.Member == "" {
+		jsonError(w, "Member cannot be empty", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.client.ZAdd(r.Context(), key, body.Member, body.Score); err != nil {
+		jsonError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	jsonResponse(w, map[string]string{"status": "ok"})
+}
+
+func (h *Handler) handleZSetRemove(w http.ResponseWriter, r *http.Request) {
+	if h.checkReadOnly(w) {
+		return
+	}
+
+	key := r.PathValue("key")
+	if h.checkKeyPrefix(w, key) {
+		return
+	}
+
+	member := r.PathValue("member")
+	if member == "" {
+		jsonError(w, "Member cannot be empty", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.client.ZRem(r.Context(), key, member); err != nil {
+		jsonError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	jsonResponse(w, map[string]string{"status": "ok"})
+}
+
+// Stream operation handlers
+
+func (h *Handler) handleStreamAdd(w http.ResponseWriter, r *http.Request) {
+	if h.checkReadOnly(w) {
+		return
+	}
+
+	key := r.PathValue("key")
+	if h.checkKeyPrefix(w, key) {
+		return
+	}
+
+	var body struct {
+		Fields map[string]string `json:"fields"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		jsonError(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if len(body.Fields) == 0 {
+		jsonError(w, "At least one field is required", http.StatusBadRequest)
+		return
+	}
+
+	// Validate field names and values are non-empty
+	for field, value := range body.Fields {
+		if field == "" {
+			jsonError(w, "Field name cannot be empty", http.StatusBadRequest)
+			return
+		}
+		if value == "" {
+			jsonError(w, "Field value cannot be empty", http.StatusBadRequest)
+			return
+		}
+	}
+
+	id, err := h.client.XAddMulti(r.Context(), key, body.Fields)
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	jsonResponse(w, map[string]string{"status": "ok", "id": id})
 }

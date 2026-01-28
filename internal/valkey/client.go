@@ -263,6 +263,107 @@ func (c *Client) XRange(ctx context.Context, key, start, stop string, count int6
 	return entries, nil
 }
 
+// List write operations
+
+// LPush prepends values to a list
+func (c *Client) LPush(ctx context.Context, key string, values ...string) error {
+	return c.client.Do(ctx, c.client.B().Lpush().Key(key).Element(values...).Build()).Error()
+}
+
+// RPush appends values to a list
+func (c *Client) RPush(ctx context.Context, key string, values ...string) error {
+	return c.client.Do(ctx, c.client.B().Rpush().Key(key).Element(values...).Build()).Error()
+}
+
+// LSet sets the value at an index in a list
+func (c *Client) LSet(ctx context.Context, key string, index int64, value string) error {
+	return c.client.Do(ctx, c.client.B().Lset().Key(key).Index(index).Element(value).Build()).Error()
+}
+
+// LRemByIndex removes the element at the given index by replacing it with a tombstone and removing
+func (c *Client) LRemByIndex(ctx context.Context, key string, index int64) error {
+	// Redis doesn't have a direct "remove by index" command
+	// We use a unique tombstone, set it at the index, then remove it
+	tombstone := "__KVWEB_DELETE_TOMBSTONE__" + strconv.FormatInt(time.Now().UnixNano(), 10)
+	if err := c.LSet(ctx, key, index, tombstone); err != nil {
+		return err
+	}
+	return c.client.Do(ctx, c.client.B().Lrem().Key(key).Count(1).Element(tombstone).Build()).Error()
+}
+
+// Set write operations
+
+// SAdd adds members to a set
+func (c *Client) SAdd(ctx context.Context, key string, members ...string) error {
+	return c.client.Do(ctx, c.client.B().Sadd().Key(key).Member(members...).Build()).Error()
+}
+
+// SRem removes members from a set
+func (c *Client) SRem(ctx context.Context, key string, members ...string) error {
+	return c.client.Do(ctx, c.client.B().Srem().Key(key).Member(members...).Build()).Error()
+}
+
+// SIsMember checks if a member exists in a set
+func (c *Client) SIsMember(ctx context.Context, key string, member string) (bool, error) {
+	result, err := c.client.Do(ctx, c.client.B().Sismember().Key(key).Member(member).Build()).ToInt64()
+	return result == 1, err
+}
+
+// Hash write operations
+
+// HSet sets a field value in a hash
+func (c *Client) HSet(ctx context.Context, key, field, value string) error {
+	return c.client.Do(ctx, c.client.B().Hset().Key(key).FieldValue().FieldValue(field, value).Build()).Error()
+}
+
+// HDel removes fields from a hash
+func (c *Client) HDel(ctx context.Context, key string, fields ...string) error {
+	return c.client.Do(ctx, c.client.B().Hdel().Key(key).Field(fields...).Build()).Error()
+}
+
+// HExists checks if a field exists in a hash
+func (c *Client) HExists(ctx context.Context, key, field string) (bool, error) {
+	result, err := c.client.Do(ctx, c.client.B().Hexists().Key(key).Field(field).Build()).ToInt64()
+	return result == 1, err
+}
+
+// Sorted set write operations
+
+// ZAdd adds a member with score to a sorted set
+func (c *Client) ZAdd(ctx context.Context, key string, member string, score float64) error {
+	return c.client.Do(ctx, c.client.B().Zadd().Key(key).ScoreMember().ScoreMember(score, member).Build()).Error()
+}
+
+// ZRem removes members from a sorted set
+func (c *Client) ZRem(ctx context.Context, key string, members ...string) error {
+	return c.client.Do(ctx, c.client.B().Zrem().Key(key).Member(members...).Build()).Error()
+}
+
+// Stream write operations
+
+// XAdd appends an entry to a stream and returns the entry ID
+func (c *Client) XAdd(ctx context.Context, key string, fields map[string]string) (string, error) {
+	// Convert map to flat field-value pairs
+	pairs := make([]string, 0, len(fields)*2)
+	for k, v := range fields {
+		pairs = append(pairs, k, v)
+	}
+	return c.client.Do(ctx, c.client.B().Xadd().Key(key).Id("*").FieldValue().FieldValue(pairs[0], pairs[1]).Build()).ToString()
+}
+
+// XAddMulti appends an entry with multiple fields to a stream
+func (c *Client) XAddMulti(ctx context.Context, key string, fields map[string]string) (string, error) {
+	if len(fields) == 0 {
+		return "", fmt.Errorf("at least one field is required")
+	}
+	// Build command with arbitrary fields using Arbitrary
+	args := []string{"XADD", key, "*"}
+	for k, v := range fields {
+		args = append(args, k, v)
+	}
+	return c.client.Do(ctx, c.client.B().Arbitrary(args...).Build()).ToString()
+}
+
 // Config operations
 
 // GetNotifyKeyspaceEvents returns the current notify-keyspace-events setting

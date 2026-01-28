@@ -12,6 +12,10 @@
 	import ChevronsLeftIcon from '@lucide/svelte/icons/chevrons-left';
 	import ChevronsRightIcon from '@lucide/svelte/icons/chevrons-right';
 	import CopyIcon from '@lucide/svelte/icons/copy';
+	import PencilIcon from '@lucide/svelte/icons/pencil';
+	import PlusIcon from '@lucide/svelte/icons/plus';
+	import Trash2Icon from '@lucide/svelte/icons/trash-2';
+	import XIcon from '@lucide/svelte/icons/x';
 	import { toast } from 'svelte-sonner';
 	import { api, type HashPair, type KeyInfo, type StreamEntry, type ZSetMember } from './api';
 	import CollapsibleValue from './CollapsibleValue.svelte';
@@ -21,7 +25,10 @@
 		formatTtl,
 		getErrorMessage,
 		highlightJson,
+		isNonEmpty,
+		isValidScore,
 		modifyOps,
+		parseScore,
 		toastError
 	} from './utils';
 	import { ws } from './ws';
@@ -68,8 +75,66 @@
 	// Delete confirmation dialog
 	let deleteDialogOpen = $state(false);
 
+	// Item delete confirmation
+	let itemDeleteDialogOpen = $state(false);
+	let itemToDelete = $state<{ type: string; identifier: string | number; display: string } | null>(
+		null
+	);
+
+	// Inline editing state
+	let editingItem = $state<{ type: string; identifier: string | number } | null>(null);
+	let editingValue = $state('');
+	let savingItem = $state(false);
+
+	// Add item form state
+	let showAddForm = $state(false);
+	let addFormData = $state<{
+		value?: string;
+		position?: 'head' | 'tail';
+		member?: string;
+		field?: string;
+		score?: string | number;
+		streamFields?: { key: string; value: string }[];
+	}>({});
+	let addingItem = $state(false);
+
 	function openDeleteDialog() {
 		deleteDialogOpen = true;
+	}
+
+	function openItemDeleteDialog(type: string, identifier: string | number, display: string) {
+		itemToDelete = { type, identifier, display };
+		itemDeleteDialogOpen = true;
+	}
+
+	function startEditing(type: string, identifier: string | number, currentValue: string) {
+		editingItem = { type, identifier };
+		editingValue = currentValue;
+	}
+
+	function cancelEditing() {
+		editingItem = null;
+		editingValue = '';
+	}
+
+	function resetAddForm() {
+		addFormData = {};
+		if (keyInfo?.type === 'list') {
+			addFormData.position = 'tail';
+		}
+		if (keyInfo?.type === 'stream') {
+			addFormData.streamFields = [{ key: '', value: '' }];
+		}
+	}
+
+	function openAddForm() {
+		resetAddForm();
+		showAddForm = true;
+	}
+
+	function closeAddForm() {
+		showAddForm = false;
+		resetAddForm();
 	}
 
 	async function copyValue() {
@@ -309,6 +374,143 @@
 			updatingTtl = false;
 		}
 	}
+
+	// Item CRUD operations
+
+	async function saveItemEdit() {
+		if (!editingItem || !keyInfo) return;
+		savingItem = true;
+		try {
+			const { type, identifier } = editingItem;
+			if (type === 'list') {
+				await api.listSet(key, identifier as number, editingValue);
+			} else if (type === 'hash') {
+				await api.hashSet(key, identifier as string, editingValue);
+			} else if (type === 'zset') {
+				if (!isValidScore(editingValue)) {
+					toast.error('Invalid score value');
+					return;
+				}
+				await api.zsetAdd(key, identifier as string, parseScore(editingValue));
+			}
+			toast.success('Item updated');
+			cancelEditing();
+			await loadKey(key);
+		} catch (e) {
+			toastError(e, 'Failed to update item');
+		} finally {
+			savingItem = false;
+		}
+	}
+
+	async function deleteItem() {
+		if (!itemToDelete || !keyInfo) return;
+		try {
+			const { type, identifier } = itemToDelete;
+			if (type === 'list') {
+				await api.listRemove(key, identifier as number);
+			} else if (type === 'set') {
+				await api.setRemove(key, identifier as string);
+			} else if (type === 'hash') {
+				await api.hashRemove(key, identifier as string);
+			} else if (type === 'zset') {
+				await api.zsetRemove(key, identifier as string);
+			}
+			toast.success('Item deleted');
+			await loadKey(key);
+		} catch (e) {
+			toastError(e, 'Failed to delete item');
+		} finally {
+			itemDeleteDialogOpen = false;
+			itemToDelete = null;
+		}
+	}
+
+	async function addItem() {
+		if (!keyInfo) return;
+		addingItem = true;
+		try {
+			if (keyInfo.type === 'list') {
+				if (!isNonEmpty(addFormData.value || '')) {
+					toast.error('Value cannot be empty');
+					return;
+				}
+				await api.listPush(key, addFormData.value!, addFormData.position || 'tail');
+				toast.success('Item added');
+			} else if (keyInfo.type === 'set') {
+				if (!isNonEmpty(addFormData.member || '')) {
+					toast.error('Member cannot be empty');
+					return;
+				}
+				await api.setAdd(key, addFormData.member!);
+				toast.success('Member added');
+			} else if (keyInfo.type === 'hash') {
+				if (!isNonEmpty(addFormData.field || '')) {
+					toast.error('Field name cannot be empty');
+					return;
+				}
+				await api.hashSet(key, addFormData.field!, addFormData.value || '');
+				toast.success('Field added');
+			} else if (keyInfo.type === 'zset') {
+				if (!isNonEmpty(addFormData.member || '')) {
+					toast.error('Member cannot be empty');
+					return;
+				}
+				if (!isValidScore(addFormData.score || '')) {
+					toast.error('Invalid score value');
+					return;
+				}
+				await api.zsetAdd(key, addFormData.member!, parseScore(addFormData.score!));
+				toast.success('Member added');
+			} else if (keyInfo.type === 'stream') {
+				const fields: Record<string, string> = {};
+				for (const f of addFormData.streamFields || []) {
+					if (!isNonEmpty(f.key)) {
+						toast.error('Field name cannot be empty');
+						return;
+					}
+					if (!isNonEmpty(f.value)) {
+						toast.error('Field value cannot be empty');
+						return;
+					}
+					fields[f.key] = f.value;
+				}
+				if (Object.keys(fields).length === 0) {
+					toast.error('At least one field is required');
+					return;
+				}
+				const result = await api.streamAdd(key, fields);
+				toast.success(`Entry added: ${result.id}`);
+			}
+			resetAddForm();
+			await loadKey(key);
+		} catch (e) {
+			toastError(e, 'Failed to add item');
+		} finally {
+			addingItem = false;
+		}
+	}
+
+	function addStreamField() {
+		if (addFormData.streamFields) {
+			addFormData.streamFields = [...addFormData.streamFields, { key: '', value: '' }];
+		}
+	}
+
+	function removeStreamField(index: number) {
+		if (addFormData.streamFields && addFormData.streamFields.length > 1) {
+			addFormData.streamFields = addFormData.streamFields.filter((_, i) => i !== index);
+		}
+	}
+
+	function handleEditKeydown(e: KeyboardEvent) {
+		if (e.key === 'Enter' && !e.shiftKey) {
+			e.preventDefault();
+			saveItemEdit();
+		} else if (e.key === 'Escape') {
+			cancelEditing();
+		}
+	}
 </script>
 
 <div class="flex h-full flex-col gap-4 p-6">
@@ -531,7 +733,19 @@
 							{keyInfo.length} items
 						{/if}
 					</span>
-					<div class="flex items-center gap-1">
+					<div class="flex items-center gap-2">
+						{#if !readOnly}
+							<Button
+								size="sm"
+								variant="outline"
+								onclick={openAddForm}
+								class="cursor-pointer"
+								title="Add item to list"
+							>
+								<PlusIcon class="mr-1 h-4 w-4" />
+								Add Item
+							</Button>
+						{/if}
 						{#if !rawView && Object.keys(listHighlights).length > 0}
 							<button
 								type="button"
@@ -552,6 +766,41 @@
 						</button>
 					</div>
 				</div>
+				{#if showAddForm && keyInfo.type === 'list'}
+					<div class="flex items-center gap-2 rounded border border-border bg-muted/50 p-3">
+						<Input
+							bind:value={addFormData.value}
+							placeholder="Value"
+							class="flex-1"
+							onkeydown={(e) => e.key === 'Enter' && addItem()}
+						/>
+						<select
+							bind:value={addFormData.position}
+							class="cursor-pointer rounded border border-border bg-background px-2 py-2 text-sm"
+						>
+							<option value="tail">Append (tail)</option>
+							<option value="head">Prepend (head)</option>
+						</select>
+						<Button
+							size="sm"
+							onclick={addItem}
+							disabled={addingItem}
+							class="cursor-pointer"
+							title="Add item"
+						>
+							{addingItem ? 'Adding...' : 'Add'}
+						</Button>
+						<Button
+							size="sm"
+							variant="ghost"
+							onclick={closeAddForm}
+							class="cursor-pointer"
+							title="Cancel"
+						>
+							<XIcon class="h-4 w-4" />
+						</Button>
+					</div>
+				{/if}
 				{#if rawView && rawJsonHtml}
 					<div
 						class="flex-1 overflow-auto rounded border border-border [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:p-4 [&>pre]:text-sm"
@@ -564,15 +813,80 @@
 							<Table.Row>
 								<Table.Head class="w-16">Index</Table.Head>
 								<Table.Head>Value</Table.Head>
+								{#if !readOnly}
+									<Table.Head class="w-24">Actions</Table.Head>
+								{/if}
 							</Table.Row>
 						</Table.Header>
 						<Table.Body>
 							{#each asArray() as item, i}
+								{@const realIndex = (currentPage - 1) * pageSize + i}
 								<Table.Row>
-									<Table.Cell class="align-top font-mono text-muted-foreground">{i}</Table.Cell>
+									<Table.Cell class="align-top font-mono text-muted-foreground"
+										>{realIndex}</Table.Cell
+									>
 									<Table.Cell class="font-mono">
-										<CollapsibleValue value={item} highlight={listHighlights[i]} />
+										{#if editingItem?.type === 'list' && editingItem.identifier === realIndex}
+											<div class="flex items-center gap-2">
+												<Input
+													bind:value={editingValue}
+													class="flex-1 font-mono text-sm"
+													onkeydown={handleEditKeydown}
+												/>
+												<Button
+													size="sm"
+													onclick={saveItemEdit}
+													disabled={savingItem}
+													class="cursor-pointer"
+													title="Save"
+												>
+													<CheckIcon class="h-4 w-4" />
+												</Button>
+												<Button
+													size="sm"
+													variant="ghost"
+													onclick={cancelEditing}
+													class="cursor-pointer"
+													title="Cancel"
+												>
+													<XIcon class="h-4 w-4" />
+												</Button>
+											</div>
+										{:else}
+											<CollapsibleValue value={item} highlight={listHighlights[i]} />
+										{/if}
 									</Table.Cell>
+									{#if !readOnly}
+										<Table.Cell class="align-top">
+											{#if !(editingItem?.type === 'list' && editingItem.identifier === realIndex)}
+												<div class="flex gap-1">
+													<Button
+														size="sm"
+														variant="ghost"
+														onclick={() => startEditing('list', realIndex, item)}
+														class="h-8 w-8 cursor-pointer p-0"
+														title="Edit item"
+													>
+														<PencilIcon class="h-4 w-4" />
+													</Button>
+													<Button
+														size="sm"
+														variant="ghost"
+														onclick={() =>
+															openItemDeleteDialog(
+																'list',
+																realIndex,
+																item.length > 50 ? item.slice(0, 50) + '...' : item
+															)}
+														class="h-8 w-8 cursor-pointer p-0 text-destructive hover:text-destructive"
+														title="Delete item"
+													>
+														<Trash2Icon class="h-4 w-4" />
+													</Button>
+												</div>
+											{/if}
+										</Table.Cell>
+									{/if}
 								</Table.Row>
 							{/each}
 						</Table.Body>
@@ -654,7 +968,19 @@
 							{keyInfo.length} members
 						{/if}
 					</span>
-					<div class="flex items-center gap-1">
+					<div class="flex items-center gap-2">
+						{#if !readOnly}
+							<Button
+								size="sm"
+								variant="outline"
+								onclick={openAddForm}
+								class="cursor-pointer"
+								title="Add member to set"
+							>
+								<PlusIcon class="mr-1 h-4 w-4" />
+								Add Member
+							</Button>
+						{/if}
 						<button
 							type="button"
 							onclick={() => (rawView = !rawView)}
@@ -665,6 +991,34 @@
 						</button>
 					</div>
 				</div>
+				{#if showAddForm && keyInfo.type === 'set'}
+					<div class="flex items-center gap-2 rounded border border-border bg-muted/50 p-3">
+						<Input
+							bind:value={addFormData.member}
+							placeholder="Member"
+							class="flex-1"
+							onkeydown={(e) => e.key === 'Enter' && addItem()}
+						/>
+						<Button
+							size="sm"
+							onclick={addItem}
+							disabled={addingItem}
+							class="cursor-pointer"
+							title="Add member"
+						>
+							{addingItem ? 'Adding...' : 'Add'}
+						</Button>
+						<Button
+							size="sm"
+							variant="ghost"
+							onclick={closeAddForm}
+							class="cursor-pointer"
+							title="Cancel"
+						>
+							<XIcon class="h-4 w-4" />
+						</Button>
+					</div>
+				{/if}
 				{#if rawView && rawJsonHtml}
 					<div
 						class="flex-1 overflow-auto rounded border border-border [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:p-4 [&>pre]:text-sm"
@@ -674,8 +1028,26 @@
 				{:else}
 					<div class="flex flex-col gap-1">
 						{#each asArray() as member}
-							<div class="rounded bg-muted px-2 py-1 font-mono text-sm">
+							<div
+								class="flex items-center justify-between rounded bg-muted px-2 py-1 font-mono text-sm"
+							>
 								<CollapsibleValue value={member} maxLength={100} />
+								{#if !readOnly}
+									<Button
+										size="sm"
+										variant="ghost"
+										onclick={() =>
+											openItemDeleteDialog(
+												'set',
+												member,
+												member.length > 50 ? member.slice(0, 50) + '...' : member
+											)}
+										class="h-6 w-6 cursor-pointer p-0 text-destructive hover:text-destructive"
+										title="Remove member"
+									>
+										<Trash2Icon class="h-4 w-4" />
+									</Button>
+								{/if}
 							</div>
 						{/each}
 					</div>
@@ -756,7 +1128,19 @@
 							{keyInfo.length} fields
 						{/if}
 					</span>
-					<div class="flex items-center gap-1">
+					<div class="flex items-center gap-2">
+						{#if !readOnly}
+							<Button
+								size="sm"
+								variant="outline"
+								onclick={openAddForm}
+								class="cursor-pointer"
+								title="Add field to hash"
+							>
+								<PlusIcon class="mr-1 h-4 w-4" />
+								Add Field
+							</Button>
+						{/if}
 						<button
 							type="button"
 							onclick={() => (rawView = !rawView)}
@@ -767,6 +1151,40 @@
 						</button>
 					</div>
 				</div>
+				{#if showAddForm && keyInfo.type === 'hash'}
+					<div class="flex items-center gap-2 rounded border border-border bg-muted/50 p-3">
+						<Input
+							bind:value={addFormData.field}
+							placeholder="Field name"
+							class="w-48"
+							onkeydown={(e) => e.key === 'Enter' && addItem()}
+						/>
+						<Input
+							bind:value={addFormData.value}
+							placeholder="Value"
+							class="flex-1"
+							onkeydown={(e) => e.key === 'Enter' && addItem()}
+						/>
+						<Button
+							size="sm"
+							onclick={addItem}
+							disabled={addingItem}
+							class="cursor-pointer"
+							title="Add field"
+						>
+							{addingItem ? 'Adding...' : 'Add'}
+						</Button>
+						<Button
+							size="sm"
+							variant="ghost"
+							onclick={closeAddForm}
+							class="cursor-pointer"
+							title="Cancel"
+						>
+							<XIcon class="h-4 w-4" />
+						</Button>
+					</div>
+				{/if}
 				{#if rawView && rawJsonHtml}
 					<div
 						class="flex-1 overflow-auto rounded border border-border [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:p-4 [&>pre]:text-sm"
@@ -779,6 +1197,9 @@
 							<Table.Row>
 								<Table.Head>Field</Table.Head>
 								<Table.Head>Value</Table.Head>
+								{#if !readOnly}
+									<Table.Head class="w-24">Actions</Table.Head>
+								{/if}
 							</Table.Row>
 						</Table.Header>
 						<Table.Body>
@@ -786,11 +1207,65 @@
 								<Table.Row>
 									<Table.Cell class="align-top font-mono text-muted-foreground">{field}</Table.Cell>
 									<Table.Cell class="font-mono">
-										<CollapsibleValue
-											{value}
-											highlight={isJson(value) ? highlightJson(value, false) : undefined}
-										/>
+										{#if editingItem?.type === 'hash' && editingItem.identifier === field}
+											<div class="flex items-center gap-2">
+												<Input
+													bind:value={editingValue}
+													class="flex-1 font-mono text-sm"
+													onkeydown={handleEditKeydown}
+												/>
+												<Button
+													size="sm"
+													onclick={saveItemEdit}
+													disabled={savingItem}
+													class="cursor-pointer"
+													title="Save"
+												>
+													<CheckIcon class="h-4 w-4" />
+												</Button>
+												<Button
+													size="sm"
+													variant="ghost"
+													onclick={cancelEditing}
+													class="cursor-pointer"
+													title="Cancel"
+												>
+													<XIcon class="h-4 w-4" />
+												</Button>
+											</div>
+										{:else}
+											<CollapsibleValue
+												{value}
+												highlight={isJson(value) ? highlightJson(value, false) : undefined}
+											/>
+										{/if}
 									</Table.Cell>
+									{#if !readOnly}
+										<Table.Cell class="align-top">
+											{#if !(editingItem?.type === 'hash' && editingItem.identifier === field)}
+												<div class="flex gap-1">
+													<Button
+														size="sm"
+														variant="ghost"
+														onclick={() => startEditing('hash', field, value)}
+														class="h-8 w-8 cursor-pointer p-0"
+														title="Edit value"
+													>
+														<PencilIcon class="h-4 w-4" />
+													</Button>
+													<Button
+														size="sm"
+														variant="ghost"
+														onclick={() => openItemDeleteDialog('hash', field, field)}
+														class="h-8 w-8 cursor-pointer p-0 text-destructive hover:text-destructive"
+														title="Delete field"
+													>
+														<Trash2Icon class="h-4 w-4" />
+													</Button>
+												</div>
+											{/if}
+										</Table.Cell>
+									{/if}
 								</Table.Row>
 							{/each}
 						</Table.Body>
@@ -872,7 +1347,19 @@
 							{keyInfo.length} members
 						{/if}
 					</span>
-					<div class="flex items-center gap-1">
+					<div class="flex items-center gap-2">
+						{#if !readOnly}
+							<Button
+								size="sm"
+								variant="outline"
+								onclick={openAddForm}
+								class="cursor-pointer"
+								title="Add member to sorted set"
+							>
+								<PlusIcon class="mr-1 h-4 w-4" />
+								Add Member
+							</Button>
+						{/if}
 						<button
 							type="button"
 							onclick={() => (rawView = !rawView)}
@@ -883,6 +1370,42 @@
 						</button>
 					</div>
 				</div>
+				{#if showAddForm && keyInfo.type === 'zset'}
+					<div class="flex items-center gap-2 rounded border border-border bg-muted/50 p-3">
+						<Input
+							bind:value={addFormData.member}
+							placeholder="Member"
+							class="flex-1"
+							onkeydown={(e) => e.key === 'Enter' && addItem()}
+						/>
+						<Input
+							bind:value={addFormData.score}
+							placeholder="Score"
+							type="number"
+							step="any"
+							class="w-32"
+							onkeydown={(e) => e.key === 'Enter' && addItem()}
+						/>
+						<Button
+							size="sm"
+							onclick={addItem}
+							disabled={addingItem}
+							class="cursor-pointer"
+							title="Add member"
+						>
+							{addingItem ? 'Adding...' : 'Add'}
+						</Button>
+						<Button
+							size="sm"
+							variant="ghost"
+							onclick={closeAddForm}
+							class="cursor-pointer"
+							title="Cancel"
+						>
+							<XIcon class="h-4 w-4" />
+						</Button>
+					</div>
+				{/if}
 				{#if rawView && rawJsonHtml}
 					<div
 						class="flex-1 overflow-auto rounded border border-border [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:p-4 [&>pre]:text-sm"
@@ -894,7 +1417,10 @@
 						<Table.Header>
 							<Table.Row>
 								<Table.Head>Member</Table.Head>
-								<Table.Head class="w-24">Score</Table.Head>
+								<Table.Head class="w-32">Score</Table.Head>
+								{#if !readOnly}
+									<Table.Head class="w-24">Actions</Table.Head>
+								{/if}
 							</Table.Row>
 						</Table.Header>
 						<Table.Body>
@@ -903,7 +1429,72 @@
 									<Table.Cell class="font-mono">
 										<CollapsibleValue value={zitem.member} />
 									</Table.Cell>
-									<Table.Cell class="font-mono text-muted-foreground">{zitem.score}</Table.Cell>
+									<Table.Cell class="font-mono text-muted-foreground">
+										{#if editingItem?.type === 'zset' && editingItem.identifier === zitem.member}
+											<div class="flex items-center gap-2">
+												<Input
+													bind:value={editingValue}
+													type="number"
+													step="any"
+													class="w-24 font-mono text-sm"
+													onkeydown={handleEditKeydown}
+												/>
+												<Button
+													size="sm"
+													onclick={saveItemEdit}
+													disabled={savingItem}
+													class="cursor-pointer"
+													title="Save"
+												>
+													<CheckIcon class="h-4 w-4" />
+												</Button>
+												<Button
+													size="sm"
+													variant="ghost"
+													onclick={cancelEditing}
+													class="cursor-pointer"
+													title="Cancel"
+												>
+													<XIcon class="h-4 w-4" />
+												</Button>
+											</div>
+										{:else}
+											{zitem.score}
+										{/if}
+									</Table.Cell>
+									{#if !readOnly}
+										<Table.Cell class="align-top">
+											{#if !(editingItem?.type === 'zset' && editingItem.identifier === zitem.member)}
+												<div class="flex gap-1">
+													<Button
+														size="sm"
+														variant="ghost"
+														onclick={() => startEditing('zset', zitem.member, String(zitem.score))}
+														class="h-8 w-8 cursor-pointer p-0"
+														title="Edit score"
+													>
+														<PencilIcon class="h-4 w-4" />
+													</Button>
+													<Button
+														size="sm"
+														variant="ghost"
+														onclick={() =>
+															openItemDeleteDialog(
+																'zset',
+																zitem.member,
+																zitem.member.length > 50
+																	? zitem.member.slice(0, 50) + '...'
+																	: zitem.member
+															)}
+														class="h-8 w-8 cursor-pointer p-0 text-destructive hover:text-destructive"
+														title="Delete member"
+													>
+														<Trash2Icon class="h-4 w-4" />
+													</Button>
+												</div>
+											{/if}
+										</Table.Cell>
+									{/if}
 								</Table.Row>
 							{/each}
 						</Table.Body>
@@ -985,7 +1576,19 @@
 							{keyInfo.length} entries
 						{/if}
 					</span>
-					<div class="flex items-center gap-1">
+					<div class="flex items-center gap-2">
+						{#if !readOnly}
+							<Button
+								size="sm"
+								variant="outline"
+								onclick={openAddForm}
+								class="cursor-pointer"
+								title="Add entry to stream"
+							>
+								<PlusIcon class="mr-1 h-4 w-4" />
+								Add Entry
+							</Button>
+						{/if}
 						<button
 							type="button"
 							onclick={() => (rawView = !rawView)}
@@ -996,6 +1599,59 @@
 						</button>
 					</div>
 				</div>
+				{#if showAddForm && keyInfo.type === 'stream'}
+					<div class="flex flex-col gap-2 rounded border border-border bg-muted/50 p-3">
+						<div class="text-sm text-muted-foreground">Add stream entry (append-only)</div>
+						{#each addFormData.streamFields || [] as field, i}
+							<div class="flex items-center gap-2">
+								<Input bind:value={field.key} placeholder="Field name" class="w-48" />
+								<Input bind:value={field.value} placeholder="Value" class="flex-1" />
+								{#if (addFormData.streamFields?.length || 0) > 1}
+									<Button
+										size="sm"
+										variant="ghost"
+										onclick={() => removeStreamField(i)}
+										class="h-8 w-8 cursor-pointer p-0"
+										title="Remove field"
+									>
+										<XIcon class="h-4 w-4" />
+									</Button>
+								{/if}
+							</div>
+						{/each}
+						<div class="flex items-center gap-2">
+							<Button
+								size="sm"
+								variant="outline"
+								onclick={addStreamField}
+								class="cursor-pointer"
+								title="Add another field"
+							>
+								<PlusIcon class="mr-1 h-4 w-4" />
+								Add Field
+							</Button>
+							<div class="flex-1"></div>
+							<Button
+								size="sm"
+								onclick={addItem}
+								disabled={addingItem}
+								class="cursor-pointer"
+								title="Add entry"
+							>
+								{addingItem ? 'Adding...' : 'Add Entry'}
+							</Button>
+							<Button
+								size="sm"
+								variant="ghost"
+								onclick={closeAddForm}
+								class="cursor-pointer"
+								title="Cancel"
+							>
+								<XIcon class="h-4 w-4" />
+							</Button>
+						</div>
+					</div>
+				{/if}
 				{#if rawView && rawJsonHtml}
 					<div
 						class="flex-1 overflow-auto rounded border border-border [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:p-4 [&>pre]:text-sm"
@@ -1044,6 +1700,33 @@
 				<AlertDialog.Footer>
 					<AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
 					<AlertDialog.Action onclick={deleteKey}>Delete</AlertDialog.Action>
+				</AlertDialog.Footer>
+			</AlertDialog.Content>
+		</AlertDialog.Root>
+
+		<AlertDialog.Root bind:open={itemDeleteDialogOpen}>
+			<AlertDialog.Content>
+				<AlertDialog.Header>
+					<AlertDialog.Title>Delete Item</AlertDialog.Title>
+					<AlertDialog.Description>
+						{#if itemToDelete}
+							Are you sure you want to delete this {itemToDelete.type === 'list'
+								? 'list item'
+								: itemToDelete.type === 'set'
+									? 'set member'
+									: itemToDelete.type === 'hash'
+										? 'hash field'
+										: 'sorted set member'}?
+							<div class="mt-2">
+								<code class="rounded bg-muted px-1 font-mono break-all">{itemToDelete.display}</code
+								>
+							</div>
+						{/if}
+					</AlertDialog.Description>
+				</AlertDialog.Header>
+				<AlertDialog.Footer>
+					<AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+					<AlertDialog.Action onclick={deleteItem}>Delete</AlertDialog.Action>
 				</AlertDialog.Footer>
 			</AlertDialog.Content>
 		</AlertDialog.Root>
