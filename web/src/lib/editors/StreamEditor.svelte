@@ -4,7 +4,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import PaginationControls from '$lib/PaginationControls.svelte';
-	import { highlightJson, isNonEmpty, toastError } from '$lib/utils';
+	import { highlightJson, isNonEmpty, showPaginationControls, toastError } from '$lib/utils';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import XIcon from '@lucide/svelte/icons/x';
 	import { toast } from 'svelte-sonner';
@@ -89,7 +89,7 @@
 </script>
 
 <div class="flex flex-1 flex-col gap-2 overflow-auto">
-	{#if pagination}
+	{#if pagination && showPaginationControls(pagination.total)}
 		<PaginationControls
 			page={currentPage}
 			{pageSize}
@@ -101,9 +101,13 @@
 	{/if}
 
 	<div class="flex items-center justify-between">
-		<span class="text-sm text-muted-foreground">
-			{pagination?.total ?? entries.length} entries total
-		</span>
+		<div class="flex-1">
+			{#if pagination && !showPaginationControls(pagination.total)}
+				<span class="text-sm text-muted-foreground">
+					{pagination.total} entr{pagination.total === 1 ? 'y' : 'ies'} total
+				</span>
+			{/if}
+		</div>
 		<div class="flex items-center gap-2">
 			{#if !readOnly}
 				<Button

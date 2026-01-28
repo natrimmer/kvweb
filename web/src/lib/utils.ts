@@ -166,3 +166,14 @@ export function parseScore(value: string | number | undefined | null): number {
 export function isLargeValue(value: string, limitBytes = 1024 * 1024): boolean {
 	return new Blob([value]).size > limitBytes;
 }
+
+// Pagination settings
+export const pageSizes = [50, 100, 200, 500] as const;
+export const minPageSize = pageSizes[0];
+
+/**
+ * Determines if pagination controls should be shown based on total items.
+ */
+export function showPaginationControls(totalItems: number): boolean {
+	return totalItems > minPageSize;
+}
