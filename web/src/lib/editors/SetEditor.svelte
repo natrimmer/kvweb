@@ -122,18 +122,22 @@
 						onclick={() => (showAddForm = true)}
 						class="cursor-pointer"
 						title="Add member to set"
+						aria-label="Add member to set"
 					>
 						<PlusIcon class="mr-1 h-4 w-4" />
 						Add Member
 					</Button>
 				{/if}
-				<button
-					type="button"
+				<Button
+					size="sm"
+					variant="outline"
 					onclick={() => (rawView = !rawView)}
-					class="cursor-pointer rounded bg-muted px-2 py-1 text-xs text-foreground hover:bg-secondary"
+					class="cursor-pointer"
+					title={rawView ? 'Show as List' : 'Show as Raw JSON'}
+					aria-label={rawView ? 'Show as List' : 'Show as Raw JSON'}
 				>
 					{rawView ? 'Show as List' : 'Show as Raw JSON'}
-				</button>
+				</Button>
 			</div>
 		</div>
 
@@ -144,6 +148,8 @@
 					placeholder="Member"
 					class="flex-1"
 					onkeydown={(e) => e.key === 'Enter' && addItem()}
+					title="Member"
+					aria-label="Member"
 				/>
 			</AddItemForm>
 		{/if}
@@ -168,8 +174,9 @@
 								size="sm"
 								variant="ghost"
 								onclick={() => openDeleteDialog(member)}
-								class="h-6 w-6 cursor-pointer p-0 text-destructive hover:text-destructive"
 								title="Remove member"
+								aria-label="Remove member"
+								class="h-6 w-6 cursor-pointer p-0 text-destructive hover:text-destructive"
 							>
 								<Trash2Icon class="h-4 w-4" />
 							</Button>

@@ -32,8 +32,9 @@
 			size="sm"
 			onclick={onSave}
 			disabled={saving}
-			class="h-8 w-8 cursor-pointer p-0"
 			title="Save"
+			aria-label="Save"
+			class="h-8 w-8 cursor-pointer p-0"
 		>
 			<CheckIcon class="h-4 w-4" />
 		</Button>
@@ -41,8 +42,9 @@
 			size="sm"
 			variant="ghost"
 			onclick={onCancel}
-			class="h-8 w-8 cursor-pointer p-0"
 			title="Cancel"
+			aria-label="Cancel"
+			class="h-8 w-8 cursor-pointer p-0"
 		>
 			<XIcon class="h-4 w-4" />
 		</Button>
@@ -52,8 +54,9 @@
 				size="sm"
 				variant="ghost"
 				onclick={onEdit}
-				class="h-8 w-8 cursor-pointer p-0"
 				title="Edit"
+				aria-label="Edit"
+				class="h-8 w-8 cursor-pointer p-0"
 			>
 				<PencilIcon class="h-4 w-4" />
 			</Button>
@@ -63,8 +66,9 @@
 				size="sm"
 				variant="ghost"
 				onclick={onDelete}
-				class="h-8 w-8 cursor-pointer p-0 text-destructive hover:text-destructive"
 				title="Delete"
+				aria-label="Delete"
+				class="h-8 w-8 cursor-pointer p-0 text-destructive hover:text-destructive"
 			>
 				<Trash2Icon class="h-4 w-4" />
 			</Button>

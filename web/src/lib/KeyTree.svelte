@@ -77,6 +77,7 @@
 				onclick={navigateBack}
 				class="cursor-pointer px-2"
 				title="Go back"
+				aria-label="Go back"
 			>
 				<MoveLeft size={16} />
 			</Button>
@@ -86,6 +87,7 @@
 				onclick={navigateToRoot}
 				class="cursor-pointer px-2"
 				title="Go to root"
+				aria-label="Go to root"
 			>
 				<House size={16} />
 			</Button>
@@ -93,14 +95,15 @@
 		{:else}
 			<span class="flex-1 text-sm text-muted-foreground">Tree View</span>
 		{/if}
-		<button
-			type="button"
+		<Button
+			size="sm"
 			onclick={onclose}
-			class="cursor-pointer rounded border border-border bg-card px-3 py-1 font-mono text-sm hover:bg-muted"
+			class="cursor-pointer"
 			title="Switch to list view"
+			aria-label="Switch to list view"
 		>
 			<List size={18} />
-		</button>
+		</Button>
 	</div>
 
 	{#if loading}
@@ -119,6 +122,9 @@
 							: ''}"
 						onclick={() => handleClick(entry)}
 						title={entry.isLeaf ? `View key: ${entry.fullKey}` : `Navigate to: ${entry.prefix}`}
+						aria-label={entry.isLeaf
+							? `View key: ${entry.fullKey}`
+							: `Navigate to: ${entry.prefix}`}
 					>
 						<span class="text-muted-foreground">
 							{#if entry.isLeaf}

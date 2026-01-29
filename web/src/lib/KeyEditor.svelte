@@ -322,14 +322,18 @@
 						<label for="value-textarea">Value:</label>
 						<div class="flex items-center gap-2">
 							{#if isJsonValue}
-								<button
-									type="button"
+								<Button
+									size="sm"
+									variant="outline"
 									onclick={() => (prettyPrint = !prettyPrint)}
-									class="cursor-pointer rounded bg-muted px-2 py-1 text-xs text-foreground hover:bg-secondary"
+									class="cursor-pointer"
 									title={prettyPrint ? 'Compact JSON formatting' : 'Pretty-print JSON formatting'}
+									aria-label={prettyPrint
+										? 'Compact JSON formatting'
+										: 'Pretty-print JSON formatting'}
 								>
 									{prettyPrint ? 'Compact JSON' : 'Format JSON'}
-								</button>
+								</Button>
 							{/if}
 							{#if !readOnly && hasChanges}
 								<Button
@@ -338,6 +342,7 @@
 									disabled={saving}
 									class="cursor-pointer"
 									title="Save changes"
+									aria-label="Save changes"
 								>
 									{saving ? 'Saving...' : 'Save'}
 								</Button>
@@ -358,6 +363,8 @@
 							id="value-textarea"
 							bind:value={editValue}
 							readonly={readOnly}
+							title="Key value"
+							aria-label="Key value"
 							class="min-h-75 flex-1 resize-none text-sm"
 						/>
 					{/if}
@@ -450,8 +457,10 @@
 					</AlertDialog.Description>
 				</AlertDialog.Header>
 				<AlertDialog.Footer>
-					<AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-					<AlertDialog.Action onclick={deleteKey}>Delete</AlertDialog.Action>
+					<AlertDialog.Cancel title="Cancel" aria-label="Cancel">Cancel</AlertDialog.Cancel>
+					<AlertDialog.Action onclick={deleteKey} title="Delete" aria-label="Delete">
+						Delete
+					</AlertDialog.Action>
 				</AlertDialog.Footer>
 			</AlertDialog.Content>
 		</AlertDialog.Root>

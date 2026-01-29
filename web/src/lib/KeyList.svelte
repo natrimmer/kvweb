@@ -204,16 +204,19 @@
 					onfocus={() => (showHistory = true)}
 					onblur={() => setTimeout(() => (showHistory = false), 150)}
 					class="pr-9"
+					title="Search keys by pattern"
+					aria-label="Search keys by pattern"
 				/>
 				{#if pattern && pattern !== '*'}
 					<Button
 						variant="ghost"
 						size="icon"
 						onclick={clearInput}
+						aria-label="Clear search input"
+						title="Clear search input"
 						class="absolute inset-y-0 right-0 rounded-l-none text-muted-foreground hover:bg-transparent focus-visible:ring-ring/50"
 					>
 						<CircleX size={18} />
-						<span class="sr-only">Clear input</span>
 					</Button>
 				{/if}
 				<SearchHistory bind:this={searchHistoryRef} show={showHistory} onselect={selectHistory} />
@@ -224,6 +227,7 @@
 					onclick={() => (useRegex = !useRegex)}
 					class="cursor-pointer"
 					title={useRegex ? 'Regex mode (click for glob)' : 'Glob mode (click for regex)'}
+					aria-label={useRegex ? 'Regex mode (click for glob)' : 'Glob mode (click for regex)'}
 				>
 					<Regex size={18} />
 				</Button>
@@ -232,6 +236,7 @@
 					onclick={() => (viewMode = 'tree')}
 					class="cursor-pointer"
 					title="Switch to tree view"
+					aria-label="Switch to tree view"
 				>
 					<ListTree size={18} />
 				</Button>
@@ -240,6 +245,7 @@
 					onclick={() => (showFilters = !showFilters)}
 					class="cursor-pointer"
 					title="Toggle filters"
+					aria-label="Toggle filters"
 				>
 					<Funnel size={18} />
 				</Button>
@@ -278,6 +284,9 @@
 					title={sortAsc
 						? 'Sorting ascending (click for descending)'
 						: 'Sorting descending (click for ascending)'}
+					aria-label={sortAsc
+						? 'Sorting ascending (click for descending)'
+						: 'Sorting descending (click for ascending)'}
 				>
 					{#if sortAsc}
 						<ArrowUpFromDot size={16} />
@@ -305,8 +314,17 @@
 					placeholder="Key name"
 					onkeydown={(e) => e.key === 'Enter' && createKey()}
 					class="flex-1"
+					title="New key name"
+					aria-label="New key name"
 				/>
-				<Button onclick={createKey}>Create</Button>
+				<Button
+					onclick={createKey}
+					disabled={!newKeyName.trim()}
+					title="Create new key"
+					aria-label="Create new key"
+				>
+					Create
+				</Button>
 			</div>
 		{/if}
 
@@ -325,6 +343,7 @@
 							: ''}"
 						onclick={() => onselect(item.key)}
 						title={`View key: ${item.key}`}
+						aria-label={`View key: ${item.key}`}
 					>
 						<span class="flex-1 overflow-hidden text-left text-ellipsis">{item.key}</span>
 						<Badge variant="secondary" class="ml-2 text-xs opacity-60">{item.type}</Badge>
@@ -334,7 +353,14 @@
 		</ul>
 
 		{#if hasMore}
-			<Button variant="secondary" class="w-full" onclick={() => loadKeys(false)} disabled={loading}>
+			<Button
+				variant="secondary"
+				class="w-full"
+				onclick={() => loadKeys(false)}
+				disabled={loading}
+				title="Load more keys"
+				aria-label="Load more keys"
+			>
 				{loading ? 'Loading...' : 'Load more'}
 			</Button>
 		{/if}

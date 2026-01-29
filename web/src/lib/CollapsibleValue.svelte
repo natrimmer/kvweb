@@ -37,6 +37,9 @@
 		onclick={() => (expanded = !expanded)}
 		class="ml-1 cursor-pointer text-xs text-primary hover:text-primary/80 hover:underline"
 		title={expanded ? 'Collapse value' : `Expand to show full value (${value.length} characters)`}
+		aria-label={expanded
+			? 'Collapse value'
+			: `Expand to show full value (${value.length} characters)`}
 	>
 		{expanded ? 'Show less' : `Show all (${value.length} chars)`}
 	</button>

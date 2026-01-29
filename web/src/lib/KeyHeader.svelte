@@ -134,13 +134,17 @@
 							if (e.key === 'Enter') handleKeyRename();
 							if (e.key === 'Escape') cancelEditingKeyName();
 						}}
+						title="Key name"
+						aria-label="Key name"
 					/>
 					<Button
 						variant="default"
 						size="sm"
 						onclick={handleKeyRename}
-						class="h-8 cursor-pointer"
+						disabled={renamingKey}
 						title="Save key name"
+						aria-label="Save key name"
+						class="h-8 cursor-pointer"
 					>
 						{#if renamingKey}
 							...
@@ -152,9 +156,10 @@
 						variant="destructive"
 						size="sm"
 						onclick={cancelEditingKeyName}
-						class="h-8 cursor-pointer"
-						title="Cancel"
 						disabled={renamingKey}
+						title="Cancel rename"
+						aria-label="Cancel rename"
+						class="h-8 cursor-pointer"
 					>
 						<XIcon class="size-4" />
 					</Button>
@@ -170,8 +175,9 @@
 						<button
 							type="button"
 							onclick={startEditingTtl}
-							class="ml-1 cursor-pointer text-muted-foreground hover:text-foreground"
 							title="Edit TTL"
+							aria-label="Edit TTL"
+							class="ml-1 cursor-pointer text-muted-foreground hover:text-foreground"
 						>
 							<PencilIcon class="inline h-3 w-3" />
 						</button>
@@ -189,14 +195,17 @@
 							if (e.key === 'Enter') handleTtlUpdate();
 							if (e.key === 'Escape') cancelEditingTtl();
 						}}
+						title="TTL in seconds"
+						aria-label="TTL in seconds"
 					/>
 					<Button
 						variant="default"
 						size="sm"
 						onclick={handleTtlUpdate}
 						disabled={updatingTtl}
-						class="h-8 cursor-pointer"
 						title="Save TTL"
+						aria-label="Save TTL"
+						class="h-8 cursor-pointer"
 					>
 						{#if updatingTtl}
 							...
@@ -208,8 +217,9 @@
 						variant="destructive"
 						size="sm"
 						onclick={cancelEditingTtl}
+						title="Cancel TTL edit"
+						aria-label="Cancel TTL edit"
 						class="h-8 cursor-pointer"
-						title="Cancel"
 					>
 						<XIcon class="size-4" />
 					</Button>
@@ -222,6 +232,7 @@
 				size="sm"
 				onclick={copyKeyName}
 				title="Copy key name to clipboard"
+				aria-label="Copy key name to clipboard"
 				class="cursor-pointer"
 			>
 				{#if copiedKey}
@@ -236,6 +247,7 @@
 				size="sm"
 				onclick={handleCopyValue}
 				title="Copy value to clipboard"
+				aria-label="Copy value to clipboard"
 				class="cursor-pointer"
 			>
 				{#if copiedValue}
@@ -253,6 +265,7 @@
 					size="sm"
 					onclick={handleRenameClick}
 					title="Rename this key"
+					aria-label="Rename this key"
 					class="shrink-0 cursor-pointer"
 				>
 					Rename
@@ -263,6 +276,7 @@
 					onclick={onDelete}
 					class="shrink-0 cursor-pointer"
 					title="Delete this key"
+					aria-label="Delete this key"
 				>
 					Delete
 				</Button>
@@ -272,8 +286,9 @@
 			variant="outline"
 			size="sm"
 			onclick={onToggleTypeHeader}
-			class="shrink-0 cursor-pointer text-muted-foreground hover:text-foreground"
+			aria-label={typeHeaderExpanded ? 'Collapse type controls' : 'Expand type controls'}
 			title={typeHeaderExpanded ? 'Collapse type controls' : 'Expand type controls'}
+			class="shrink-0 cursor-pointer text-muted-foreground hover:text-foreground"
 		>
 			{#if typeHeaderExpanded}
 				<ChevronUpIcon class="h-5 w-5" />
@@ -289,14 +304,30 @@
 			class="flex items-center justify-between rounded bg-destructive/10 px-3 py-2 text-sm text-destructive"
 		>
 			<span>This key was deleted externally</span>
-			<Button variant="secondary" size="sm" onclick={onClose} class="cursor-pointer">Close</Button>
+			<Button
+				variant="secondary"
+				size="sm"
+				onclick={onClose}
+				class="cursor-pointer"
+				title="Close alert"
+				aria-label="Close alert"
+			>
+				Close
+			</Button>
 		</div>
 	{:else if externallyModified}
 		<div
 			class="flex items-center justify-between rounded bg-accent/10 px-3 py-2 text-sm text-accent-foreground"
 		>
 			<span>Modified externally</span>
-			<Button variant="secondary" size="sm" onclick={onReload} class="cursor-pointer">
+			<Button
+				variant="secondary"
+				size="sm"
+				onclick={onReload}
+				class="cursor-pointer"
+				title="Reload key data"
+				aria-label="Reload key data"
+			>
 				Reload
 			</Button>
 		</div>

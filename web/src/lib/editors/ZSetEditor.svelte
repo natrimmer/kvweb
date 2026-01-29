@@ -170,18 +170,22 @@
 						onclick={() => (showAddForm = true)}
 						class="cursor-pointer"
 						title="Add member to sorted set"
+						aria-label="Add member to sorted set"
 					>
 						<PlusIcon class="mr-1 h-4 w-4" />
 						Add Member
 					</Button>
 				{/if}
-				<button
-					type="button"
+				<Button
+					size="sm"
+					variant="outline"
 					onclick={() => (rawView = !rawView)}
-					class="cursor-pointer rounded bg-muted px-2 py-1 text-xs text-foreground hover:bg-secondary"
+					class="cursor-pointer"
+					title={rawView ? 'Show as Table' : 'Show as Raw JSON'}
+					aria-label={rawView ? 'Show as Table' : 'Show as Raw JSON'}
 				>
 					{rawView ? 'Show as Table' : 'Show as Raw JSON'}
-				</button>
+				</Button>
 			</div>
 		</div>
 
@@ -192,6 +196,8 @@
 					placeholder="Member"
 					class="flex-1"
 					onkeydown={(e) => e.key === 'Enter' && addItem()}
+					title="Member"
+					aria-label="Member"
 				/>
 				<Input
 					bind:value={addScore}
@@ -200,6 +206,8 @@
 					step="any"
 					class="w-32"
 					onkeydown={(e) => e.key === 'Enter' && addItem()}
+					title="Score"
+					aria-label="Score"
 				/>
 			</AddItemForm>
 		{/if}

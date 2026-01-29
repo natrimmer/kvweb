@@ -202,27 +202,34 @@
 						onclick={() => (showAddForm = true)}
 						class="cursor-pointer"
 						title="Add item to list"
+						aria-label="Add item to list"
 					>
 						<PlusIcon class="mr-1 h-4 w-4" />
 						Add Item
 					</Button>
 				{/if}
 				{#if !rawView && Object.keys(listHighlights).length > 0}
-					<button
-						type="button"
+					<Button
+						size="sm"
+						variant="outline"
 						onclick={() => (prettyPrint = !prettyPrint)}
-						class="cursor-pointer rounded bg-muted px-2 py-1 text-xs text-foreground hover:bg-secondary"
+						class="cursor-pointer"
+						title={prettyPrint ? 'Show compact JSON' : 'Show formatted JSON'}
+						aria-label={prettyPrint ? 'Show compact JSON' : 'Show formatted JSON'}
 					>
 						{prettyPrint ? 'Compact JSON' : 'Format JSON'}
-					</button>
+					</Button>
 				{/if}
-				<button
-					type="button"
+				<Button
+					size="sm"
+					variant="outline"
 					onclick={() => (rawView = !rawView)}
-					class="cursor-pointer rounded bg-muted px-2 py-1 text-xs text-foreground hover:bg-secondary"
+					class="cursor-pointer"
+					title={rawView ? 'Show as Table' : 'Show as Raw JSON'}
+					aria-label={rawView ? 'Show as Table' : 'Show as Raw JSON'}
 				>
 					{rawView ? 'Show as Table' : 'Show as Raw JSON'}
-				</button>
+				</Button>
 			</div>
 		</div>
 
@@ -233,6 +240,8 @@
 					placeholder="Value"
 					class="flex-1"
 					onkeydown={(e) => e.key === 'Enter' && addItem()}
+					title="Value"
+					aria-label="Value"
 				/>
 				<Select.Root type="single" value={addPosition} onValueChange={handlePositionChange}>
 					<Select.Trigger class="w-36">

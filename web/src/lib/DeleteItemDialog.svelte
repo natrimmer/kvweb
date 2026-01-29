@@ -39,8 +39,12 @@
 			</AlertDialog.Description>
 		</AlertDialog.Header>
 		<AlertDialog.Footer>
-			<AlertDialog.Cancel onclick={onCancel}>Cancel</AlertDialog.Cancel>
-			<AlertDialog.Action onclick={onConfirm}>Delete</AlertDialog.Action>
+			<AlertDialog.Cancel onclick={onCancel} title="Cancel" aria-label="Cancel">
+				Cancel
+			</AlertDialog.Cancel>
+			<AlertDialog.Action onclick={onConfirm} title="Delete" aria-label="Delete">
+				Delete
+			</AlertDialog.Action>
 		</AlertDialog.Footer>
 	</AlertDialog.Content>
 </AlertDialog.Root>

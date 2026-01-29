@@ -134,6 +134,7 @@
 				disabled={loading}
 				class="cursor-pointer"
 				title="Refresh server info"
+				aria-label="Refresh server info"
 			>
 				Refresh
 			</Button>
@@ -170,6 +171,7 @@
 					disabled={enablingNotifications}
 					class="cursor-pointer"
 					title="Enable real-time key change notifications"
+					aria-label="Enable real-time key change notifications"
 				>
 					{enablingNotifications ? 'Enabling...' : 'Enable Live Updates'}
 				</Button>
@@ -178,6 +180,8 @@
 		<a
 			href="/kvweb"
 			class="flex items-center justify-between gap-2 text-sm text-muted-foreground hover:underline"
+			title="Learn more about kvweb"
+			aria-label="Learn more about kvweb"
 		>
 			<span>learn more about kvweb</span>
 			<Info size={20} />

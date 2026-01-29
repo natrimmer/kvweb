@@ -83,6 +83,7 @@
 				class="cursor-pointer text-xs text-muted-foreground hover:text-destructive"
 				onmousedown={() => clearHistory()}
 				title="Clear search history"
+				aria-label="Clear search history"
 			>
 				Clear all
 			</button>
@@ -94,6 +95,7 @@
 					class="flex flex-1 cursor-pointer items-center gap-2 px-3 py-2 text-left font-mono text-sm"
 					onmousedown={() => selectHistory(h)}
 					title="Use this search pattern"
+					aria-label="Use this search pattern"
 				>
 					<span class="flex-1 overflow-hidden text-ellipsis">{h.pattern}</span>
 					{#if h.regex}
@@ -105,6 +107,7 @@
 					class="cursor-pointer px-2 py-1 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive"
 					onmousedown={() => removeFromHistory(h)}
 					title="Remove from history"
+					aria-label="Remove from history"
 				>
 					<X size={14} />
 				</button>

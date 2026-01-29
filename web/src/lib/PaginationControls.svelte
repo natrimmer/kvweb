@@ -60,8 +60,9 @@
 				variant="outline"
 				onclick={() => onPageChange(1)}
 				disabled={page === 1}
-				class="size-9 cursor-pointer p-0"
 				title="First page"
+				aria-label="First page"
+				class="size-9 cursor-pointer p-0"
 			>
 				<ChevronsLeftIcon class="h-4 w-4" />
 			</Button>
@@ -70,8 +71,9 @@
 				variant="outline"
 				onclick={() => onPageChange(page - 1)}
 				disabled={page === 1}
-				class="size-9 cursor-pointer p-0"
 				title="Previous page"
+				aria-label="Previous page"
+				class="size-9 cursor-pointer p-0"
 			>
 				<ChevronLeftIcon class="h-4 w-4" />
 			</Button>
@@ -86,8 +88,9 @@
 				variant="outline"
 				onclick={() => onPageChange(page + 1)}
 				disabled={page >= totalPages}
-				class="size-9 cursor-pointer p-0"
 				title="Next page"
+				aria-label="Next page"
+				class="size-9 cursor-pointer p-0"
 			>
 				<ChevronRightIcon class="h-4 w-4" />
 			</Button>
@@ -96,8 +99,9 @@
 				variant="outline"
 				onclick={() => onPageChange(totalPages)}
 				disabled={page >= totalPages}
-				class="size-9 cursor-pointer p-0"
 				title="Last page"
+				aria-label="Last page"
+				class="size-9 cursor-pointer p-0"
 			>
 				<ChevronsRightIcon class="h-4 w-4" />
 			</Button>

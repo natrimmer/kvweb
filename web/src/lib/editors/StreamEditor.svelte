@@ -120,18 +120,22 @@
 						onclick={() => (showAddForm = true)}
 						class="cursor-pointer"
 						title="Add entry to stream"
+						aria-label="Add entry to stream"
 					>
 						<PlusIcon class="mr-1 h-4 w-4" />
 						Add Entry
 					</Button>
 				{/if}
-				<button
-					type="button"
+				<Button
+					size="sm"
+					variant="outline"
 					onclick={() => (rawView = !rawView)}
-					class="cursor-pointer rounded bg-muted px-2 py-1 text-xs text-foreground hover:bg-secondary"
+					class="cursor-pointer"
+					title={rawView ? 'Show as Cards' : 'Show as Raw JSON'}
+					aria-label={rawView ? 'Show as Cards' : 'Show as Raw JSON'}
 				>
 					{rawView ? 'Show as Cards' : 'Show as Raw JSON'}
-				</button>
+				</Button>
 			</div>
 		</div>
 
@@ -147,8 +151,9 @@
 								size="sm"
 								variant="ghost"
 								onclick={() => removeField(i)}
-								class="h-8 w-8 cursor-pointer p-0"
 								title="Remove field"
+								aria-label="Remove field"
+								class="h-8 w-8 cursor-pointer p-0"
 							>
 								<XIcon class="h-4 w-4" />
 							</Button>
@@ -162,6 +167,7 @@
 						onclick={addField}
 						class="cursor-pointer"
 						title="Add another field"
+						aria-label="Add another field"
 					>
 						<PlusIcon class="mr-1 h-4 w-4" />
 						Add Field
@@ -173,6 +179,7 @@
 						disabled={adding}
 						class="cursor-pointer"
 						title="Add entry"
+						aria-label="Add entry"
 					>
 						{adding ? 'Adding...' : 'Add Entry'}
 					</Button>
@@ -183,8 +190,9 @@
 							showAddForm = false;
 							resetForm();
 						}}
-						class="cursor-pointer"
 						title="Cancel"
+						aria-label="Cancel"
+						class="cursor-pointer"
 					>
 						<XIcon class="h-4 w-4" />
 					</Button>

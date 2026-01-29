@@ -25,6 +25,8 @@
 	bind:value
 	{type}
 	step={type === 'number' ? 'any' : undefined}
+	title="Edit value"
+	aria-label="Edit value"
 	class="font-mono text-sm {inputClass}"
 	onkeydown={handleKeydown}
 />
