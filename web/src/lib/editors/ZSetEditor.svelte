@@ -9,6 +9,7 @@
 	import InlineEditor from '$lib/InlineEditor.svelte';
 	import ItemActions from '$lib/ItemActions.svelte';
 	import PaginationControls from '$lib/PaginationControls.svelte';
+	import TypeHeader from '$lib/TypeHeader.svelte';
 	import {
 		highlightJson,
 		isValidScore,
@@ -26,6 +27,7 @@
 		currentPage: number;
 		pageSize: number;
 		readOnly: boolean;
+		typeHeaderExpanded: boolean;
 		onPageChange: (page: number) => void;
 		onPageSizeChange: (size: number) => void;
 		onDataChange: () => void;
@@ -38,6 +40,7 @@
 		currentPage,
 		pageSize,
 		readOnly,
+		typeHeaderExpanded,
 		onPageChange,
 		onPageSizeChange,
 		onDataChange
@@ -138,121 +141,125 @@
 	}
 </script>
 
-<div class="flex flex-1 flex-col gap-2 overflow-auto">
-	{#if pagination && showPaginationControls(pagination.total)}
-		<PaginationControls
-			page={currentPage}
-			{pageSize}
-			total={pagination.total}
-			itemLabel="members"
-			{onPageChange}
-			{onPageSizeChange}
-		/>
-	{/if}
+<div class="flex min-h-0 flex-1 flex-col gap-2">
+	<TypeHeader expanded={typeHeaderExpanded}>
+		{#if pagination && showPaginationControls(pagination.total)}
+			<PaginationControls
+				page={currentPage}
+				{pageSize}
+				total={pagination.total}
+				itemLabel="members"
+				{onPageChange}
+				{onPageSizeChange}
+			/>
+		{/if}
 
-	<div class="flex items-center justify-between">
-		<div class="flex-1">
-			{#if pagination && !showPaginationControls(pagination.total)}
-				<span class="text-sm text-muted-foreground">
-					{pagination.total} member{pagination.total === 1 ? '' : 's'} total
-				</span>
-			{/if}
-		</div>
-		<div class="flex items-center gap-2">
-			{#if !readOnly}
-				<Button
-					size="sm"
-					variant="outline"
-					onclick={() => (showAddForm = true)}
-					class="cursor-pointer"
-					title="Add member to sorted set"
+		<div class="flex items-center justify-between">
+			<div class="flex-1">
+				{#if pagination && !showPaginationControls(pagination.total)}
+					<span class="text-sm text-muted-foreground">
+						{pagination.total} member{pagination.total === 1 ? '' : 's'} total
+					</span>
+				{/if}
+			</div>
+			<div class="flex items-center gap-2">
+				{#if !readOnly}
+					<Button
+						size="sm"
+						variant="outline"
+						onclick={() => (showAddForm = true)}
+						class="cursor-pointer"
+						title="Add member to sorted set"
+					>
+						<PlusIcon class="mr-1 h-4 w-4" />
+						Add Member
+					</Button>
+				{/if}
+				<button
+					type="button"
+					onclick={() => (rawView = !rawView)}
+					class="cursor-pointer rounded bg-muted px-2 py-1 text-xs text-foreground hover:bg-secondary"
 				>
-					<PlusIcon class="mr-1 h-4 w-4" />
-					Add Member
-				</Button>
-			{/if}
-			<button
-				type="button"
-				onclick={() => (rawView = !rawView)}
-				class="cursor-pointer rounded bg-muted px-2 py-1 text-xs text-foreground hover:bg-secondary"
+					{rawView ? 'Show as Table' : 'Show as Raw JSON'}
+				</button>
+			</div>
+		</div>
+
+		{#if showAddForm}
+			<AddItemForm {adding} onAdd={addItem} onClose={() => (showAddForm = false)}>
+				<Input
+					bind:value={addMember}
+					placeholder="Member"
+					class="flex-1"
+					onkeydown={(e) => e.key === 'Enter' && addItem()}
+				/>
+				<Input
+					bind:value={addScore}
+					placeholder="Score"
+					type="number"
+					step="any"
+					class="w-32"
+					onkeydown={(e) => e.key === 'Enter' && addItem()}
+				/>
+			</AddItemForm>
+		{/if}
+	</TypeHeader>
+
+	<div class="-mx-6 min-h-0 flex-1 overflow-auto border-t border-border px-6 pt-2">
+		{#if rawView && rawJsonHtml}
+			<div
+				class="rounded border border-border [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:p-4 [&>pre]:text-sm"
 			>
-				{rawView ? 'Show as Table' : 'Show as Raw JSON'}
-			</button>
-		</div>
-	</div>
-
-	{#if showAddForm}
-		<AddItemForm {adding} onAdd={addItem} onClose={() => (showAddForm = false)}>
-			<Input
-				bind:value={addMember}
-				placeholder="Member"
-				class="flex-1"
-				onkeydown={(e) => e.key === 'Enter' && addItem()}
-			/>
-			<Input
-				bind:value={addScore}
-				placeholder="Score"
-				type="number"
-				step="any"
-				class="w-32"
-				onkeydown={(e) => e.key === 'Enter' && addItem()}
-			/>
-		</AddItemForm>
-	{/if}
-
-	{#if rawView && rawJsonHtml}
-		<div
-			class="flex-1 overflow-auto rounded border border-border [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:p-4 [&>pre]:text-sm"
-		>
-			{@html rawJsonHtml}
-		</div>
-	{:else}
-		<Table.Root>
-			<Table.Header>
-				<Table.Row>
-					<Table.Head>Member</Table.Head>
-					<Table.Head class="w-32">Score</Table.Head>
-					{#if !readOnly}
-						<Table.Head class="w-24">Actions</Table.Head>
-					{/if}
-				</Table.Row>
-			</Table.Header>
-			<Table.Body>
-				{#each members as { member, score }}
+				{@html rawJsonHtml}
+			</div>
+		{:else}
+			<Table.Root>
+				<Table.Header>
 					<Table.Row>
-						<Table.Cell class="font-mono">
-							<CollapsibleValue value={member} />
-						</Table.Cell>
-						<Table.Cell class="font-mono text-muted-foreground">
-							{#if editingMember === member}
-								<InlineEditor
-									bind:value={editingValue}
-									type="number"
-									inputClass="w-24"
-									onSave={saveEdit}
-									onCancel={cancelEditing}
-								/>
-							{:else}
-								{score}
-							{/if}
-						</Table.Cell>
+						<Table.Head>Member</Table.Head>
+						<Table.Head class="w-32">Score</Table.Head>
 						{#if !readOnly}
-							<Table.Cell class="align-top">
-								<ItemActions
-									editing={editingMember === member}
-									{saving}
-									onEdit={() => startEditing(member, score)}
-									onSave={() => saveEdit(editingValue)}
-									onCancel={cancelEditing}
-									onDelete={() => openDeleteDialog(member)}
-								/>
-							</Table.Cell>
+							<Table.Head class="w-24">Actions</Table.Head>
 						{/if}
 					</Table.Row>
-				{/each}
-			</Table.Body>
-		</Table.Root>
-	{/if}
+				</Table.Header>
+				<Table.Body>
+					{#each members as { member, score }}
+						<Table.Row>
+							<Table.Cell class="font-mono">
+								<CollapsibleValue value={member} />
+							</Table.Cell>
+							<Table.Cell class="font-mono text-muted-foreground">
+								{#if editingMember === member}
+									<InlineEditor
+										bind:value={editingValue}
+										type="number"
+										inputClass="w-24"
+										onSave={saveEdit}
+										onCancel={cancelEditing}
+									/>
+								{:else}
+									{score}
+								{/if}
+							</Table.Cell>
+							{#if !readOnly}
+								<Table.Cell class="align-top">
+									<ItemActions
+										editing={editingMember === member}
+										{saving}
+										onEdit={() => startEditing(member, score)}
+										onSave={() => saveEdit(editingValue)}
+										onCancel={cancelEditing}
+										onDelete={() => openDeleteDialog(member)}
+									/>
+								</Table.Cell>
+							{/if}
+						</Table.Row>
+					{/each}
+				</Table.Body>
+			</Table.Root>
+		{/if}
+	</div>
 </div>
 
 <DeleteItemDialog

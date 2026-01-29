@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
+	import * as ButtonGroup from '$lib/components/ui/button-group';
 	import * as Select from '$lib/components/ui/select';
 	import { pageSizes } from '$lib/utils';
 	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
@@ -36,24 +37,24 @@
 	}
 </script>
 
-<div class="flex items-center justify-between gap-4 border-b border-border pb-2">
+<div class="flex items-center justify-between gap-4 pb-2">
 	<span class="text-sm text-muted-foreground">
 		Showing {showingStart}–{showingEnd} of {total}
 		{itemLabel}
 	</span>
 	<div class="flex items-center gap-2">
 		<span class="text-sm text-muted-foreground">Page size:</span>
-		<Select.Root type="single" value={String(pageSize)} onValueChange={handlePageSizeChange}>
-			<Select.Trigger class="h-9 w-20 text-xs">
-				{pageSize}
-			</Select.Trigger>
-			<Select.Content>
-				{#each pageSizes as size}
-					<Select.Item value={String(size)}>{size}</Select.Item>
-				{/each}
-			</Select.Content>
-		</Select.Root>
-		<div class="flex gap-1">
+		<ButtonGroup.Root>
+			<Select.Root type="single" value={String(pageSize)} onValueChange={handlePageSizeChange}>
+				<Select.Trigger class="h-9 w-20 text-xs">
+					{pageSize}
+				</Select.Trigger>
+				<Select.Content>
+					{#each pageSizes as size}
+						<Select.Item value={String(size)}>{size}</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
 			<Button
 				size="sm"
 				variant="outline"
@@ -74,9 +75,12 @@
 			>
 				<ChevronLeftIcon class="h-4 w-4" />
 			</Button>
-			<span class="flex items-center px-3 py-1 text-sm">
-				Page {page} of {totalPages}
-			</span>
+		</ButtonGroup.Root>
+
+		<span class="flex items-center px-3 py-1 text-sm">
+			Page {page} of {totalPages}
+		</span>
+		<ButtonGroup.Root>
 			<Button
 				size="sm"
 				variant="outline"
@@ -97,6 +101,6 @@
 			>
 				<ChevronsRightIcon class="h-4 w-4" />
 			</Button>
-		</div>
+		</ButtonGroup.Root>
 	</div>
 </div>

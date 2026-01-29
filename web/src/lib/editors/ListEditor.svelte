@@ -10,6 +10,7 @@
 	import InlineEditor from '$lib/InlineEditor.svelte';
 	import ItemActions from '$lib/ItemActions.svelte';
 	import PaginationControls from '$lib/PaginationControls.svelte';
+	import TypeHeader from '$lib/TypeHeader.svelte';
 	import { highlightJson, showPaginationControls, toastError } from '$lib/utils';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import { toast } from 'svelte-sonner';
@@ -21,6 +22,7 @@
 		currentPage: number;
 		pageSize: number;
 		readOnly: boolean;
+		typeHeaderExpanded: boolean;
 		onPageChange: (page: number) => void;
 		onPageSizeChange: (size: number) => void;
 		onDataChange: () => void;
@@ -33,6 +35,7 @@
 		currentPage,
 		pageSize,
 		readOnly,
+		typeHeaderExpanded,
 		onPageChange,
 		onPageSizeChange,
 		onDataChange
@@ -170,129 +173,133 @@
 	}
 </script>
 
-<div class="flex flex-1 flex-col gap-2 overflow-auto">
-	{#if pagination && showPaginationControls(pagination.total)}
-		<PaginationControls
-			page={currentPage}
-			{pageSize}
-			total={pagination.total}
-			itemLabel="items"
-			{onPageChange}
-			{onPageSizeChange}
-		/>
-	{/if}
+<div class="flex min-h-0 flex-1 flex-col gap-2">
+	<TypeHeader expanded={typeHeaderExpanded}>
+		{#if pagination && showPaginationControls(pagination.total)}
+			<PaginationControls
+				page={currentPage}
+				{pageSize}
+				total={pagination.total}
+				itemLabel="items"
+				{onPageChange}
+				{onPageSizeChange}
+			/>
+		{/if}
 
-	<div class="flex items-center justify-between">
-		<div class="flex-1">
-			{#if pagination && !showPaginationControls(pagination.total)}
-				<span class="text-sm text-muted-foreground">
-					{pagination.total} item{pagination.total === 1 ? '' : 's'} total
-				</span>
-			{/if}
-		</div>
-		<div class="flex items-center gap-2">
-			{#if !readOnly}
-				<Button
-					size="sm"
-					variant="outline"
-					onclick={() => (showAddForm = true)}
-					class="cursor-pointer"
-					title="Add item to list"
-				>
-					<PlusIcon class="mr-1 h-4 w-4" />
-					Add Item
-				</Button>
-			{/if}
-			{#if !rawView && Object.keys(listHighlights).length > 0}
+		<div class="flex items-center justify-between">
+			<div class="flex-1">
+				{#if pagination && !showPaginationControls(pagination.total)}
+					<span class="text-sm text-muted-foreground">
+						{pagination.total} item{pagination.total === 1 ? '' : 's'} total
+					</span>
+				{/if}
+			</div>
+			<div class="flex items-center gap-2">
+				{#if !readOnly}
+					<Button
+						size="sm"
+						variant="outline"
+						onclick={() => (showAddForm = true)}
+						class="cursor-pointer"
+						title="Add item to list"
+					>
+						<PlusIcon class="mr-1 h-4 w-4" />
+						Add Item
+					</Button>
+				{/if}
+				{#if !rawView && Object.keys(listHighlights).length > 0}
+					<button
+						type="button"
+						onclick={() => (prettyPrint = !prettyPrint)}
+						class="cursor-pointer rounded bg-muted px-2 py-1 text-xs text-foreground hover:bg-secondary"
+					>
+						{prettyPrint ? 'Compact JSON' : 'Format JSON'}
+					</button>
+				{/if}
 				<button
 					type="button"
-					onclick={() => (prettyPrint = !prettyPrint)}
+					onclick={() => (rawView = !rawView)}
 					class="cursor-pointer rounded bg-muted px-2 py-1 text-xs text-foreground hover:bg-secondary"
 				>
-					{prettyPrint ? 'Compact JSON' : 'Format JSON'}
+					{rawView ? 'Show as Table' : 'Show as Raw JSON'}
 				</button>
-			{/if}
-			<button
-				type="button"
-				onclick={() => (rawView = !rawView)}
-				class="cursor-pointer rounded bg-muted px-2 py-1 text-xs text-foreground hover:bg-secondary"
+			</div>
+		</div>
+
+		{#if showAddForm}
+			<AddItemForm {adding} onAdd={addItem} onClose={() => (showAddForm = false)}>
+				<Input
+					bind:value={addValue}
+					placeholder="Value"
+					class="flex-1"
+					onkeydown={(e) => e.key === 'Enter' && addItem()}
+				/>
+				<Select.Root type="single" value={addPosition} onValueChange={handlePositionChange}>
+					<Select.Trigger class="w-36">
+						{positionLabel}
+					</Select.Trigger>
+					<Select.Content>
+						{#each positionOptions as opt}
+							<Select.Item value={opt.value}>{opt.label}</Select.Item>
+						{/each}
+					</Select.Content>
+				</Select.Root>
+			</AddItemForm>
+		{/if}
+	</TypeHeader>
+
+	<div class="-mx-6 min-h-0 flex-1 overflow-auto border-t border-border px-6 pt-2">
+		{#if rawView && rawJsonHtml}
+			<div
+				class="rounded border border-border [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:p-4 [&>pre]:text-sm"
 			>
-				{rawView ? 'Show as Table' : 'Show as Raw JSON'}
-			</button>
-		</div>
-	</div>
-
-	{#if showAddForm}
-		<AddItemForm {adding} onAdd={addItem} onClose={() => (showAddForm = false)}>
-			<Input
-				bind:value={addValue}
-				placeholder="Value"
-				class="flex-1"
-				onkeydown={(e) => e.key === 'Enter' && addItem()}
-			/>
-			<Select.Root type="single" value={addPosition} onValueChange={handlePositionChange}>
-				<Select.Trigger class="w-36">
-					{positionLabel}
-				</Select.Trigger>
-				<Select.Content>
-					{#each positionOptions as opt}
-						<Select.Item value={opt.value}>{opt.label}</Select.Item>
-					{/each}
-				</Select.Content>
-			</Select.Root>
-		</AddItemForm>
-	{/if}
-
-	{#if rawView && rawJsonHtml}
-		<div
-			class="flex-1 overflow-auto rounded border border-border [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:p-4 [&>pre]:text-sm"
-		>
-			{@html rawJsonHtml}
-		</div>
-	{:else}
-		<Table.Root>
-			<Table.Header>
-				<Table.Row>
-					<Table.Head class="w-16">Index</Table.Head>
-					<Table.Head>Value</Table.Head>
-					{#if !readOnly}
-						<Table.Head class="w-24">Actions</Table.Head>
-					{/if}
-				</Table.Row>
-			</Table.Header>
-			<Table.Body>
-				{#each items as item, i}
-					{@const realIndex = (currentPage - 1) * pageSize + i}
+				{@html rawJsonHtml}
+			</div>
+		{:else}
+			<Table.Root>
+				<Table.Header>
 					<Table.Row>
-						<Table.Cell class="align-top font-mono text-muted-foreground">{realIndex}</Table.Cell>
-						<Table.Cell class="font-mono">
-							{#if editingIndex === realIndex}
-								<InlineEditor
-									bind:value={editingValue}
-									onSave={saveEdit}
-									onCancel={cancelEditing}
-								/>
-							{:else}
-								<CollapsibleValue value={item} highlight={listHighlights[i]} />
-							{/if}
-						</Table.Cell>
+						<Table.Head class="w-16">Index</Table.Head>
+						<Table.Head>Value</Table.Head>
 						{#if !readOnly}
-							<Table.Cell class="align-top">
-								<ItemActions
-									editing={editingIndex === realIndex}
-									{saving}
-									onEdit={() => startEditing(realIndex, item)}
-									onSave={() => saveEdit(editingValue)}
-									onCancel={cancelEditing}
-									onDelete={() => openDeleteDialog(realIndex, item)}
-								/>
-							</Table.Cell>
+							<Table.Head class="w-24">Actions</Table.Head>
 						{/if}
 					</Table.Row>
-				{/each}
-			</Table.Body>
-		</Table.Root>
-	{/if}
+				</Table.Header>
+				<Table.Body>
+					{#each items as item, i}
+						{@const realIndex = (currentPage - 1) * pageSize + i}
+						<Table.Row>
+							<Table.Cell class="align-top font-mono text-muted-foreground">{realIndex}</Table.Cell>
+							<Table.Cell class="font-mono">
+								{#if editingIndex === realIndex}
+									<InlineEditor
+										bind:value={editingValue}
+										onSave={saveEdit}
+										onCancel={cancelEditing}
+									/>
+								{:else}
+									<CollapsibleValue value={item} highlight={listHighlights[i]} />
+								{/if}
+							</Table.Cell>
+							{#if !readOnly}
+								<Table.Cell class="align-top">
+									<ItemActions
+										editing={editingIndex === realIndex}
+										{saving}
+										onEdit={() => startEditing(realIndex, item)}
+										onSave={() => saveEdit(editingValue)}
+										onCancel={cancelEditing}
+										onDelete={() => openDeleteDialog(realIndex, item)}
+									/>
+								</Table.Cell>
+							{/if}
+						</Table.Row>
+					{/each}
+				</Table.Body>
+			</Table.Root>
+		{/if}
+	</div>
 </div>
 
 <DeleteItemDialog

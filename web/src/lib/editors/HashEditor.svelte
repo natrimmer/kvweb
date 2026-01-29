@@ -9,6 +9,7 @@
 	import InlineEditor from '$lib/InlineEditor.svelte';
 	import ItemActions from '$lib/ItemActions.svelte';
 	import PaginationControls from '$lib/PaginationControls.svelte';
+	import TypeHeader from '$lib/TypeHeader.svelte';
 	import { highlightJson, showPaginationControls, toastError } from '$lib/utils';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import { toast } from 'svelte-sonner';
@@ -20,6 +21,7 @@
 		currentPage: number;
 		pageSize: number;
 		readOnly: boolean;
+		typeHeaderExpanded: boolean;
 		onPageChange: (page: number) => void;
 		onPageSizeChange: (size: number) => void;
 		onDataChange: () => void;
@@ -32,6 +34,7 @@
 		currentPage,
 		pageSize,
 		readOnly,
+		typeHeaderExpanded,
 		onPageChange,
 		onPageSizeChange,
 		onDataChange
@@ -147,118 +150,122 @@
 	}
 </script>
 
-<div class="flex flex-1 flex-col gap-2 overflow-auto">
-	{#if pagination && showPaginationControls(pagination.total)}
-		<PaginationControls
-			page={currentPage}
-			{pageSize}
-			total={pagination.total}
-			itemLabel="fields"
-			{onPageChange}
-			{onPageSizeChange}
-		/>
-	{/if}
+<div class="flex min-h-0 flex-1 flex-col gap-2">
+	<TypeHeader expanded={typeHeaderExpanded}>
+		{#if pagination && showPaginationControls(pagination.total)}
+			<PaginationControls
+				page={currentPage}
+				{pageSize}
+				total={pagination.total}
+				itemLabel="fields"
+				{onPageChange}
+				{onPageSizeChange}
+			/>
+		{/if}
 
-	<div class="flex items-center justify-between">
-		<div class="flex-1">
-			{#if pagination && !showPaginationControls(pagination.total)}
-				<span class="text-sm text-muted-foreground">
-					{pagination.total} field{pagination.total === 1 ? '' : 's'} total
-				</span>
-			{/if}
-		</div>
-		<div class="flex items-center gap-2">
-			{#if !readOnly}
-				<Button
-					size="sm"
-					variant="outline"
-					onclick={() => (showAddForm = true)}
-					class="cursor-pointer"
-					title="Add field to hash"
+		<div class="flex items-center justify-between">
+			<div class="flex-1">
+				{#if pagination && !showPaginationControls(pagination.total)}
+					<span class="text-sm text-muted-foreground">
+						{pagination.total} field{pagination.total === 1 ? '' : 's'} total
+					</span>
+				{/if}
+			</div>
+			<div class="flex items-center gap-2">
+				{#if !readOnly}
+					<Button
+						size="sm"
+						variant="outline"
+						onclick={() => (showAddForm = true)}
+						class="cursor-pointer"
+						title="Add field to hash"
+					>
+						<PlusIcon class="mr-1 h-4 w-4" />
+						Add Field
+					</Button>
+				{/if}
+				<button
+					type="button"
+					onclick={() => (rawView = !rawView)}
+					class="cursor-pointer rounded bg-muted px-2 py-1 text-xs text-foreground hover:bg-secondary"
 				>
-					<PlusIcon class="mr-1 h-4 w-4" />
-					Add Field
-				</Button>
-			{/if}
-			<button
-				type="button"
-				onclick={() => (rawView = !rawView)}
-				class="cursor-pointer rounded bg-muted px-2 py-1 text-xs text-foreground hover:bg-secondary"
+					{rawView ? 'Show as Table' : 'Show as Raw JSON'}
+				</button>
+			</div>
+		</div>
+
+		{#if showAddForm}
+			<AddItemForm {adding} onAdd={addItem} onClose={() => (showAddForm = false)}>
+				<Input
+					bind:value={addField}
+					placeholder="Field name"
+					class="w-48"
+					onkeydown={(e) => e.key === 'Enter' && addItem()}
+				/>
+				<Input
+					bind:value={addValue}
+					placeholder="Value"
+					class="flex-1"
+					onkeydown={(e) => e.key === 'Enter' && addItem()}
+				/>
+			</AddItemForm>
+		{/if}
+	</TypeHeader>
+
+	<div class="border-border-2 -mx-6 min-h-0 flex-1 overflow-auto border-t px-6 pt-2">
+		{#if rawView && rawJsonHtml}
+			<div
+				class="rounded border border-border [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:p-4 [&>pre]:text-sm"
 			>
-				{rawView ? 'Show as Table' : 'Show as Raw JSON'}
-			</button>
-		</div>
-	</div>
-
-	{#if showAddForm}
-		<AddItemForm {adding} onAdd={addItem} onClose={() => (showAddForm = false)}>
-			<Input
-				bind:value={addField}
-				placeholder="Field name"
-				class="w-48"
-				onkeydown={(e) => e.key === 'Enter' && addItem()}
-			/>
-			<Input
-				bind:value={addValue}
-				placeholder="Value"
-				class="flex-1"
-				onkeydown={(e) => e.key === 'Enter' && addItem()}
-			/>
-		</AddItemForm>
-	{/if}
-
-	{#if rawView && rawJsonHtml}
-		<div
-			class="flex-1 overflow-auto rounded border border-border [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:p-4 [&>pre]:text-sm"
-		>
-			{@html rawJsonHtml}
-		</div>
-	{:else}
-		<Table.Root>
-			<Table.Header>
-				<Table.Row>
-					<Table.Head>Field</Table.Head>
-					<Table.Head>Value</Table.Head>
-					{#if !readOnly}
-						<Table.Head class="w-24">Actions</Table.Head>
-					{/if}
-				</Table.Row>
-			</Table.Header>
-			<Table.Body>
-				{#each fields as { field, value }}
+				{@html rawJsonHtml}
+			</div>
+		{:else}
+			<Table.Root>
+				<Table.Header>
 					<Table.Row>
-						<Table.Cell class="align-top font-mono text-muted-foreground">{field}</Table.Cell>
-						<Table.Cell class="font-mono">
-							{#if editingField === field}
-								<InlineEditor
-									bind:value={editingValue}
-									onSave={saveEdit}
-									onCancel={cancelEditing}
-								/>
-							{:else}
-								<CollapsibleValue
-									{value}
-									highlight={isJson(value) ? highlightJson(value, false) : undefined}
-								/>
-							{/if}
-						</Table.Cell>
+						<Table.Head>Field</Table.Head>
+						<Table.Head>Value</Table.Head>
 						{#if !readOnly}
-							<Table.Cell class="align-top">
-								<ItemActions
-									editing={editingField === field}
-									{saving}
-									onEdit={() => startEditing(field, value)}
-									onSave={() => saveEdit(editingValue)}
-									onCancel={cancelEditing}
-									onDelete={() => openDeleteDialog(field)}
-								/>
-							</Table.Cell>
+							<Table.Head class="w-24">Actions</Table.Head>
 						{/if}
 					</Table.Row>
-				{/each}
-			</Table.Body>
-		</Table.Root>
-	{/if}
+				</Table.Header>
+				<Table.Body>
+					{#each fields as { field, value }}
+						<Table.Row>
+							<Table.Cell class="align-top font-mono text-muted-foreground">{field}</Table.Cell>
+							<Table.Cell class="font-mono">
+								{#if editingField === field}
+									<InlineEditor
+										bind:value={editingValue}
+										onSave={saveEdit}
+										onCancel={cancelEditing}
+									/>
+								{:else}
+									<CollapsibleValue
+										{value}
+										highlight={isJson(value) ? highlightJson(value, false) : undefined}
+									/>
+								{/if}
+							</Table.Cell>
+							{#if !readOnly}
+								<Table.Cell class="align-top">
+									<ItemActions
+										editing={editingField === field}
+										{saving}
+										onEdit={() => startEditing(field, value)}
+										onSave={() => saveEdit(editingValue)}
+										onCancel={cancelEditing}
+										onDelete={() => openDeleteDialog(field)}
+									/>
+								</Table.Cell>
+							{/if}
+						</Table.Row>
+					{/each}
+				</Table.Body>
+			</Table.Root>
+		{/if}
+	</div>
 </div>
 
 <DeleteItemDialog

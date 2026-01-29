@@ -4,6 +4,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import PaginationControls from '$lib/PaginationControls.svelte';
+	import TypeHeader from '$lib/TypeHeader.svelte';
 	import { highlightJson, isNonEmpty, showPaginationControls, toastError } from '$lib/utils';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import XIcon from '@lucide/svelte/icons/x';
@@ -16,6 +17,7 @@
 		currentPage: number;
 		pageSize: number;
 		readOnly: boolean;
+		typeHeaderExpanded: boolean;
 		onPageChange: (page: number) => void;
 		onPageSizeChange: (size: number) => void;
 		onDataChange: () => void;
@@ -28,6 +30,7 @@
 		currentPage,
 		pageSize,
 		readOnly,
+		typeHeaderExpanded,
 		onPageChange,
 		onPageSizeChange,
 		onDataChange
@@ -88,127 +91,131 @@
 	}
 </script>
 
-<div class="flex flex-1 flex-col gap-2 overflow-auto">
-	{#if pagination && showPaginationControls(pagination.total)}
-		<PaginationControls
-			page={currentPage}
-			{pageSize}
-			total={pagination.total}
-			itemLabel="entries"
-			{onPageChange}
-			{onPageSizeChange}
-		/>
-	{/if}
+<div class="flex min-h-0 flex-1 flex-col gap-2">
+	<TypeHeader expanded={typeHeaderExpanded}>
+		{#if pagination && showPaginationControls(pagination.total)}
+			<PaginationControls
+				page={currentPage}
+				{pageSize}
+				total={pagination.total}
+				itemLabel="entries"
+				{onPageChange}
+				{onPageSizeChange}
+			/>
+		{/if}
 
-	<div class="flex items-center justify-between">
-		<div class="flex-1">
-			{#if pagination && !showPaginationControls(pagination.total)}
-				<span class="text-sm text-muted-foreground">
-					{pagination.total} entr{pagination.total === 1 ? 'y' : 'ies'} total
-				</span>
-			{/if}
-		</div>
-		<div class="flex items-center gap-2">
-			{#if !readOnly}
-				<Button
-					size="sm"
-					variant="outline"
-					onclick={() => (showAddForm = true)}
-					class="cursor-pointer"
-					title="Add entry to stream"
-				>
-					<PlusIcon class="mr-1 h-4 w-4" />
-					Add Entry
-				</Button>
-			{/if}
-			<button
-				type="button"
-				onclick={() => (rawView = !rawView)}
-				class="cursor-pointer rounded bg-muted px-2 py-1 text-xs text-foreground hover:bg-secondary"
-			>
-				{rawView ? 'Show as Cards' : 'Show as Raw JSON'}
-			</button>
-		</div>
-	</div>
-
-	{#if showAddForm}
-		<div class="flex flex-col gap-2 rounded border border-border bg-muted/50 p-3">
-			<div class="text-sm text-muted-foreground">Add stream entry (append-only)</div>
-			{#each streamFields as field, i}
-				<div class="flex items-center gap-2">
-					<Input bind:value={field.key} placeholder="Field name" class="w-48" />
-					<Input bind:value={field.value} placeholder="Value" class="flex-1" />
-					{#if streamFields.length > 1}
-						<Button
-							size="sm"
-							variant="ghost"
-							onclick={() => removeField(i)}
-							class="h-8 w-8 cursor-pointer p-0"
-							title="Remove field"
-						>
-							<XIcon class="h-4 w-4" />
-						</Button>
-					{/if}
-				</div>
-			{/each}
+		<div class="flex items-center justify-between">
+			<div class="flex-1">
+				{#if pagination && !showPaginationControls(pagination.total)}
+					<span class="text-sm text-muted-foreground">
+						{pagination.total} entr{pagination.total === 1 ? 'y' : 'ies'} total
+					</span>
+				{/if}
+			</div>
 			<div class="flex items-center gap-2">
-				<Button
-					size="sm"
-					variant="outline"
-					onclick={addField}
-					class="cursor-pointer"
-					title="Add another field"
+				{#if !readOnly}
+					<Button
+						size="sm"
+						variant="outline"
+						onclick={() => (showAddForm = true)}
+						class="cursor-pointer"
+						title="Add entry to stream"
+					>
+						<PlusIcon class="mr-1 h-4 w-4" />
+						Add Entry
+					</Button>
+				{/if}
+				<button
+					type="button"
+					onclick={() => (rawView = !rawView)}
+					class="cursor-pointer rounded bg-muted px-2 py-1 text-xs text-foreground hover:bg-secondary"
 				>
-					<PlusIcon class="mr-1 h-4 w-4" />
-					Add Field
-				</Button>
-				<div class="flex-1"></div>
-				<Button
-					size="sm"
-					onclick={addItem}
-					disabled={adding}
-					class="cursor-pointer"
-					title="Add entry"
-				>
-					{adding ? 'Adding...' : 'Add Entry'}
-				</Button>
-				<Button
-					size="sm"
-					variant="ghost"
-					onclick={() => {
-						showAddForm = false;
-						resetForm();
-					}}
-					class="cursor-pointer"
-					title="Cancel"
-				>
-					<XIcon class="h-4 w-4" />
-				</Button>
+					{rawView ? 'Show as Cards' : 'Show as Raw JSON'}
+				</button>
 			</div>
 		</div>
-	{/if}
 
-	{#if rawView && rawJsonHtml}
-		<div
-			class="flex-1 overflow-auto rounded border border-border [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:p-4 [&>pre]:text-sm"
-		>
-			{@html rawJsonHtml}
-		</div>
-	{:else}
-		<div class="flex flex-col gap-2">
-			{#each entries as entry}
-				<div class="rounded border border-border p-3">
-					<div class="mb-2 font-mono text-xs text-muted-foreground">{entry.id}</div>
-					<div class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-						{#each Object.entries(entry.fields) as [field, val]}
-							<span class="font-mono text-muted-foreground">{field}</span>
-							<span class="font-mono">
-								<CollapsibleValue value={val} maxLength={150} />
-							</span>
-						{/each}
+		{#if showAddForm}
+			<div class="flex flex-col gap-2 rounded border border-border bg-muted/50 p-3">
+				<div class="text-sm text-muted-foreground">Add stream entry (append-only)</div>
+				{#each streamFields as field, i}
+					<div class="flex items-center gap-2">
+						<Input bind:value={field.key} placeholder="Field name" class="w-48" />
+						<Input bind:value={field.value} placeholder="Value" class="flex-1" />
+						{#if streamFields.length > 1}
+							<Button
+								size="sm"
+								variant="ghost"
+								onclick={() => removeField(i)}
+								class="h-8 w-8 cursor-pointer p-0"
+								title="Remove field"
+							>
+								<XIcon class="h-4 w-4" />
+							</Button>
+						{/if}
 					</div>
+				{/each}
+				<div class="flex items-center gap-2">
+					<Button
+						size="sm"
+						variant="outline"
+						onclick={addField}
+						class="cursor-pointer"
+						title="Add another field"
+					>
+						<PlusIcon class="mr-1 h-4 w-4" />
+						Add Field
+					</Button>
+					<div class="flex-1"></div>
+					<Button
+						size="sm"
+						onclick={addItem}
+						disabled={adding}
+						class="cursor-pointer"
+						title="Add entry"
+					>
+						{adding ? 'Adding...' : 'Add Entry'}
+					</Button>
+					<Button
+						size="sm"
+						variant="ghost"
+						onclick={() => {
+							showAddForm = false;
+							resetForm();
+						}}
+						class="cursor-pointer"
+						title="Cancel"
+					>
+						<XIcon class="h-4 w-4" />
+					</Button>
 				</div>
-			{/each}
-		</div>
-	{/if}
+			</div>
+		{/if}
+	</TypeHeader>
+
+	<div class="-mx-6 min-h-0 flex-1 overflow-auto border-t border-border px-6 pt-2">
+		{#if rawView && rawJsonHtml}
+			<div
+				class="rounded border border-border [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:p-4 [&>pre]:text-sm"
+			>
+				{@html rawJsonHtml}
+			</div>
+		{:else}
+			<div class="flex flex-col gap-2">
+				{#each entries as entry}
+					<div class="rounded border border-border p-3">
+						<div class="mb-2 font-mono text-xs text-muted-foreground">{entry.id}</div>
+						<div class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+							{#each Object.entries(entry.fields) as [field, val]}
+								<span class="font-mono text-muted-foreground">{field}</span>
+								<span class="font-mono">
+									<CollapsibleValue value={val} maxLength={150} />
+								</span>
+							{/each}
+						</div>
+					</div>
+				{/each}
+			</div>
+		{/if}
+	</div>
 </div>

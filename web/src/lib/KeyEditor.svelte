@@ -6,6 +6,7 @@
 	import { api, type HashPair, type KeyInfo, type StreamEntry, type ZSetMember } from './api';
 	import { HashEditor, ListEditor, SetEditor, StreamEditor, ZSetEditor } from './editors';
 	import KeyHeader from './KeyHeader.svelte';
+	import TypeHeader from './TypeHeader.svelte';
 	import {
 		copyToClipboard,
 		deleteOps,
@@ -51,8 +52,15 @@
 	// Delete confirmation dialog
 	let deleteDialogOpen = $state(false);
 
+	// Type header expand/collapse state
+	let typeHeaderExpanded = $state(true);
+
 	function openDeleteDialog() {
 		deleteDialogOpen = true;
+	}
+
+	function toggleTypeHeader() {
+		typeHeaderExpanded = !typeHeaderExpanded;
 	}
 
 	async function copyValue() {
@@ -279,7 +287,7 @@
 	}
 </script>
 
-<div class="flex h-full flex-col gap-4 p-6">
+<div class="flex h-full flex-col gap-4 overflow-hidden p-6">
 	{#if showLoading}
 		<div class="flex h-full items-center justify-center text-muted-foreground">Loading...</div>
 	{:else if error}
@@ -294,6 +302,8 @@
 			{keyDeleted}
 			{updatingTtl}
 			{renamingKey}
+			{typeHeaderExpanded}
+			onToggleTypeHeader={toggleTypeHeader}
 			onDelete={openDeleteDialog}
 			onReload={() => {
 				loadKey(key);
@@ -306,48 +316,52 @@
 		/>
 
 		{#if keyInfo.type === 'string'}
-			{#if !readOnly && hasChanges}
-				<div class="flex justify-end">
-					<Button
-						size="sm"
-						onclick={saveValue}
-						disabled={saving}
-						class="cursor-pointer"
-						title="Save changes"
-					>
-						{saving ? 'Saving...' : 'Save'}
-					</Button>
-				</div>
-			{/if}
-			<div class="flex flex-1 flex-col gap-2">
-				<div class="flex items-center justify-between">
-					<label for="value-textarea">Value:</label>
-					{#if isJsonValue}
-						<button
-							type="button"
-							onclick={() => (prettyPrint = !prettyPrint)}
-							class="cursor-pointer rounded bg-muted px-2 py-1 text-xs text-foreground hover:bg-secondary"
-							title={prettyPrint ? 'Compact JSON formatting' : 'Pretty-print JSON formatting'}
+			<div class="flex min-h-0 flex-1 flex-col gap-2">
+				<TypeHeader expanded={typeHeaderExpanded}>
+					<div class="flex items-center justify-between">
+						<label for="value-textarea">Value:</label>
+						<div class="flex items-center gap-2">
+							{#if isJsonValue}
+								<button
+									type="button"
+									onclick={() => (prettyPrint = !prettyPrint)}
+									class="cursor-pointer rounded bg-muted px-2 py-1 text-xs text-foreground hover:bg-secondary"
+									title={prettyPrint ? 'Compact JSON formatting' : 'Pretty-print JSON formatting'}
+								>
+									{prettyPrint ? 'Compact JSON' : 'Format JSON'}
+								</button>
+							{/if}
+							{#if !readOnly && hasChanges}
+								<Button
+									size="sm"
+									onclick={saveValue}
+									disabled={saving}
+									class="cursor-pointer"
+									title="Save changes"
+								>
+									{saving ? 'Saving...' : 'Save'}
+								</Button>
+							{/if}
+						</div>
+					</div>
+				</TypeHeader>
+
+				<div class="-mx-6 min-h-0 flex-1 overflow-auto border-t border-border px-6 pt-2">
+					{#if isJsonValue && highlightedHtml}
+						<div
+							class="rounded border border-border [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:p-4 [&>pre]:text-sm"
 						>
-							{prettyPrint ? 'Compact JSON' : 'Format JSON'}
-						</button>
+							{@html highlightedHtml}
+						</div>
+					{:else}
+						<Textarea
+							id="value-textarea"
+							bind:value={editValue}
+							readonly={readOnly}
+							class="min-h-75 flex-1 resize-none text-sm"
+						/>
 					{/if}
 				</div>
-
-				{#if isJsonValue && highlightedHtml}
-					<div
-						class="min-h-75 flex-1 overflow-auto rounded border border-border [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:p-4 [&>pre]:text-sm"
-					>
-						{@html highlightedHtml}
-					</div>
-				{:else}
-					<Textarea
-						id="value-textarea"
-						bind:value={editValue}
-						readonly={readOnly}
-						class="min-h-75 flex-1 resize-none text-sm"
-					/>
-				{/if}
 			</div>
 		{:else if keyInfo.type === 'list'}
 			<ListEditor
@@ -357,6 +371,7 @@
 				{currentPage}
 				{pageSize}
 				{readOnly}
+				{typeHeaderExpanded}
 				onPageChange={goToPage}
 				onPageSizeChange={changePageSize}
 				onDataChange={handleDataChange}
@@ -369,6 +384,7 @@
 				{currentPage}
 				{pageSize}
 				{readOnly}
+				{typeHeaderExpanded}
 				onPageChange={goToPage}
 				onPageSizeChange={changePageSize}
 				onDataChange={handleDataChange}
@@ -381,6 +397,7 @@
 				{currentPage}
 				{pageSize}
 				{readOnly}
+				{typeHeaderExpanded}
 				onPageChange={goToPage}
 				onPageSizeChange={changePageSize}
 				onDataChange={handleDataChange}
@@ -393,6 +410,7 @@
 				{currentPage}
 				{pageSize}
 				{readOnly}
+				{typeHeaderExpanded}
 				onPageChange={goToPage}
 				onPageSizeChange={changePageSize}
 				onDataChange={handleDataChange}
@@ -405,6 +423,7 @@
 				{currentPage}
 				{pageSize}
 				{readOnly}
+				{typeHeaderExpanded}
 				onPageChange={goToPage}
 				onPageSizeChange={changePageSize}
 				onDataChange={handleDataChange}

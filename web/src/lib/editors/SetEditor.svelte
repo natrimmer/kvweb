@@ -6,6 +6,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import DeleteItemDialog from '$lib/DeleteItemDialog.svelte';
 	import PaginationControls from '$lib/PaginationControls.svelte';
+	import TypeHeader from '$lib/TypeHeader.svelte';
 	import { highlightJson, showPaginationControls, toastError } from '$lib/utils';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
@@ -18,6 +19,7 @@
 		currentPage: number;
 		pageSize: number;
 		readOnly: boolean;
+		typeHeaderExpanded: boolean;
 		onPageChange: (page: number) => void;
 		onPageSizeChange: (size: number) => void;
 		onDataChange: () => void;
@@ -30,6 +32,7 @@
 		currentPage,
 		pageSize,
 		readOnly,
+		typeHeaderExpanded,
 		onPageChange,
 		onPageSizeChange,
 		onDataChange
@@ -90,86 +93,92 @@
 	}
 </script>
 
-<div class="flex flex-1 flex-col gap-2 overflow-auto">
-	{#if pagination && showPaginationControls(pagination.total)}
-		<PaginationControls
-			page={currentPage}
-			{pageSize}
-			total={pagination.total}
-			itemLabel="members"
-			{onPageChange}
-			{onPageSizeChange}
-		/>
-	{/if}
-
-	<div class="flex items-center justify-between">
-		<div class="flex-1">
-			{#if pagination && !showPaginationControls(pagination.total)}
-				<span class="text-sm text-muted-foreground">
-					{pagination.total} member{pagination.total === 1 ? '' : 's'} total
-				</span>
-			{/if}
-		</div>
-		<div class="flex items-center gap-2">
-			{#if !readOnly}
-				<Button
-					size="sm"
-					variant="outline"
-					onclick={() => (showAddForm = true)}
-					class="cursor-pointer"
-					title="Add member to set"
-				>
-					<PlusIcon class="mr-1 h-4 w-4" />
-					Add Member
-				</Button>
-			{/if}
-			<button
-				type="button"
-				onclick={() => (rawView = !rawView)}
-				class="cursor-pointer rounded bg-muted px-2 py-1 text-xs text-foreground hover:bg-secondary"
-			>
-				{rawView ? 'Show as List' : 'Show as Raw JSON'}
-			</button>
-		</div>
-	</div>
-
-	{#if showAddForm}
-		<AddItemForm {adding} onAdd={addItem} onClose={() => (showAddForm = false)}>
-			<Input
-				bind:value={addMember}
-				placeholder="Member"
-				class="flex-1"
-				onkeydown={(e) => e.key === 'Enter' && addItem()}
+<div class="flex min-h-0 flex-1 flex-col gap-2">
+	<TypeHeader expanded={typeHeaderExpanded}>
+		{#if pagination && showPaginationControls(pagination.total)}
+			<PaginationControls
+				page={currentPage}
+				{pageSize}
+				total={pagination.total}
+				itemLabel="members"
+				{onPageChange}
+				{onPageSizeChange}
 			/>
-		</AddItemForm>
-	{/if}
+		{/if}
 
-	{#if rawView && rawJsonHtml}
-		<div
-			class="flex-1 overflow-auto rounded border border-border [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:p-4 [&>pre]:text-sm"
-		>
-			{@html rawJsonHtml}
+		<div class="flex items-center justify-between">
+			<div class="flex-1">
+				{#if pagination && !showPaginationControls(pagination.total)}
+					<span class="text-sm text-muted-foreground">
+						{pagination.total} member{pagination.total === 1 ? '' : 's'} total
+					</span>
+				{/if}
+			</div>
+			<div class="flex items-center gap-2">
+				{#if !readOnly}
+					<Button
+						size="sm"
+						variant="outline"
+						onclick={() => (showAddForm = true)}
+						class="cursor-pointer"
+						title="Add member to set"
+					>
+						<PlusIcon class="mr-1 h-4 w-4" />
+						Add Member
+					</Button>
+				{/if}
+				<button
+					type="button"
+					onclick={() => (rawView = !rawView)}
+					class="cursor-pointer rounded bg-muted px-2 py-1 text-xs text-foreground hover:bg-secondary"
+				>
+					{rawView ? 'Show as List' : 'Show as Raw JSON'}
+				</button>
+			</div>
 		</div>
-	{:else}
-		<div class="flex flex-col gap-1">
-			{#each members as member}
-				<div class="flex items-center justify-between rounded bg-muted px-2 py-1 font-mono text-sm">
-					<CollapsibleValue value={member} maxLength={100} />
-					{#if !readOnly}
-						<Button
-							size="sm"
-							variant="ghost"
-							onclick={() => openDeleteDialog(member)}
-							class="h-6 w-6 cursor-pointer p-0 text-destructive hover:text-destructive"
-							title="Remove member"
-						>
-							<Trash2Icon class="h-4 w-4" />
-						</Button>
-					{/if}
-				</div>
-			{/each}
-		</div>
-	{/if}
+
+		{#if showAddForm}
+			<AddItemForm {adding} onAdd={addItem} onClose={() => (showAddForm = false)}>
+				<Input
+					bind:value={addMember}
+					placeholder="Member"
+					class="flex-1"
+					onkeydown={(e) => e.key === 'Enter' && addItem()}
+				/>
+			</AddItemForm>
+		{/if}
+	</TypeHeader>
+
+	<div class="-mx-6 min-h-0 flex-1 overflow-auto border-t border-border px-6 pt-2">
+		{#if rawView && rawJsonHtml}
+			<div
+				class="rounded border border-border [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:p-4 [&>pre]:text-sm"
+			>
+				{@html rawJsonHtml}
+			</div>
+		{:else}
+			<div class="flex flex-col gap-1">
+				{#each members as member}
+					<div
+						class="flex items-center justify-between rounded bg-muted px-2 py-1 font-mono text-sm"
+					>
+						<CollapsibleValue value={member} maxLength={100} />
+						{#if !readOnly}
+							<Button
+								size="sm"
+								variant="ghost"
+								onclick={() => openDeleteDialog(member)}
+								class="h-6 w-6 cursor-pointer p-0 text-destructive hover:text-destructive"
+								title="Remove member"
+							>
+								<Trash2Icon class="h-4 w-4" />
+							</Button>
+						{/if}
+					</div>
+				{/each}
+			</div>
+		{/if}
+	</div>
 </div>
 
 <DeleteItemDialog

@@ -4,6 +4,8 @@
 	import * as ButtonGroup from '$lib/components/ui/button-group';
 	import { Input } from '$lib/components/ui/input';
 	import CheckIcon from '@lucide/svelte/icons/check';
+	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
+	import ChevronUpIcon from '@lucide/svelte/icons/chevron-up';
 	import CopyIcon from '@lucide/svelte/icons/copy';
 	import PencilIcon from '@lucide/svelte/icons/pencil';
 	import XIcon from '@lucide/svelte/icons/x';
@@ -19,6 +21,8 @@
 		keyDeleted: boolean;
 		updatingTtl: boolean;
 		renamingKey: boolean;
+		typeHeaderExpanded: boolean;
+		onToggleTypeHeader: () => void;
 		onDelete: () => void;
 		onReload: () => void;
 		onClose: () => void;
@@ -36,6 +40,8 @@
 		keyDeleted,
 		updatingTtl,
 		renamingKey,
+		typeHeaderExpanded,
+		onToggleTypeHeader,
 		onDelete,
 		onReload,
 		onClose,
@@ -262,6 +268,19 @@
 				</Button>
 			</ButtonGroup.Root>
 		{/if}
+		<Button
+			variant="outline"
+			size="sm"
+			onclick={onToggleTypeHeader}
+			class="shrink-0 cursor-pointer text-muted-foreground hover:text-foreground"
+			title={typeHeaderExpanded ? 'Collapse type controls' : 'Expand type controls'}
+		>
+			{#if typeHeaderExpanded}
+				<ChevronUpIcon class="h-5 w-5" />
+			{:else}
+				<ChevronDownIcon class="h-5 w-5" />
+			{/if}
+		</Button>
 	</div>
 
 	<!-- External modification alerts -->
