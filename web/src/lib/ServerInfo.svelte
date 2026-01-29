@@ -12,9 +12,10 @@
 	interface Props {
 		readOnly: boolean;
 		disableFlush: boolean;
+		clearSelectedKey: () => void;
 	}
 
-	let { readOnly, disableFlush }: Props = $props();
+	let { readOnly, disableFlush, clearSelectedKey }: Props = $props();
 
 	let info = $state('');
 	let loading = $state(false);
@@ -93,6 +94,7 @@
 		} catch (e) {
 			toastError(e, 'Failed to flush database');
 		} finally {
+			clearSelectedKey();
 			flushDialogOpen = false;
 		}
 	}

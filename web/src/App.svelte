@@ -184,7 +184,7 @@
 				</Resizable.Pane>
 			</Resizable.PaneGroup>
 		{:else}
-			<ServerInfo {readOnly} {disableFlush} />
+			<ServerInfo {readOnly} {disableFlush} clearSelectedKey={() => (selectedKey = null)} />
 		{/if}
 	</main>
 </div>
