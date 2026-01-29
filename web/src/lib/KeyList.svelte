@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
+	import * as ButtonGroup from '$lib/components/ui/button-group';
 	import { Input } from '$lib/components/ui/input';
 	import * as Select from '$lib/components/ui/select';
-	import { ListTree, Regex } from '@lucide/svelte';
+	import { ArrowUpFromDot, CircleX, Funnel, ListTree, Regex } from '@lucide/svelte';
 	import { onMount } from 'svelte';
 	import { api, type KeyMeta } from './api';
 	import KeyTree from './KeyTree.svelte';
@@ -38,6 +39,8 @@
 	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 	let showHistory = $state(false);
 	let searchHistoryRef: SearchHistory | undefined = $state();
+	let showFilters = $state(false);
+	let inputRef: HTMLInputElement | null = $state(null);
 
 	const keyTypes = [
 		{ value: '', label: 'All types' },
@@ -96,6 +99,11 @@
 		pattern = entry.pattern;
 		useRegex = entry.regex;
 		showHistory = false;
+	}
+
+	function clearInput() {
+		pattern = '';
+		inputRef?.focus();
 	}
 
 	// Subscribe to WebSocket key events for live updates
@@ -189,69 +197,96 @@
 		<div class="flex gap-2">
 			<div class="relative flex-1">
 				<Input
+					bind:ref={inputRef}
 					type="text"
 					bind:value={pattern}
 					placeholder={useRegex ? 'Regex (e.g., ^user:\\d+)' : 'Pattern (e.g., user:*)'}
 					onfocus={() => (showHistory = true)}
 					onblur={() => setTimeout(() => (showHistory = false), 150)}
+					class="pr-9"
 				/>
+				{#if pattern && pattern !== '*'}
+					<Button
+						variant="ghost"
+						size="icon"
+						onclick={clearInput}
+						class="absolute inset-y-0 right-0 rounded-l-none text-muted-foreground hover:bg-transparent focus-visible:ring-ring/50"
+					>
+						<CircleX size={18} />
+						<span class="sr-only">Clear input</span>
+					</Button>
+				{/if}
 				<SearchHistory bind:this={searchHistoryRef} show={showHistory} onselect={selectHistory} />
 			</div>
-			<button
-				type="button"
-				onclick={() => (useRegex = !useRegex)}
-				class="cursor-pointer rounded border px-3 py-2 font-mono text-sm {useRegex
-					? 'border-primary bg-primary/10 text-primary'
-					: 'border-border bg-card hover:bg-muted'}"
-				title={useRegex ? 'Regex mode (click for glob)' : 'Glob mode (click for regex)'}
-			>
-				<Regex size={18} />
-			</button>
-			<button
-				type="button"
-				onclick={() => (viewMode = 'tree')}
-				class="cursor-pointer rounded border border-border bg-card px-3 py-2 font-mono text-sm hover:bg-muted"
-				title="Switch to tree view"
-			>
-				<ListTree size={18} />
-			</button>
+			<ButtonGroup.Root>
+				<Button
+					variant="outline"
+					onclick={() => (useRegex = !useRegex)}
+					class="cursor-pointer"
+					title={useRegex ? 'Regex mode (click for glob)' : 'Glob mode (click for regex)'}
+				>
+					<Regex size={18} />
+				</Button>
+				<Button
+					variant="outline"
+					onclick={() => (viewMode = 'tree')}
+					class="cursor-pointer"
+					title="Switch to tree view"
+				>
+					<ListTree size={18} />
+				</Button>
+				<Button
+					variant="outline"
+					onclick={() => (showFilters = !showFilters)}
+					class="cursor-pointer"
+					title="Toggle filters"
+				>
+					<Funnel size={18} />
+				</Button>
+			</ButtonGroup.Root>
 		</div>
 		{#if regexError}
 			<div class="text-sm text-destructive">{regexError}</div>
 		{/if}
 
-		<div class="flex gap-2">
-			<Select.Root type="single" value={typeFilter} onValueChange={handleTypeFilterChange}>
-				<Select.Trigger class="flex-1">
-					{typeFilterLabel}
-				</Select.Trigger>
-				<Select.Content>
-					{#each keyTypes as t}
-						<Select.Item value={t.value}>{t.label}</Select.Item>
-					{/each}
-				</Select.Content>
-			</Select.Root>
-			<Select.Root type="single" value={sortBy} onValueChange={handleSortByChange}>
-				<Select.Trigger class="w-32">
-					Sort: {sortByLabel}
-				</Select.Trigger>
-				<Select.Content>
-					{#each sortOptions as opt}
-						<Select.Item value={opt.value}>{opt.label}</Select.Item>
-					{/each}
-				</Select.Content>
-			</Select.Root>
-			<button
-				type="button"
-				onclick={() => (sortAsc = !sortAsc)}
-				class="cursor-pointer rounded border border-border bg-card px-3 py-2 text-sm hover:bg-muted"
-				title={sortAsc
-					? 'Sorting ascending (click for descending)'
-					: 'Sorting descending (click for ascending)'}
-			>
-				{sortAsc ? '↑' : '↓'}
-			</button>
-		</div>
+		{#if showFilters}
+			<ButtonGroup.Root class="w-full">
+				<Select.Root type="single" value={typeFilter} onValueChange={handleTypeFilterChange}>
+					<Select.Trigger class="flex-1">
+						{typeFilterLabel}
+					</Select.Trigger>
+					<Select.Content>
+						{#each keyTypes as t}
+							<Select.Item value={t.value}>{t.label}</Select.Item>
+						{/each}
+					</Select.Content>
+				</Select.Root>
+				<Select.Root type="single" value={sortBy} onValueChange={handleSortByChange}>
+					<Select.Trigger class="w-32">
+						Sort: {sortByLabel}
+					</Select.Trigger>
+					<Select.Content>
+						{#each sortOptions as opt}
+							<Select.Item value={opt.value}>{opt.label}</Select.Item>
+						{/each}
+					</Select.Content>
+				</Select.Root>
+				<Button
+					variant="outline"
+					onclick={() => (sortAsc = !sortAsc)}
+					class="cursor-pointer"
+					title={sortAsc
+						? 'Sorting ascending (click for descending)'
+						: 'Sorting descending (click for ascending)'}
+				>
+					{#if sortAsc}
+						<ArrowUpFromDot size={16} />
+					{:else}
+						<ArrowUpFromDot size={16} class="rotate-180" />
+					{/if}
+				</Button>
+			</ButtonGroup.Root>
+		{/if}
 
 		{#if !readOnly}
 			<div class="flex gap-2">
