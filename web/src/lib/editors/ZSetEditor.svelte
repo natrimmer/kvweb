@@ -3,6 +3,7 @@
 	import { api, type GeoMember, type PaginationInfo, type ZSetMember } from '$lib/api';
 	import CollapsibleValue from '$lib/CollapsibleValue.svelte';
 	import { Button } from '$lib/components/ui/button';
+	import * as ButtonGroup from '$lib/components/ui/button-group';
 	import { Input } from '$lib/components/ui/input';
 	import * as Table from '$lib/components/ui/table';
 	import DeleteItemDialog from '$lib/DeleteItemDialog.svelte';
@@ -61,7 +62,7 @@
 	let viewMode = $state<'zset' | 'geo'>('zset');
 	let geoMembers = $state<GeoMember[]>([]);
 	let loadingGeo = $state(false);
-	let showMap = $state(false);
+	let geoDisplayMode = $state<'table' | 'map' | 'json'>('table');
 
 	// Add form state
 	let showAddForm = $state(false);
@@ -81,6 +82,9 @@
 	let deleteTarget = $state<{ member: string; display: string } | null>(null);
 
 	let rawJsonHtml = $derived(rawView ? highlightJson(JSON.stringify(members, null, 2), true) : '');
+	let geoJsonHtml = $derived(
+		geoDisplayMode === 'json' ? highlightJson(JSON.stringify(geoMembers, null, 2), true) : ''
+	);
 
 	// Reload geo data when key changes (if in geo mode)
 	let previousKeyName: string | null = null;
@@ -286,31 +290,61 @@
 					{viewMode === 'zset' ? 'View as Geo' : 'View as ZSet'}
 				</Button>
 				{#if viewMode === 'zset'}
-					<Button
-						size="sm"
-						variant="outline"
-						onclick={() => (rawView = !rawView)}
-						class="cursor-pointer"
-						title={rawView ? 'Show as Table' : 'Show as Raw JSON'}
-						aria-label={rawView ? 'Show as Table' : 'Show as Raw JSON'}
-					>
-						{rawView ? 'Show as Table' : 'Show as Raw JSON'}
-					</Button>
+					<ButtonGroup.Root>
+						<Button
+							size="sm"
+							variant="outline"
+							onclick={() => (rawView = false)}
+							class="cursor-pointer {!rawView ? 'bg-accent' : ''}"
+							title="Show as Table"
+							aria-label="Show as Table"
+						>
+							<TableIcon class="h-4 w-4" />
+						</Button>
+						<Button
+							size="sm"
+							variant="outline"
+							onclick={() => (rawView = true)}
+							class="cursor-pointer {rawView ? 'bg-accent' : ''}"
+							title="Show as Raw JSON"
+							aria-label="Show as Raw JSON"
+						>
+							{'{ }'}
+						</Button>
+					</ButtonGroup.Root>
 				{:else}
-					<Button
-						size="sm"
-						variant="outline"
-						onclick={() => (showMap = !showMap)}
-						class="cursor-pointer"
-						title={showMap ? 'Show as Table' : 'Show on Map'}
-						aria-label={showMap ? 'Show as Table' : 'Show on Map'}
-					>
-						{#if showMap}
-							<TableIcon /> Show as Table
-						{:else}
-							<Map /> Show on Map
-						{/if}
-					</Button>
+					<ButtonGroup.Root>
+						<Button
+							size="sm"
+							variant="outline"
+							onclick={() => (geoDisplayMode = 'table')}
+							class="cursor-pointer {geoDisplayMode === 'table' ? 'bg-accent' : ''}"
+							title="Show as Table"
+							aria-label="Show as Table"
+						>
+							<TableIcon class="h-4 w-4" />
+						</Button>
+						<Button
+							size="sm"
+							variant="outline"
+							onclick={() => (geoDisplayMode = 'map')}
+							class="cursor-pointer {geoDisplayMode === 'map' ? 'bg-accent' : ''}"
+							title="Show on Map"
+							aria-label="Show on Map"
+						>
+							<Map class="h-4 w-4" />
+						</Button>
+						<Button
+							size="sm"
+							variant="outline"
+							onclick={() => (geoDisplayMode = 'json')}
+							class="cursor-pointer {geoDisplayMode === 'json' ? 'bg-accent' : ''}"
+							title="Show as Raw JSON"
+							aria-label="Show as Raw JSON"
+						>
+							{'{ }'}
+						</Button>
+					</ButtonGroup.Root>
 				{/if}
 			</div>
 		</div>
@@ -378,8 +412,14 @@
 				<div class="flex items-center justify-center py-8 text-muted-foreground">
 					Loading geo data...
 				</div>
-			{:else if showMap}
+			{:else if geoDisplayMode === 'map'}
 				<GeoMapView members={geoMembers} />
+			{:else if geoDisplayMode === 'json' && geoJsonHtml}
+				<div
+					class="rounded border border-border [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:p-4 [&>pre]:text-sm"
+				>
+					{@html geoJsonHtml}
+				</div>
 			{:else}
 				<Table.Root>
 					<Table.Header>

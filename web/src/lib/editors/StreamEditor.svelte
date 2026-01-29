@@ -2,10 +2,12 @@
 	import { api, type PaginationInfo, type StreamEntry } from '$lib/api';
 	import CollapsibleValue from '$lib/CollapsibleValue.svelte';
 	import { Button } from '$lib/components/ui/button';
+	import * as ButtonGroup from '$lib/components/ui/button-group';
 	import { Input } from '$lib/components/ui/input';
 	import PaginationControls from '$lib/PaginationControls.svelte';
 	import TypeHeader from '$lib/TypeHeader.svelte';
 	import { highlightJson, isNonEmpty, showPaginationControls, toastError } from '$lib/utils';
+	import LayoutListIcon from '@lucide/svelte/icons/layout-list';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import XIcon from '@lucide/svelte/icons/x';
 	import { toast } from 'svelte-sonner';
@@ -126,16 +128,28 @@
 						Add Entry
 					</Button>
 				{/if}
-				<Button
-					size="sm"
-					variant="outline"
-					onclick={() => (rawView = !rawView)}
-					class="cursor-pointer"
-					title={rawView ? 'Show as Cards' : 'Show as Raw JSON'}
-					aria-label={rawView ? 'Show as Cards' : 'Show as Raw JSON'}
-				>
-					{rawView ? 'Show as Cards' : 'Show as Raw JSON'}
-				</Button>
+				<ButtonGroup.Root>
+					<Button
+						size="sm"
+						variant="outline"
+						onclick={() => (rawView = false)}
+						class="cursor-pointer {!rawView ? 'bg-accent' : ''}"
+						title="Show as Cards"
+						aria-label="Show as Cards"
+					>
+						<LayoutListIcon class="h-4 w-4" />
+					</Button>
+					<Button
+						size="sm"
+						variant="outline"
+						onclick={() => (rawView = true)}
+						class="cursor-pointer {rawView ? 'bg-accent' : ''}"
+						title="Show as Raw JSON"
+						aria-label="Show as Raw JSON"
+					>
+						{'{ }'}
+					</Button>
+				</ButtonGroup.Root>
 			</div>
 		</div>
 

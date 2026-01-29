@@ -3,11 +3,13 @@
 	import { api, type PaginationInfo } from '$lib/api';
 	import CollapsibleValue from '$lib/CollapsibleValue.svelte';
 	import { Button } from '$lib/components/ui/button';
+	import * as ButtonGroup from '$lib/components/ui/button-group';
 	import { Input } from '$lib/components/ui/input';
 	import DeleteItemDialog from '$lib/DeleteItemDialog.svelte';
 	import PaginationControls from '$lib/PaginationControls.svelte';
 	import TypeHeader from '$lib/TypeHeader.svelte';
 	import { highlightJson, showPaginationControls, toastError } from '$lib/utils';
+	import ListIcon from '@lucide/svelte/icons/list';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import { toast } from 'svelte-sonner';
@@ -128,16 +130,28 @@
 						Add Member
 					</Button>
 				{/if}
-				<Button
-					size="sm"
-					variant="outline"
-					onclick={() => (rawView = !rawView)}
-					class="cursor-pointer"
-					title={rawView ? 'Show as List' : 'Show as Raw JSON'}
-					aria-label={rawView ? 'Show as List' : 'Show as Raw JSON'}
-				>
-					{rawView ? 'Show as List' : 'Show as Raw JSON'}
-				</Button>
+				<ButtonGroup.Root>
+					<Button
+						size="sm"
+						variant="outline"
+						onclick={() => (rawView = false)}
+						class="cursor-pointer {!rawView ? 'bg-accent' : ''}"
+						title="Show as List"
+						aria-label="Show as List"
+					>
+						<ListIcon class="h-4 w-4" />
+					</Button>
+					<Button
+						size="sm"
+						variant="outline"
+						onclick={() => (rawView = true)}
+						class="cursor-pointer {rawView ? 'bg-accent' : ''}"
+						title="Show as Raw JSON"
+						aria-label="Show as Raw JSON"
+					>
+						{'{ }'}
+					</Button>
+				</ButtonGroup.Root>
 			</div>
 		</div>
 
