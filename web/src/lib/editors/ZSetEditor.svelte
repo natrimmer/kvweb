@@ -20,8 +20,11 @@
 		showPaginationControls,
 		toastError
 	} from '$lib/utils';
+	import Map from '@lucide/svelte/icons/map';
 	import PlusIcon from '@lucide/svelte/icons/plus';
+	import TableIcon from '@lucide/svelte/icons/table';
 	import { toast } from 'svelte-sonner';
+	import GeoMapView from './GeoMapView.svelte';
 
 	interface Props {
 		keyName: string;
@@ -58,6 +61,7 @@
 	let viewMode = $state<'zset' | 'geo'>('zset');
 	let geoMembers = $state<GeoMember[]>([]);
 	let loadingGeo = $state(false);
+	let showMap = $state(false);
 
 	// Add form state
 	let showAddForm = $state(false);
@@ -292,6 +296,21 @@
 					>
 						{rawView ? 'Show as Table' : 'Show as Raw JSON'}
 					</Button>
+				{:else}
+					<Button
+						size="sm"
+						variant="outline"
+						onclick={() => (showMap = !showMap)}
+						class="cursor-pointer"
+						title={showMap ? 'Show as Table' : 'Show on Map'}
+						aria-label={showMap ? 'Show as Table' : 'Show on Map'}
+					>
+						{#if showMap}
+							<TableIcon /> Show as Table
+						{:else}
+							<Map /> Show on Map
+						{/if}
+					</Button>
 				{/if}
 			</div>
 		</div>
@@ -359,6 +378,8 @@
 				<div class="flex items-center justify-center py-8 text-muted-foreground">
 					Loading geo data...
 				</div>
+			{:else if showMap}
+				<GeoMapView members={geoMembers} />
 			{:else}
 				<Table.Root>
 					<Table.Header>

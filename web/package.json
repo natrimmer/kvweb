@@ -35,6 +35,8 @@
 	},
 	"dependencies": {
 		"@tailwindcss/vite": "^4.1.18",
+		"@types/leaflet": "^1.9.21",
+		"leaflet": "^1.9.4",
 		"tailwindcss": "^4.1.18"
 	}
 }
