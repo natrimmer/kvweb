@@ -150,7 +150,7 @@
 	<main class="flex-1 overflow-hidden">
 		{#if view === 'keys'}
 			<Resizable.PaneGroup direction="horizontal" class="h-full">
-				<Resizable.Pane defaultSize={25} minSize={15} maxSize={50}>
+				<Resizable.Pane defaultSize={25} minSize={15} maxSize={50} collapsible={true}>
 					<div class="flex h-full flex-col overflow-hidden border-r border-border">
 						<KeyList
 							onselect={handleKeySelect}

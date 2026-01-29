@@ -86,15 +86,19 @@
 		geoDisplayMode === 'json' ? highlightJson(JSON.stringify(geoMembers, null, 2), true) : ''
 	);
 
-	// Reload geo data when key changes (if in geo mode)
+	// Reload geo data when key changes or when members change (if in geo mode)
 	let previousKeyName: string | null = null;
+	let previousMembersLength = 0;
 	$effect(() => {
-		if (previousKeyName !== null && keyName !== previousKeyName) {
-			if (viewMode === 'geo') {
-				loadGeoData();
-			}
+		const keyChanged = previousKeyName !== null && keyName !== previousKeyName;
+		const membersChanged = members.length !== previousMembersLength;
+
+		if (viewMode === 'geo' && (keyChanged || membersChanged)) {
+			loadGeoData();
 		}
+
 		previousKeyName = keyName;
+		previousMembersLength = members.length;
 	});
 
 	// Provide copy value function based on view mode
@@ -408,11 +412,7 @@
 				{@html rawJsonHtml}
 			</div>
 		{:else if viewMode === 'geo'}
-			{#if loadingGeo}
-				<div class="flex items-center justify-center py-8 text-muted-foreground">
-					Loading geo data...
-				</div>
-			{:else if geoDisplayMode === 'map'}
+			{#if geoDisplayMode === 'map'}
 				<GeoMapView members={geoMembers} />
 			{:else if geoDisplayMode === 'json' && geoJsonHtml}
 				<div

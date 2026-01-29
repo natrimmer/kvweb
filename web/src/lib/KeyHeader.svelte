@@ -17,16 +17,12 @@
 		keyType: KeyType;
 		liveTtl: number | null;
 		readOnly: boolean;
-		externallyModified: boolean;
-		keyDeleted: boolean;
 		updatingTtl: boolean;
 		renamingKey: boolean;
 		typeHeaderExpanded: boolean;
 		geoViewActive?: boolean;
 		onToggleTypeHeader: () => void;
 		onDelete: () => void;
-		onReload: () => void;
-		onClose: () => void;
 		onTtlChange: (ttl: number) => void;
 		onCopyValue: () => void;
 		onRename: (newKey: string) => void;
@@ -37,16 +33,12 @@
 		keyType,
 		liveTtl,
 		readOnly,
-		externallyModified,
-		keyDeleted,
 		updatingTtl,
 		renamingKey,
 		typeHeaderExpanded,
 		geoViewActive = false,
 		onToggleTypeHeader,
 		onDelete,
-		onReload,
-		onClose,
 		onTtlChange,
 		onCopyValue,
 		onRename
@@ -301,39 +293,4 @@
 			{/if}
 		</Button>
 	</div>
-
-	<!-- External modification alerts -->
-	{#if keyDeleted}
-		<div
-			class="flex items-center justify-between rounded bg-destructive/10 px-3 py-2 text-sm text-destructive"
-		>
-			<span>This key was deleted externally</span>
-			<Button
-				variant="secondary"
-				size="sm"
-				onclick={onClose}
-				class="cursor-pointer"
-				title="Close alert"
-				aria-label="Close alert"
-			>
-				Close
-			</Button>
-		</div>
-	{:else if externallyModified}
-		<div
-			class="flex items-center justify-between rounded bg-accent/10 px-3 py-2 text-sm text-accent-foreground"
-		>
-			<span>Modified externally</span>
-			<Button
-				variant="secondary"
-				size="sm"
-				onclick={onReload}
-				class="cursor-pointer"
-				title="Reload key data"
-				aria-label="Reload key data"
-			>
-				Reload
-			</Button>
-		</div>
-	{/if}
 </div>

@@ -45,10 +45,6 @@
 	let currentPage = $state(1);
 	let pageSize = $state(100);
 
-	// External modification detection
-	let externallyModified = $state(false);
-	let keyDeleted = $state(false);
-
 	// Delete confirmation dialog
 	let deleteDialogOpen = $state(false);
 
@@ -168,13 +164,10 @@
 			zsetGeoViewActive = false;
 		}
 		loadKey(key);
-		// Reset external modification state when key changes
-		externallyModified = false;
-		keyDeleted = false;
 		return () => stopTtlCountdown();
 	});
 
-	// Subscribe to WebSocket key events for external modification detection
+	// Subscribe to WebSocket key events for live auto-reload
 	$effect(() => {
 		if (!key) return;
 
@@ -182,12 +175,12 @@
 			if (event.key !== key) return;
 
 			if (deleteOps.has(event.op)) {
-				keyDeleted = true;
-				externallyModified = false;
+				// Key was deleted externally, close the editor
+				ondeleted();
 			} else if (modifyOps.has(event.op)) {
-				// Only mark as externally modified if we're not currently saving
+				// Key was modified externally, auto-reload if we're not currently saving
 				if (!saving) {
-					externallyModified = true;
+					loadKey(key);
 				}
 			}
 		});
@@ -310,19 +303,12 @@
 			keyType={keyInfo.type}
 			{liveTtl}
 			{readOnly}
-			{externallyModified}
-			{keyDeleted}
 			{updatingTtl}
 			{renamingKey}
 			{typeHeaderExpanded}
 			geoViewActive={keyInfo.type === 'zset' && zsetGeoViewActive}
 			onToggleTypeHeader={toggleTypeHeader}
 			onDelete={openDeleteDialog}
-			onReload={() => {
-				loadKey(key);
-				externallyModified = false;
-			}}
-			onClose={ondeleted}
 			onTtlChange={updateTtl}
 			onCopyValue={copyValue}
 			onRename={renameKey}

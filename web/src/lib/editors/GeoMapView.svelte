@@ -13,6 +13,7 @@
 	let mapContainer: HTMLDivElement;
 	let map: L.Map | null = null;
 	let markersLayer: L.LayerGroup | null = null;
+	let initialFitDone = false;
 
 	onMount(() => {
 		// Initialize map centered on first member or default to world view
@@ -27,14 +28,14 @@
 		}).addTo(map);
 
 		markersLayer = L.layerGroup().addTo(map);
-		updateMarkers();
+		updateMarkers(true); // true = initial load, fit bounds
 
 		return () => {
 			map?.remove();
 		};
 	});
 
-	function updateMarkers() {
+	function updateMarkers(fitBounds = false) {
 		if (!map || !markersLayer) return;
 
 		markersLayer.clearLayers();
@@ -47,17 +48,23 @@
 			markersLayer.addLayer(marker);
 		}
 
-		// Fit bounds if we have members
-		if (members.length > 0) {
+		// Only fit bounds on initial load or when explicitly requested
+		if (fitBounds && members.length > 0 && !initialFitDone) {
 			const bounds = L.latLngBounds(members.map((m) => [m.latitude, m.longitude]));
 			map.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
+			initialFitDone = true;
 		}
 	}
 
 	// Update markers when members change
+	// Using untrack pattern since updateMarkers() accesses members internally
 	$effect(() => {
+		// This will re-run whenever members prop changes (reference or content)
 		members;
-		updateMarkers();
+		// Call updateMarkers which reads from members
+		if (map && markersLayer) {
+			updateMarkers();
+		}
 	});
 </script>
 

@@ -113,20 +113,12 @@
 			if (deleteOps.has(event.op)) {
 				// Remove deleted/expired keys from list
 				keys = keys.filter((k) => k.key !== event.key);
-			} else if (modifyOps.has(event.op)) {
-				// Check if key already exists in list
-				const exists = keys.some((k) => k.key === event.key);
-				if (!exists) {
-					// New key - reload to get metadata (type, ttl)
-					loadKeys(true);
-				}
-				// If key exists and is selected, parent will handle refresh
+			} else if (modifyOps.has(event.op) || event.op === 'rename_to') {
+				// Key modified or renamed - reload to get updated metadata
+				loadKeys(true);
 			} else if (event.op === 'rename_from') {
 				// Remove the old key name
 				keys = keys.filter((k) => k.key !== event.key);
-			} else if (event.op === 'rename_to') {
-				// New key name appeared - reload to get it
-				loadKeys(true);
 			}
 		});
 	});
