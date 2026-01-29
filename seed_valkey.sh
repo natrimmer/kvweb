@@ -123,6 +123,51 @@ $CLI ZADD "zset:json" \
     1705319400 '{"type":"share","content":"Check this out"}'
 
 # ===================
+# GEO (Geospatial Index)
+# ===================
+
+# Single location
+$CLI GEOADD "geo:single" -122.4194 37.7749 "San Francisco"
+
+# Few locations (US cities)
+$CLI GEOADD "geo:cities:us" \
+    -122.4194 37.7749 "San Francisco" \
+    -118.2437 34.0522 "Los Angeles" \
+    -73.9857 40.7484 "New York" \
+    -87.6298 41.8781 "Chicago" \
+    -95.3698 29.7604 "Houston"
+
+# International landmarks
+$CLI GEOADD "geo:landmarks" \
+    -0.1276 51.5074 "Big Ben" \
+    2.2945 48.8584 "Eiffel Tower" \
+    12.4924 41.8902 "Colosseum" \
+    139.6917 35.6895 "Tokyo Tower" \
+    -43.1729 -22.9068 "Christ the Redeemer" \
+    151.2153 -33.8568 "Sydney Opera House"
+
+# Coffee shops (clustered locations for radius search testing)
+$CLI GEOADD "geo:coffee:downtown" \
+    -122.4089 37.7851 "Blue Bottle Coffee" \
+    -122.4103 37.7879 "Sightglass Coffee" \
+    -122.4058 37.7892 "Ritual Coffee Roasters" \
+    -122.4127 37.7866 "Philz Coffee" \
+    -122.4072 37.7840 "Starbucks Reserve"
+
+# Many locations (airports)
+$CLI GEOADD "geo:airports" \
+    -122.3750 37.6213 "SFO" \
+    -118.4085 33.9425 "LAX" \
+    -73.7781 40.6413 "JFK" \
+    -87.9073 41.9742 "ORD" \
+    -95.3414 29.9902 "IAH" \
+    -84.4281 33.6407 "ATL" \
+    -97.0403 32.8998 "DFW" \
+    -104.6737 39.8561 "DEN" \
+    -115.1523 36.0840 "LAS" \
+    -122.3088 47.4502 "SEA"
+
+# ===================
 # STREAM
 # ===================
 

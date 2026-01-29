@@ -233,6 +233,60 @@ func toString(i int64) string {
 	return strconv.FormatInt(i, 10)
 }
 
+// Geospatial operations
+
+// GeoPosition represents geographic coordinates
+type GeoPosition struct {
+	Longitude float64 `json:"longitude"`
+	Latitude  float64 `json:"latitude"`
+}
+
+// GeoMember represents a member with geographic coordinates
+type GeoMember struct {
+	Member    string  `json:"member"`
+	Longitude float64 `json:"longitude"`
+	Latitude  float64 `json:"latitude"`
+}
+
+// GeoPos returns the coordinates of members in a geospatial index
+// Returns nil for members that don't exist
+func (c *Client) GeoPos(ctx context.Context, key string, members ...string) ([]*GeoPosition, error) {
+	result, err := c.client.Do(ctx, c.client.B().Geopos().Key(key).Member(members...).Build()).ToArray()
+	if err != nil {
+		return nil, err
+	}
+
+	positions := make([]*GeoPosition, len(result))
+	for i, r := range result {
+		if r.IsNil() {
+			positions[i] = nil
+			continue
+		}
+		coords, err := r.ToArray()
+		if err != nil || len(coords) != 2 {
+			positions[i] = nil
+			continue
+		}
+		lon, err := coords[0].AsFloat64()
+		if err != nil {
+			positions[i] = nil
+			continue
+		}
+		lat, err := coords[1].AsFloat64()
+		if err != nil {
+			positions[i] = nil
+			continue
+		}
+		positions[i] = &GeoPosition{Longitude: lon, Latitude: lat}
+	}
+	return positions, nil
+}
+
+// GeoAdd adds a member with coordinates to a geospatial index
+func (c *Client) GeoAdd(ctx context.Context, key string, longitude, latitude float64, member string) error {
+	return c.client.Do(ctx, c.client.B().Geoadd().Key(key).LongitudeLatitudeMember().LongitudeLatitudeMember(longitude, latitude, member).Build()).Error()
+}
+
 // Stream operations
 
 // XLen returns the number of entries in a stream

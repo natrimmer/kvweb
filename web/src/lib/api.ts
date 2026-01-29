@@ -5,6 +5,12 @@ export interface ZSetMember {
 	score: number;
 }
 
+export interface GeoMember {
+	member: string;
+	longitude: number;
+	latitude: number;
+}
+
 export interface StreamEntry {
 	id: string;
 	fields: Record<string, string>;
@@ -27,7 +33,14 @@ export type KeyType = 'string' | 'list' | 'set' | 'hash' | 'zset' | 'stream';
 export interface KeyInfo {
 	key: string;
 	type: KeyType;
-	value: string | string[] | HashPair[] | Record<string, string> | ZSetMember[] | StreamEntry[];
+	value:
+		| string
+		| string[]
+		| HashPair[]
+		| Record<string, string>
+		| ZSetMember[]
+		| GeoMember[]
+		| StreamEntry[];
 	ttl: number;
 	length?: number;
 	pagination?: PaginationInfo;
@@ -227,6 +240,23 @@ export const api = {
 	zsetRemove(key: string, member: string): Promise<void> {
 		return request(`/key/${encodeURIComponent(key)}/zset/${encodeURIComponent(member)}`, {
 			method: 'DELETE'
+		});
+	},
+
+	// Geo operations (view zset as coordinates)
+	geoGet(key: string, page?: number, pageSize?: number): Promise<KeyInfo> {
+		let url = `/key/${encodeURIComponent(key)}/geo`;
+		const params = new URLSearchParams();
+		if (page !== undefined) params.set('page', page.toString());
+		if (pageSize !== undefined) params.set('pageSize', pageSize.toString());
+		if (params.toString()) url += `?${params.toString()}`;
+		return request(url);
+	},
+
+	geoAdd(key: string, member: string, longitude: number, latitude: number): Promise<void> {
+		return request(`/key/${encodeURIComponent(key)}/geo`, {
+			method: 'POST',
+			body: JSON.stringify({ member, longitude, latitude })
 		});
 	},
 

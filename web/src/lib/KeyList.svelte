@@ -49,6 +49,7 @@
 		{ value: 'list', label: 'list' },
 		{ value: 'set', label: 'set' },
 		{ value: 'zset', label: 'zset' },
+		{ value: 'geo', label: 'geo (zset)' },
 		{ value: 'stream', label: 'stream' }
 	] as const;
 	const sortOptions = [
@@ -150,7 +151,16 @@
 		regexError = '';
 		try {
 			const c = reset ? 0 : cursor;
-			const result = await api.getKeys(pattern, c, 100, typeFilter || undefined, true, useRegex);
+			// "geo" filter uses "zset" since geo data is stored as zset
+			const actualTypeFilter = typeFilter === 'geo' ? 'zset' : typeFilter;
+			const result = await api.getKeys(
+				pattern,
+				c,
+				100,
+				actualTypeFilter || undefined,
+				true,
+				useRegex
+			);
 			const newKeys = result.keys as KeyMeta[];
 			if (reset) {
 				keys = newKeys;
@@ -325,6 +335,13 @@
 				>
 					Create
 				</Button>
+			</div>
+		{/if}
+
+		{#if typeFilter === 'geo'}
+			<div class="text-xs text-muted-foreground">
+				Geo data is stored as sorted sets. Use "View as Geo" toggle in the editor to see
+				coordinates.
 			</div>
 		{/if}
 

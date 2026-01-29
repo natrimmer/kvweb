@@ -1,6 +1,6 @@
 <script lang="ts">
 	import AddItemForm from '$lib/AddItemForm.svelte';
-	import { api, type PaginationInfo, type ZSetMember } from '$lib/api';
+	import { api, type GeoMember, type PaginationInfo, type ZSetMember } from '$lib/api';
 	import CollapsibleValue from '$lib/CollapsibleValue.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
@@ -11,7 +11,10 @@
 	import PaginationControls from '$lib/PaginationControls.svelte';
 	import TypeHeader from '$lib/TypeHeader.svelte';
 	import {
+		formatCoordinate,
 		highlightJson,
+		isValidLatitude,
+		isValidLongitude,
 		isValidScore,
 		parseScore,
 		showPaginationControls,
@@ -31,6 +34,8 @@
 		onPageChange: (page: number) => void;
 		onPageSizeChange: (size: number) => void;
 		onDataChange: () => void;
+		getCopyValue?: () => string;
+		geoViewActive?: boolean;
 	}
 
 	let {
@@ -43,16 +48,23 @@
 		typeHeaderExpanded,
 		onPageChange,
 		onPageSizeChange,
-		onDataChange
+		onDataChange,
+		getCopyValue = $bindable(),
+		geoViewActive = $bindable(false)
 	}: Props = $props();
 
 	// View state
 	let rawView = $state(false);
+	let viewMode = $state<'zset' | 'geo'>('zset');
+	let geoMembers = $state<GeoMember[]>([]);
+	let loadingGeo = $state(false);
 
 	// Add form state
 	let showAddForm = $state(false);
 	let addMember = $state('');
 	let addScore = $state<string | number>('');
+	let addLongitude = $state<string | number>('');
+	let addLatitude = $state<string | number>('');
 	let adding = $state(false);
 
 	// Edit state
@@ -65,6 +77,52 @@
 	let deleteTarget = $state<{ member: string; display: string } | null>(null);
 
 	let rawJsonHtml = $derived(rawView ? highlightJson(JSON.stringify(members, null, 2), true) : '');
+
+	// Reload geo data when key changes (if in geo mode)
+	let previousKeyName: string | null = null;
+	$effect(() => {
+		if (previousKeyName !== null && keyName !== previousKeyName) {
+			if (viewMode === 'geo') {
+				loadGeoData();
+			}
+		}
+		previousKeyName = keyName;
+	});
+
+	// Provide copy value function based on view mode
+	$effect(() => {
+		getCopyValue = () => {
+			if (viewMode === 'geo' && geoMembers.length > 0) {
+				return JSON.stringify(geoMembers, null, 2);
+			}
+			return JSON.stringify(members, null, 2);
+		};
+	});
+
+	async function loadGeoData() {
+		loadingGeo = true;
+		try {
+			const result = await api.geoGet(keyName, currentPage, pageSize);
+			geoMembers = result.value as GeoMember[];
+		} catch (e) {
+			toastError(e, 'Failed to load geo data');
+			viewMode = 'zset';
+		} finally {
+			loadingGeo = false;
+		}
+	}
+
+	function toggleGeoView() {
+		if (viewMode === 'zset') {
+			viewMode = 'geo';
+			geoViewActive = true;
+			loadGeoData();
+		} else {
+			viewMode = 'zset';
+			geoViewActive = false;
+		}
+		rawView = false;
+	}
 
 	function startEditing(member: string, score: number) {
 		editingMember = member;
@@ -118,6 +176,38 @@
 		}
 	}
 
+	async function addGeoItem() {
+		if (!addMember.trim()) {
+			toast.error('Member cannot be empty');
+			return;
+		}
+		if (!isValidLongitude(addLongitude)) {
+			toast.error('Longitude must be between -180 and 180');
+			return;
+		}
+		if (!isValidLatitude(addLatitude)) {
+			toast.error('Latitude must be between -85.05 and 85.05');
+			return;
+		}
+		adding = true;
+		try {
+			const lon =
+				typeof addLongitude === 'number' ? addLongitude : parseFloat(String(addLongitude));
+			const lat = typeof addLatitude === 'number' ? addLatitude : parseFloat(String(addLatitude));
+			await api.geoAdd(keyName, addMember, lon, lat);
+			toast.success('Location added');
+			addMember = '';
+			addLongitude = '';
+			addLatitude = '';
+			onDataChange();
+			loadGeoData();
+		} catch (e) {
+			toastError(e, 'Failed to add location');
+		} finally {
+			adding = false;
+		}
+	}
+
 	function openDeleteDialog(member: string) {
 		deleteTarget = {
 			member,
@@ -130,10 +220,13 @@
 		if (!deleteTarget) return;
 		try {
 			await api.zsetRemove(keyName, deleteTarget.member);
-			toast.success('Member deleted');
+			toast.success(viewMode === 'geo' ? 'Location deleted' : 'Member deleted');
 			onDataChange();
+			if (viewMode === 'geo') {
+				loadGeoData();
+			}
 		} catch (e) {
-			toastError(e, 'Failed to delete member');
+			toastError(e, viewMode === 'geo' ? 'Failed to delete location' : 'Failed to delete member');
 		} finally {
 			deleteDialogOpen = false;
 			deleteTarget = null;
@@ -169,57 +262,142 @@
 						variant="outline"
 						onclick={() => (showAddForm = true)}
 						class="cursor-pointer"
-						title="Add member to sorted set"
-						aria-label="Add member to sorted set"
+						title={viewMode === 'geo' ? 'Add location to geo index' : 'Add member to sorted set'}
+						aria-label={viewMode === 'geo'
+							? 'Add location to geo index'
+							: 'Add member to sorted set'}
 					>
 						<PlusIcon class="mr-1 h-4 w-4" />
-						Add Member
+						{viewMode === 'geo' ? 'Add Location' : 'Add Member'}
 					</Button>
 				{/if}
 				<Button
 					size="sm"
 					variant="outline"
-					onclick={() => (rawView = !rawView)}
+					onclick={toggleGeoView}
 					class="cursor-pointer"
-					title={rawView ? 'Show as Table' : 'Show as Raw JSON'}
-					aria-label={rawView ? 'Show as Table' : 'Show as Raw JSON'}
+					title={viewMode === 'zset' ? 'View as geo coordinates' : 'View as sorted set scores'}
+					aria-label={viewMode === 'zset' ? 'View as geo coordinates' : 'View as sorted set scores'}
 				>
-					{rawView ? 'Show as Table' : 'Show as Raw JSON'}
+					{viewMode === 'zset' ? 'View as Geo' : 'View as ZSet'}
 				</Button>
+				{#if viewMode === 'zset'}
+					<Button
+						size="sm"
+						variant="outline"
+						onclick={() => (rawView = !rawView)}
+						class="cursor-pointer"
+						title={rawView ? 'Show as Table' : 'Show as Raw JSON'}
+						aria-label={rawView ? 'Show as Table' : 'Show as Raw JSON'}
+					>
+						{rawView ? 'Show as Table' : 'Show as Raw JSON'}
+					</Button>
+				{/if}
 			</div>
 		</div>
 
 		{#if showAddForm}
-			<AddItemForm {adding} onAdd={addItem} onClose={() => (showAddForm = false)}>
+			<AddItemForm
+				{adding}
+				onAdd={viewMode === 'geo' ? addGeoItem : addItem}
+				onClose={() => (showAddForm = false)}
+			>
 				<Input
 					bind:value={addMember}
 					placeholder="Member"
 					class="flex-1"
-					onkeydown={(e) => e.key === 'Enter' && addItem()}
+					onkeydown={(e) => e.key === 'Enter' && (viewMode === 'geo' ? addGeoItem() : addItem())}
 					title="Member"
 					aria-label="Member"
 				/>
-				<Input
-					bind:value={addScore}
-					placeholder="Score"
-					type="number"
-					step="any"
-					class="w-32"
-					onkeydown={(e) => e.key === 'Enter' && addItem()}
-					title="Score"
-					aria-label="Score"
-				/>
+				{#if viewMode === 'geo'}
+					<Input
+						bind:value={addLongitude}
+						placeholder="Longitude"
+						type="number"
+						step="any"
+						class="w-28"
+						onkeydown={(e) => e.key === 'Enter' && addGeoItem()}
+						title="Longitude (-180 to 180)"
+						aria-label="Longitude"
+					/>
+					<Input
+						bind:value={addLatitude}
+						placeholder="Latitude"
+						type="number"
+						step="any"
+						class="w-28"
+						onkeydown={(e) => e.key === 'Enter' && addGeoItem()}
+						title="Latitude (-85.05 to 85.05)"
+						aria-label="Latitude"
+					/>
+				{:else}
+					<Input
+						bind:value={addScore}
+						placeholder="Score"
+						type="number"
+						step="any"
+						class="w-32"
+						onkeydown={(e) => e.key === 'Enter' && addItem()}
+						title="Score"
+						aria-label="Score"
+					/>
+				{/if}
 			</AddItemForm>
 		{/if}
 	</TypeHeader>
 
 	<div class="-mx-6 min-h-0 flex-1 overflow-auto border-t border-border px-6 pt-2">
-		{#if rawView && rawJsonHtml}
+		{#if rawView && rawJsonHtml && viewMode === 'zset'}
 			<div
 				class="rounded border border-border [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:p-4 [&>pre]:text-sm"
 			>
 				{@html rawJsonHtml}
 			</div>
+		{:else if viewMode === 'geo'}
+			{#if loadingGeo}
+				<div class="flex items-center justify-center py-8 text-muted-foreground">
+					Loading geo data...
+				</div>
+			{:else}
+				<Table.Root>
+					<Table.Header>
+						<Table.Row>
+							<Table.Head>Member</Table.Head>
+							<Table.Head class="w-36">Longitude</Table.Head>
+							<Table.Head class="w-36">Latitude</Table.Head>
+							{#if !readOnly}
+								<Table.Head class="w-24">Actions</Table.Head>
+							{/if}
+						</Table.Row>
+					</Table.Header>
+					<Table.Body>
+						{#each geoMembers as { member, longitude, latitude }}
+							<Table.Row>
+								<Table.Cell class="font-mono">
+									<CollapsibleValue value={member} />
+								</Table.Cell>
+								<Table.Cell class="font-mono text-muted-foreground">
+									{formatCoordinate(longitude)}
+								</Table.Cell>
+								<Table.Cell class="font-mono text-muted-foreground">
+									{formatCoordinate(latitude)}
+								</Table.Cell>
+								{#if !readOnly}
+									<Table.Cell class="align-top">
+										<ItemActions
+											editing={false}
+											{saving}
+											showEdit={false}
+											onDelete={() => openDeleteDialog(member)}
+										/>
+									</Table.Cell>
+								{/if}
+							</Table.Row>
+						{/each}
+					</Table.Body>
+				</Table.Root>
+			{/if}
 		{:else}
 			<Table.Root>
 				<Table.Header>
@@ -272,7 +450,7 @@
 
 <DeleteItemDialog
 	bind:open={deleteDialogOpen}
-	itemType="zset"
+	itemType={viewMode === 'geo' ? 'geo' : 'zset'}
 	itemDisplay={deleteTarget?.display ?? ''}
 	onConfirm={confirmDelete}
 	onCancel={() => (deleteDialogOpen = false)}

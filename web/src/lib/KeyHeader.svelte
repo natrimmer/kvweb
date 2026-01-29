@@ -22,6 +22,7 @@
 		updatingTtl: boolean;
 		renamingKey: boolean;
 		typeHeaderExpanded: boolean;
+		geoViewActive?: boolean;
 		onToggleTypeHeader: () => void;
 		onDelete: () => void;
 		onReload: () => void;
@@ -41,6 +42,7 @@
 		updatingTtl,
 		renamingKey,
 		typeHeaderExpanded,
+		geoViewActive = false,
 		onToggleTypeHeader,
 		onDelete,
 		onReload,
@@ -167,7 +169,9 @@
 			{:else}
 				<h2 class="min-w-0 font-mono text-lg leading-none break-all">{keyName}</h2>
 			{/if}
-			<Badge variant="secondary" class="shrink-0 uppercase">{keyType}</Badge>
+			<Badge variant="secondary" class="shrink-0 uppercase"
+				>{keyType}{#if geoViewActive}(geo){/if}</Badge
+			>
 			{#if !editingTtl}
 				<span class="shrink-0 text-sm text-muted-foreground">
 					TTL: {formatTtl(liveTtl ?? -1)}

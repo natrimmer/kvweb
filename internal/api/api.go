@@ -61,6 +61,11 @@ func New(cfg *config.Config, client *valkey.Client) *Handler {
 	h.mux.HandleFunc("POST /api/key/{key}/zset", h.handleZSetAdd)
 	h.mux.HandleFunc("DELETE /api/key/{key}/zset/{member}", h.handleZSetRemove)
 
+	// Geo operations (uses zset internally, provides coordinate view)
+	h.mux.HandleFunc("GET /api/key/{key}/geo", h.handleGeoGet)
+	h.mux.HandleFunc("POST /api/key/{key}/geo", h.handleGeoAdd)
+	// DELETE uses handleZSetRemove - same underlying operation
+
 	// Stream operations
 	h.mux.HandleFunc("POST /api/key/{key}/stream", h.handleStreamAdd)
 
@@ -1043,6 +1048,132 @@ func (h *Handler) handleZSetRemove(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.client.ZRem(r.Context(), key, member); err != nil {
+		jsonError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	jsonResponse(w, map[string]string{"status": "ok"})
+}
+
+// Geo operation handlers
+
+func (h *Handler) handleGeoGet(w http.ResponseWriter, r *http.Request) {
+	key := r.PathValue("key")
+	if h.checkKeyPrefix(w, key) {
+		return
+	}
+
+	// Parse pagination params
+	pageStr := r.URL.Query().Get("page")
+	page := int64(1)
+	if pageStr != "" {
+		if p, err := strconv.ParseInt(pageStr, 10, 64); err == nil && p > 0 {
+			page = p
+		}
+	}
+
+	pageSizeStr := r.URL.Query().Get("pageSize")
+	pageSize := int64(defaultPageSize)
+	if pageSizeStr != "" {
+		if ps, err := strconv.ParseInt(pageSizeStr, 10, 64); err == nil && ps > 0 && ps <= 1000 {
+			pageSize = ps
+		}
+	}
+
+	ctx := r.Context()
+
+	// Get total count
+	length, _ := h.client.ZCard(ctx, key)
+
+	// Get paginated members
+	start := (page - 1) * pageSize
+	stop := start + pageSize - 1
+
+	zMembers, err := h.client.ZRangeWithScores(ctx, key, start, stop)
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Extract member names for GEOPOS
+	memberNames := make([]string, len(zMembers))
+	for i, m := range zMembers {
+		memberNames[i] = m.Member
+	}
+
+	// Get coordinates
+	positions, err := h.client.GeoPos(ctx, key, memberNames...)
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Combine into response (only include members with valid positions)
+	geoMembers := make([]valkey.GeoMember, 0, len(zMembers))
+	for i, m := range zMembers {
+		if i < len(positions) && positions[i] != nil {
+			geoMembers = append(geoMembers, valkey.GeoMember{
+				Member:    m.Member,
+				Longitude: positions[i].Longitude,
+				Latitude:  positions[i].Latitude,
+			})
+		}
+	}
+
+	ttl, _ := h.client.TTL(ctx, key)
+
+	jsonResponse(w, map[string]any{
+		"key":    key,
+		"type":   "zset",
+		"value":  geoMembers,
+		"ttl":    ttl,
+		"length": length,
+		"pagination": map[string]any{
+			"page":     page,
+			"pageSize": pageSize,
+			"total":    length,
+			"hasMore":  stop < length-1,
+		},
+	})
+}
+
+func (h *Handler) handleGeoAdd(w http.ResponseWriter, r *http.Request) {
+	if h.checkReadOnly(w) {
+		return
+	}
+
+	key := r.PathValue("key")
+	if h.checkKeyPrefix(w, key) {
+		return
+	}
+
+	var body struct {
+		Member    string  `json:"member"`
+		Longitude float64 `json:"longitude"`
+		Latitude  float64 `json:"latitude"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		jsonError(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if body.Member == "" {
+		jsonError(w, "Member cannot be empty", http.StatusBadRequest)
+		return
+	}
+
+	// Validate coordinates (Redis geo limits)
+	if body.Longitude < -180 || body.Longitude > 180 {
+		jsonError(w, "Longitude must be between -180 and 180", http.StatusBadRequest)
+		return
+	}
+	if body.Latitude < -85.05112878 || body.Latitude > 85.05112878 {
+		jsonError(w, "Latitude must be between -85.05112878 and 85.05112878", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.client.GeoAdd(r.Context(), key, body.Longitude, body.Latitude, body.Member); err != nil {
 		jsonError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

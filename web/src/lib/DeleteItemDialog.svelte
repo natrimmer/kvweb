@@ -21,6 +21,8 @@
 				return 'hash field';
 			case 'zset':
 				return 'sorted set member';
+			case 'geo':
+				return 'geo location';
 			default:
 				return 'item';
 		}

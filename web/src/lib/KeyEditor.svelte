@@ -63,10 +63,19 @@
 		typeHeaderExpanded = !typeHeaderExpanded;
 	}
 
+	// Optional callback from child editors to provide custom copy value
+	let zsetGetCopyValue: (() => string) | undefined = $state(undefined);
+	let zsetGeoViewActive = $state(false);
+
 	async function copyValue() {
 		if (!keyInfo) return;
-		const text =
-			typeof keyInfo.value === 'string' ? keyInfo.value : JSON.stringify(keyInfo.value, null, 2);
+		let text: string;
+		if (zsetGetCopyValue) {
+			text = zsetGetCopyValue();
+		} else {
+			text =
+				typeof keyInfo.value === 'string' ? keyInfo.value : JSON.stringify(keyInfo.value, null, 2);
+		}
 		await copyToClipboard(text, () => {});
 	}
 
@@ -154,6 +163,9 @@
 		if (previousKey !== key) {
 			currentPage = 1;
 			previousKey = key;
+			// Reset editor-specific state
+			zsetGetCopyValue = undefined;
+			zsetGeoViewActive = false;
 		}
 		loadKey(key);
 		// Reset external modification state when key changes
@@ -303,6 +315,7 @@
 			{updatingTtl}
 			{renamingKey}
 			{typeHeaderExpanded}
+			geoViewActive={keyInfo.type === 'zset' && zsetGeoViewActive}
 			onToggleTypeHeader={toggleTypeHeader}
 			onDelete={openDeleteDialog}
 			onReload={() => {
@@ -421,6 +434,8 @@
 				onPageChange={goToPage}
 				onPageSizeChange={changePageSize}
 				onDataChange={handleDataChange}
+				bind:getCopyValue={zsetGetCopyValue}
+				bind:geoViewActive={zsetGeoViewActive}
 			/>
 		{:else if keyInfo.type === 'stream'}
 			<StreamEditor

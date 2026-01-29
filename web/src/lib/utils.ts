@@ -161,6 +161,31 @@ export function parseScore(value: string | number | undefined | null): number {
 }
 
 /**
+ * Validates that a value is a valid longitude (-180 to 180).
+ */
+export function isValidLongitude(value: string | number | undefined | null): boolean {
+	if (value == null) return false;
+	const num = typeof value === 'number' ? value : parseFloat(String(value));
+	return !isNaN(num) && num >= -180 && num <= 180;
+}
+
+/**
+ * Validates that a value is a valid latitude for Redis geo (-85.05112878 to 85.05112878).
+ */
+export function isValidLatitude(value: string | number | undefined | null): boolean {
+	if (value == null) return false;
+	const num = typeof value === 'number' ? value : parseFloat(String(value));
+	return !isNaN(num) && num >= -85.05112878 && num <= 85.05112878;
+}
+
+/**
+ * Formats a coordinate to 6 decimal places.
+ */
+export function formatCoordinate(value: number): string {
+	return value.toFixed(6);
+}
+
+/**
  * Checks if a value exceeds the recommended size limit (1MB).
  */
 export function isLargeValue(value: string, limitBytes = 1024 * 1024): boolean {
