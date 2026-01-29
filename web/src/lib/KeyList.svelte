@@ -3,10 +3,11 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import * as Select from '$lib/components/ui/select';
-	import { ListTree, Regex, X } from '@lucide/svelte';
+	import { ListTree, Regex } from '@lucide/svelte';
 	import { onMount } from 'svelte';
 	import { api, type KeyMeta } from './api';
 	import KeyTree from './KeyTree.svelte';
+	import SearchHistory, { type HistoryEntry } from './SearchHistory.svelte';
 	import { deleteOps, getErrorMessage, modifyOps, toastError } from './utils';
 	import { ws } from './ws';
 
@@ -36,12 +37,7 @@
 	let newKeyName = $state('');
 	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 	let showHistory = $state(false);
-
-	interface HistoryEntry {
-		pattern: string;
-		regex: boolean;
-	}
-	let searchHistory = $state<HistoryEntry[]>([]);
+	let searchHistoryRef: SearchHistory | undefined = $state();
 
 	const keyTypes = [
 		{ value: '', label: 'All types' },
@@ -96,63 +92,11 @@
 
 	let sortedKeys = $derived(sortKeys(keys));
 
-	const HISTORY_KEY = 'kvweb:search-history';
-	const MAX_HISTORY = 20;
-
-	function loadHistory() {
-		try {
-			const stored = localStorage.getItem(HISTORY_KEY);
-			if (!stored) {
-				searchHistory = [];
-				return;
-			}
-			const parsed = JSON.parse(stored);
-			// Migrate old string[] format to HistoryEntry[]
-			if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'string') {
-				searchHistory = parsed.map((p: string) => ({ pattern: p, regex: false }));
-				saveHistory();
-			} else {
-				searchHistory = parsed;
-			}
-		} catch {
-			searchHistory = [];
-		}
-	}
-
-	function saveHistory() {
-		localStorage.setItem(HISTORY_KEY, JSON.stringify(searchHistory));
-	}
-
-	function addToHistory(p: string, isRegex: boolean) {
-		if (!p || p === '*') return;
-		const entry: HistoryEntry = { pattern: p, regex: isRegex };
-		searchHistory = [
-			entry,
-			...searchHistory.filter((h) => !(h.pattern === p && h.regex === isRegex))
-		].slice(0, MAX_HISTORY);
-		saveHistory();
-	}
-
-	function removeFromHistory(entry: HistoryEntry) {
-		searchHistory = searchHistory.filter(
-			(h) => !(h.pattern === entry.pattern && h.regex === entry.regex)
-		);
-		saveHistory();
-	}
-
-	function clearHistory() {
-		searchHistory = [];
-		saveHistory();
-	}
-
 	function selectHistory(entry: HistoryEntry) {
 		pattern = entry.pattern;
 		useRegex = entry.regex;
 		showHistory = false;
 	}
-
-	// Load history on init
-	loadHistory();
 
 	// Subscribe to WebSocket key events for live updates
 	onMount(() => {
@@ -186,7 +130,7 @@
 		if (debounceTimer) clearTimeout(debounceTimer);
 		debounceTimer = setTimeout(() => {
 			loadKeys(true);
-			addToHistory(pattern, useRegex);
+			searchHistoryRef?.addToHistory(pattern, useRegex);
 		}, 300);
 		return () => {
 			if (debounceTimer) clearTimeout(debounceTimer);
@@ -251,46 +195,7 @@
 					onfocus={() => (showHistory = true)}
 					onblur={() => setTimeout(() => (showHistory = false), 150)}
 				/>
-				{#if showHistory && searchHistory.length > 0}
-					<div
-						class="absolute top-full right-0 left-0 z-10 mt-1 max-h-60 overflow-auto rounded border border-border bg-popover shadow-lg"
-					>
-						<div class="flex items-center justify-between border-b border-border px-3 py-2">
-							<span class="text-xs text-muted-foreground">Recent searches</span>
-							<button
-								type="button"
-								class="cursor-pointer text-xs text-muted-foreground hover:text-destructive"
-								onmousedown={() => clearHistory()}
-								title="Clear search history"
-							>
-								Clear all
-							</button>
-						</div>
-						{#each searchHistory as h}
-							<div class="group flex items-center hover:bg-muted">
-								<button
-									type="button"
-									class="flex flex-1 cursor-pointer items-center gap-2 px-3 py-2 text-left font-mono text-sm"
-									onmousedown={() => selectHistory(h)}
-									title="Use this search pattern"
-								>
-									<span class="flex-1 overflow-hidden text-ellipsis">{h.pattern}</span>
-									{#if h.regex}
-										<span class="text-xs text-primary opacity-70">.*</span>
-									{/if}
-								</button>
-								<button
-									type="button"
-									class="cursor-pointer px-2 py-1 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive"
-									onmousedown={() => removeFromHistory(h)}
-									title="Remove from history"
-								>
-									<X size={14} />
-								</button>
-							</div>
-						{/each}
-					</div>
-				{/if}
+				<SearchHistory bind:this={searchHistoryRef} show={showHistory} onselect={selectHistory} />
 			</div>
 			<button
 				type="button"
