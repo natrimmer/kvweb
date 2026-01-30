@@ -234,7 +234,7 @@
 		{/if}
 	</TypeHeader>
 
-	<div class="border-border-2 -mx-6 min-h-0 flex-1 overflow-auto border-t px-6 pt-2">
+	<div class="border-border-2 -mx-6 min-h-0 flex-1 overflow-auto border-t px-6 pt-6">
 		{#if rawView && rawJsonHtml}
 			<div
 				class="rounded border border-border [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:p-4 [&>pre]:text-sm"
