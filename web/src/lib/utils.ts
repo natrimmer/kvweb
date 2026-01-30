@@ -58,6 +58,8 @@ export const modifyOps = new Set([
 	'zincrby', // sorted set
 	'xadd',
 	'xtrim', // stream
+	'pfadd',
+	'pfmerge', // hyperloglog
 	'append',
 	'incr',
 	'decr',

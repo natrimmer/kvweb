@@ -3,8 +3,22 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { toast } from 'svelte-sonner';
-	import { api, type HashPair, type KeyInfo, type StreamEntry, type ZSetMember } from './api';
-	import { HashEditor, ListEditor, SetEditor, StreamEditor, ZSetEditor } from './editors';
+	import {
+		api,
+		type HashPair,
+		type HLLData,
+		type KeyInfo,
+		type StreamEntry,
+		type ZSetMember
+	} from './api';
+	import {
+		HashEditor,
+		HLLEditor,
+		ListEditor,
+		SetEditor,
+		StreamEditor,
+		ZSetEditor
+	} from './editors';
 	import KeyHeader from './KeyHeader.svelte';
 	import TypeHeader from './TypeHeader.svelte';
 	import {
@@ -116,6 +130,9 @@
 	}
 	function asStream(): StreamEntry[] {
 		return Array.isArray(keyInfo?.value) ? (keyInfo.value as StreamEntry[]) : [];
+	}
+	function asHLL(): HLLData {
+		return (keyInfo?.value as HLLData) ?? { count: 0 };
 	}
 
 	function isJson(str: string): boolean {
@@ -434,6 +451,14 @@
 				{typeHeaderExpanded}
 				onPageChange={goToPage}
 				onPageSizeChange={changePageSize}
+				onDataChange={handleDataChange}
+			/>
+		{:else if keyInfo.type === 'hyperloglog'}
+			<HLLEditor
+				keyName={key}
+				data={asHLL()}
+				{readOnly}
+				{typeHeaderExpanded}
 				onDataChange={handleDataChange}
 			/>
 		{:else}

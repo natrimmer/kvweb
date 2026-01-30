@@ -73,12 +73,13 @@ func (s *Server) initNotifications(ctx context.Context) {
 	// Auto-enable if flag set and not already enabled
 	if s.cfg.Notifications && current == "" {
 		// K = Keyspace events, E = Keyevent events
-		// g = generic (DEL, EXPIRE, RENAME, etc), $ = string, l = list, s = set, h = hash, z = zset, x = stream, e = expired, t = stream
-		if err := s.client.SetNotifyKeyspaceEvents(ctx, "KEg$lshzxet"); err != nil {
+		// A = all commands (includes HyperLogLog which has no dedicated flag)
+		// g = generic (DEL, EXPIRE, RENAME), e = expired, x = evicted
+		if err := s.client.SetNotifyKeyspaceEvents(ctx, "KEAgex"); err != nil {
 			log.Printf("Warning: Could not enable keyspace notifications: %v", err)
 			return
 		}
-		current = "KEg$lshzxet"
+		current = "KEAgex"
 		log.Println("Enabled Valkey keyspace notifications")
 	}
 

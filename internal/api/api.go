@@ -69,6 +69,9 @@ func New(cfg *config.Config, client *valkey.Client) *Handler {
 	// Stream operations
 	h.mux.HandleFunc("POST /api/key/{key}/stream", h.handleStreamAdd)
 
+	// HyperLogLog operations
+	h.mux.HandleFunc("POST /api/key/{key}/hll", h.handleHLLAdd)
+
 	return h
 }
 
@@ -239,7 +242,17 @@ func (h *Handler) handleKeys(w http.ResponseWriter, r *http.Request) {
 		filtered := make([]string, 0, len(keys))
 		for _, key := range keys {
 			keyType, err := h.client.Type(r.Context(), key)
-			if err == nil && keyType == typeFilter {
+			if err != nil {
+				continue
+			}
+			// Detect HyperLogLog (stored as string with HYLL magic header)
+			if keyType == "string" {
+				val, err := h.client.Get(r.Context(), key)
+				if err == nil && len(val) >= 4 && val[:4] == "HYLL" {
+					keyType = "hyperloglog"
+				}
+			}
+			if keyType == typeFilter {
 				filtered = append(filtered, key)
 			}
 		}
@@ -251,6 +264,13 @@ func (h *Handler) handleKeys(w http.ResponseWriter, r *http.Request) {
 		metas := make([]keyMeta, 0, len(keys))
 		for _, key := range keys {
 			keyType, _ := h.client.Type(r.Context(), key)
+			// Detect HyperLogLog (stored as string with HYLL magic header)
+			if keyType == "string" {
+				val, err := h.client.Get(r.Context(), key)
+				if err == nil && len(val) >= 4 && val[:4] == "HYLL" {
+					keyType = "hyperloglog"
+				}
+			}
 			ttl, _ := h.client.TTL(r.Context(), key)
 			metas = append(metas, keyMeta{Key: key, Type: keyType, TTL: ttl})
 		}
@@ -412,7 +432,17 @@ func (h *Handler) handleGetKey(w http.ResponseWriter, r *http.Request) {
 
 	switch keyType {
 	case "string":
-		value, err = h.client.Get(ctx, key)
+		val, getErr := h.client.Get(ctx, key)
+		if getErr != nil {
+			err = getErr
+		} else if len(val) >= 4 && val[:4] == "HYLL" {
+			// HyperLogLog detected by magic header
+			keyType = "hyperloglog"
+			count, _ := h.client.PFCount(ctx, key)
+			value = map[string]any{"count": count}
+		} else {
+			value = val
+		}
 	case "list":
 		length, _ = h.client.LLen(ctx, key)
 		start := (page - 1) * pageSize
@@ -752,8 +782,9 @@ func (h *Handler) handleSetNotifications(w http.ResponseWriter, r *http.Request)
 	val := ""
 	if body.Enabled {
 		// K = Keyspace events, E = Keyevent events
-		// g = generic (DEL, EXPIRE, RENAME, etc), $ = string, l = list, s = set, h = hash, z = zset, x = stream, e = expired, t = stream
-		val = "KEg$lshzxet"
+		// A = all commands (includes HyperLogLog which has no dedicated flag)
+		// g = generic (DEL, EXPIRE, RENAME), e = expired, x = evicted
+		val = "KEAgex"
 	}
 
 	if err := h.client.SetNotifyKeyspaceEvents(r.Context(), val); err != nil {
@@ -1226,4 +1257,38 @@ func (h *Handler) handleStreamAdd(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jsonResponse(w, map[string]string{"status": "ok", "id": id})
+}
+
+// HyperLogLog operation handlers
+
+func (h *Handler) handleHLLAdd(w http.ResponseWriter, r *http.Request) {
+	if h.checkReadOnly(w) {
+		return
+	}
+
+	key := r.PathValue("key")
+	if h.checkKeyPrefix(w, key) {
+		return
+	}
+
+	var body struct {
+		Element string `json:"element"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		jsonError(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if body.Element == "" {
+		jsonError(w, "Element cannot be empty", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.client.PFAdd(r.Context(), key, body.Element); err != nil {
+		jsonError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	jsonResponse(w, map[string]string{"status": "ok"})
 }

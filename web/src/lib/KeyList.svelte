@@ -50,7 +50,8 @@
 		{ value: 'set', label: 'set' },
 		{ value: 'zset', label: 'zset' },
 		{ value: 'geo', label: 'geo (zset)' },
-		{ value: 'stream', label: 'stream' }
+		{ value: 'stream', label: 'stream' },
+		{ value: 'hyperloglog', label: 'hyperloglog' }
 	] as const;
 	const sortOptions = [
 		{ value: 'key', label: 'Name' },

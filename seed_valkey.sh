@@ -195,6 +195,29 @@ $CLI XADD "stream:json" "*" \
     payload '{"userId":123,"email":"test@example.com"}'
 
 # ===================
+# HYPERLOGLOG
+# ===================
+
+# Single element
+$CLI PFADD "hll:single" "only-element"
+
+# Few elements
+$CLI PFADD "hll:few" "alpha" "beta" "gamma" "delta" "epsilon"
+
+# Many elements (demonstrates cardinality estimation)
+for i in $(seq 1 1000); do
+    $CLI PFADD "hll:many" "user-$i"
+done
+
+# Duplicate elements (count should stay same)
+$CLI PFADD "hll:duplicates" "a" "b" "c" "a" "b" "c" "a" "b" "c"
+
+# High cardinality simulation (unique visitors)
+for i in $(seq 1 10000); do
+    $CLI PFADD "hll:visitors" "visitor-$RANDOM-$i"
+done
+
+# ===================
 # TTL examples
 # ===================
 

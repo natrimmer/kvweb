@@ -28,7 +28,11 @@ export interface PaginationInfo {
 	hasMore: boolean;
 }
 
-export type KeyType = 'string' | 'list' | 'set' | 'hash' | 'zset' | 'stream';
+export type KeyType = 'string' | 'list' | 'set' | 'hash' | 'zset' | 'stream' | 'hyperloglog';
+
+export interface HLLData {
+	count: number;
+}
 
 export interface KeyInfo {
 	key: string;
@@ -40,7 +44,8 @@ export interface KeyInfo {
 		| Record<string, string>
 		| ZSetMember[]
 		| GeoMember[]
-		| StreamEntry[];
+		| StreamEntry[]
+		| HLLData;
 	ttl: number;
 	length?: number;
 	pagination?: PaginationInfo;
@@ -265,6 +270,14 @@ export const api = {
 		return request(`/key/${encodeURIComponent(key)}/stream`, {
 			method: 'POST',
 			body: JSON.stringify({ fields })
+		});
+	},
+
+	// HyperLogLog operations
+	hllAdd(key: string, element: string): Promise<void> {
+		return request(`/key/${encodeURIComponent(key)}/hll`, {
+			method: 'POST',
+			body: JSON.stringify({ element })
 		});
 	}
 };

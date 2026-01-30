@@ -418,6 +418,18 @@ func (c *Client) XAddMulti(ctx context.Context, key string, fields map[string]st
 	return c.client.Do(ctx, c.client.B().Arbitrary(args...).Build()).ToString()
 }
 
+// HyperLogLog operations
+
+// PFCount returns the approximate cardinality of the HyperLogLog
+func (c *Client) PFCount(ctx context.Context, key string) (int64, error) {
+	return c.client.Do(ctx, c.client.B().Pfcount().Key(key).Build()).ToInt64()
+}
+
+// PFAdd adds elements to a HyperLogLog
+func (c *Client) PFAdd(ctx context.Context, key string, elements ...string) error {
+	return c.client.Do(ctx, c.client.B().Pfadd().Key(key).Element(elements...).Build()).Error()
+}
+
 // Config operations
 
 // GetNotifyKeyspaceEvents returns the current notify-keyspace-events setting
