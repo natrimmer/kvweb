@@ -61,7 +61,6 @@
 	let rawView = $state(false);
 	let viewMode = $state<'zset' | 'geo'>('zset');
 	let geoMembers = $state<GeoMember[]>([]);
-	let loadingGeo = $state(false);
 	let geoDisplayMode = $state<'table' | 'map' | 'json'>('table');
 
 	// Add form state
@@ -112,15 +111,12 @@
 	});
 
 	async function loadGeoData() {
-		loadingGeo = true;
 		try {
 			const result = await api.geoGet(keyName, currentPage, pageSize);
 			geoMembers = result.value as GeoMember[];
 		} catch (e) {
 			toastError(e, 'Failed to load geo data');
 			viewMode = 'zset';
-		} finally {
-			loadingGeo = false;
 		}
 	}
 
@@ -413,7 +409,7 @@
 			</div>
 		{:else if viewMode === 'geo'}
 			{#if geoDisplayMode === 'map'}
-				<GeoMapView members={geoMembers} />
+				<GeoMapView members={geoMembers} {keyName} />
 			{:else if geoDisplayMode === 'json' && geoJsonHtml}
 				<div
 					class="rounded border border-border [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:p-4 [&>pre]:text-sm"

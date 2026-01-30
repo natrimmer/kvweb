@@ -6,14 +6,17 @@
 
 	interface Props {
 		members: GeoMember[];
+		keyName: string;
 	}
 
-	let { members }: Props = $props();
+	let { members, keyName }: Props = $props();
 
 	let mapContainer: HTMLDivElement;
 	let map: L.Map | null = null;
 	let markersLayer: L.LayerGroup | null = null;
-	let initialFitDone = false;
+	let previousKeyName = '';
+	let previousMembersLength = 0;
+	let shouldFitBounds = false;
 
 	onMount(() => {
 		// Initialize map centered on first member or default to world view
@@ -28,14 +31,15 @@
 		}).addTo(map);
 
 		markersLayer = L.layerGroup().addTo(map);
-		updateMarkers(true); // true = initial load, fit bounds
+		shouldFitBounds = true; // Fit bounds on initial load
+		updateMarkers();
 
 		return () => {
 			map?.remove();
 		};
 	});
 
-	function updateMarkers(fitBounds = false) {
+	function updateMarkers() {
 		if (!map || !markersLayer) return;
 
 		markersLayer.clearLayers();
@@ -48,22 +52,37 @@
 			markersLayer.addLayer(marker);
 		}
 
-		// Only fit bounds on initial load or when explicitly requested
-		if (fitBounds && members.length > 0 && !initialFitDone) {
+		// Fit bounds if we've been told to (key changed and we now have the new data)
+		if (shouldFitBounds && members.length > 0) {
 			const bounds = L.latLngBounds(members.map((m) => [m.latitude, m.longitude]));
 			map.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
-			initialFitDone = true;
+			shouldFitBounds = false;
 		}
 	}
 
 	// Update markers when members change
-	// Using untrack pattern since updateMarkers() accesses members internally
 	$effect(() => {
-		// This will re-run whenever members prop changes (reference or content)
-		members;
-		// Call updateMarkers which reads from members
-		if (map && markersLayer) {
-			updateMarkers();
+		const keyChanged = keyName !== previousKeyName && previousKeyName !== '';
+		const membersChanged = members.length !== previousMembersLength;
+
+		// When key changes, set flag to fit bounds but DON'T update markers yet (data is stale)
+		if (keyChanged) {
+			shouldFitBounds = true;
+			previousKeyName = keyName;
+			// Don't update markers yet - wait for new members data
+			return;
+		}
+
+		if (previousKeyName === '') {
+			previousKeyName = keyName;
+		}
+
+		// Update markers when members change
+		if (membersChanged || shouldFitBounds) {
+			previousMembersLength = members.length;
+			if (map && markersLayer) {
+				updateMarkers();
+			}
 		}
 	});
 </script>
