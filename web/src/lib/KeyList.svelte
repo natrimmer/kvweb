@@ -1,14 +1,27 @@
 <script lang="ts">
+	import * as Alert from '$lib/components/ui/alert';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import * as ButtonGroup from '$lib/components/ui/button-group';
+	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import * as Select from '$lib/components/ui/select';
-	import { ArrowUpFromDot, CirclePlus, CircleX, Funnel, ListTree, Regex } from '@lucide/svelte';
+	import {
+		ArrowUpFromDot,
+		CircleAlert,
+		CirclePlus,
+		CircleX,
+		Funnel,
+		Info,
+		ListTree,
+		Regex,
+		Settings
+	} from '@lucide/svelte';
 	import { onMount } from 'svelte';
 	import { api, type KeyMeta } from './api';
 	import KeyTree from './KeyTree.svelte';
 	import SearchHistory, { type HistoryEntry } from './SearchHistory.svelte';
+	import ServerSettings from './ServerSettings.svelte';
 	import { deleteOps, getErrorMessage, modifyOps, toastError } from './utils';
 	import { ws } from './ws';
 
@@ -19,9 +32,18 @@
 		readOnly: boolean;
 		prefix: string;
 		dbSize: number;
+		disableFlush?: boolean;
 	}
 
-	let { selected, onselect, oncreated, readOnly, prefix, dbSize }: Props = $props();
+	let {
+		selected,
+		onselect,
+		oncreated,
+		readOnly,
+		prefix,
+		dbSize,
+		disableFlush = false
+	}: Props = $props();
 
 	let viewMode = $state<'list' | 'tree'>('list');
 	let keys = $state<KeyMeta[]>([]);
@@ -35,6 +57,7 @@
 	let cursor = $state(0);
 	let hasMore = $state(false);
 	let showNewKey = $state(false);
+	let showSettings = $state(false);
 	let newKeyName = $state('');
 	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 	let showHistory = $state(false);
@@ -193,8 +216,8 @@
 {#if viewMode === 'tree'}
 	<KeyTree {selected} {onselect} onclose={() => (viewMode = 'list')} />
 {:else}
-	<div class="flex h-full flex-col gap-3 p-4">
-		<div class="flex gap-2">
+	<div class="flex h-full flex-col p-4">
+		<div class="mb-3 flex gap-2">
 			<div class="relative flex-1">
 				<Input
 					bind:ref={inputRef}
@@ -225,7 +248,7 @@
 				<Button
 					variant="outline"
 					onclick={() => (useRegex = !useRegex)}
-					class="cursor-pointer"
+					class="cursor-pointer {useRegex ? 'bg-accent' : ''}"
 					title={useRegex ? 'Regex mode (click for glob)' : 'Glob mode (click for regex)'}
 					aria-label={useRegex ? 'Regex mode (click for glob)' : 'Glob mode (click for regex)'}
 				>
@@ -243,7 +266,7 @@
 				<Button
 					variant="outline"
 					onclick={() => (showFilters = !showFilters)}
-					class="cursor-pointer"
+					class="cursor-pointer {showFilters ? 'bg-accent' : ''}"
 					title="Toggle filters"
 					aria-label="Toggle filters"
 				>
@@ -251,12 +274,9 @@
 				</Button>
 			</ButtonGroup.Root>
 		</div>
-		{#if regexError}
-			<div class="text-sm text-destructive">{regexError}</div>
-		{/if}
 
 		{#if showFilters}
-			<ButtonGroup.Root class="w-full">
+			<ButtonGroup.Root class="mb-3 w-full">
 				<Select.Root type="single" value={typeFilter} onValueChange={handleTypeFilterChange}>
 					<Select.Trigger class="flex-1">
 						{typeFilterLabel}
@@ -297,7 +317,7 @@
 			</ButtonGroup.Root>
 		{/if}
 
-		<div class="flex items-center justify-between">
+		<div class="mb-3 flex items-center justify-between">
 			<span class="text-sm text-muted-foreground">
 				{#if pattern !== '*' || typeFilter}
 					{sortedKeys.length} of {dbSize} key{dbSize === 1 ? '' : 's'}
@@ -345,13 +365,23 @@
 		{/if}
 
 		{#if typeFilter === 'geo'}
-			<div class="text-xs text-muted-foreground">
+			<div class="mb-3 text-xs text-muted-foreground">
 				Geo data is stored as sorted sets. Use "View as Geo" toggle in the editor to see
 				coordinates.
 			</div>
 		{/if}
 
-		<ul class="flex-1 list-none overflow-y-auto border-t border-muted py-2">
+		{#if regexError}
+			<Alert.Root variant="destructive" class="mb-3 border-destructive bg-background">
+				<CircleAlert />
+				<Alert.Title>Regex Error</Alert.Title>
+				<Alert.Description>
+					{regexError}
+				</Alert.Description>
+			</Alert.Root>
+		{/if}
+
+		<ul class="flex-1 list-none overflow-y-auto border-t border-muted py-1">
 			{#each sortedKeys as item, i (item.key)}
 				{@const hasTtlBoundary =
 					sortBy === 'ttl' &&
@@ -391,5 +421,40 @@
 		{#if sortedKeys.length === 0 && !loading}
 			<div class="py-8 text-center text-muted-foreground">No keys found</div>
 		{/if}
+
+		<!-- Footer with about and settings -->
+		<div class="mt-0 flex items-center justify-between border-t border-border pt-3 text-xs">
+			<a
+				href="/kvweb"
+				class="flex items-center gap-1.5 text-muted-foreground hover:text-foreground hover:underline"
+				title="Learn more about kvweb"
+				aria-label="Learn more about kvweb"
+			>
+				<Info size={14} />
+				<span>About kvweb</span>
+			</a>
+			<Button
+				variant="ghost"
+				size="sm"
+				class="h-7 cursor-pointer text-muted-foreground hover:text-foreground"
+				onclick={() => (showSettings = true)}
+				title="Settings and server info"
+				aria-label="Settings and server info"
+			>
+				<Settings size={14} />
+			</Button>
+		</div>
 	</div>
 {/if}
+
+<Dialog.Root bind:open={showSettings}>
+	<Dialog.Content class="flex max-h-[80vh] min-w-3xl flex-col">
+		<Dialog.Header>
+			<Dialog.Title>Server Settings</Dialog.Title>
+			<Dialog.Description>View server information and manage database settings</Dialog.Description>
+		</Dialog.Header>
+		<div class="min-h-0 flex-1">
+			<ServerSettings {readOnly} {disableFlush} />
+		</div>
+	</Dialog.Content>
+</Dialog.Root>

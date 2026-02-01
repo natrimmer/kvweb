@@ -2,19 +2,19 @@
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import { Button } from '$lib/components/ui/button';
 	import * as Select from '$lib/components/ui/select';
-	import { Info, Radio, RotateCcw } from '@lucide/svelte';
+	import { Radio, RotateCcw } from '@lucide/svelte';
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { api } from './api';
 	import { toastError } from './utils';
 	import { ws, type Stats, type Status } from './ws';
+
 	interface Props {
 		readOnly: boolean;
 		disableFlush: boolean;
-		clearSelectedKey: () => void;
 	}
 
-	let { readOnly, disableFlush, clearSelectedKey }: Props = $props();
+	let { readOnly, disableFlush }: Props = $props();
 
 	let info = $state('');
 	let loading = $state(false);
@@ -93,7 +93,6 @@
 		} catch (e) {
 			toastError(e, 'Failed to flush database');
 		} finally {
-			clearSelectedKey();
 			flushDialogOpen = false;
 		}
 	}
@@ -116,8 +115,8 @@
 	}
 </script>
 
-<div class="flex h-full flex-col gap-4 p-6">
-	<div class="flex items-center justify-between">
+<div class="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
+	<div class="flex shrink-0 items-center justify-between gap-2">
 		<div class="flex gap-2">
 			<Select.Root type="single" bind:value={section} onValueChange={handleValueChange}>
 				<Select.Trigger class="w-50" size="sm">
@@ -194,19 +193,7 @@
 		{/if}
 	</div>
 
-	<pre
-		class="flex-1 overflow-auto rounded bg-muted p-4 font-mono text-sm break-all whitespace-pre-wrap">{loading
-			? 'Loading...'
-			: info}
-	</pre>
-
-	<a
-		href="/kvweb"
-		class="flex items-center gap-2 text-sm text-muted-foreground hover:underline"
-		title="Learn more about kvweb"
-		aria-label="Learn more about kvweb"
-	>
-		<span>learn more about kvweb</span>
-		<Info size={20} />
-	</a>
+	<div class="h-96 overflow-auto rounded bg-muted p-4 font-mono text-sm whitespace-pre-wrap">
+		{loading ? 'Loading...' : info}
+	</div>
 </div>

@@ -8,11 +8,9 @@
 	import { api } from './lib/api';
 	import KeyEditor from './lib/KeyEditor.svelte';
 	import KeyList from './lib/KeyList.svelte';
-	import ServerInfo from './lib/ServerInfo.svelte';
 	import { ws } from './lib/ws';
 
 	let selectedKey = $state<string | null>(null);
-	let view = $state<'keys' | 'info'>('keys');
 	let dbSize = $state(0);
 	let apiConnected = $state<boolean | null>(null); // null = not checked yet
 	let dbConnected = $state<boolean | null>(null); // null = not checked yet
@@ -25,7 +23,6 @@
 
 	function resetToHome() {
 		selectedKey = null;
-		view = 'keys';
 	}
 
 	async function checkHealth() {
@@ -146,29 +143,6 @@
 			kvweb
 		</button>
 
-		<nav class="flex gap-1">
-			<button
-				type="button"
-				onclick={() => (view = 'keys')}
-				class="cursor-pointer rounded px-4 py-1.5 text-sm transition-colors {view === 'keys'
-					? 'bg-primary text-primary-foreground'
-					: 'text-muted-foreground hover:bg-muted hover:text-foreground'}"
-				title="View and manage keys"
-			>
-				Keys
-			</button>
-			<button
-				type="button"
-				onclick={() => (view = 'info')}
-				class="cursor-pointer rounded px-4 py-1.5 text-sm transition-colors {view === 'info'
-					? 'bg-primary text-primary-foreground'
-					: 'text-muted-foreground hover:bg-muted hover:text-foreground'}"
-				title="View server information"
-			>
-				Info
-			</button>
-		</nav>
-
 		<div class="ml-auto flex items-center gap-3 text-sm">
 			{#if readOnly}
 				<Badge variant="default" class="bg-accent text-accent-foreground hover:bg-accent"
@@ -198,44 +172,41 @@
 	</header>
 
 	<main class="flex-1 overflow-hidden">
-		{#if view === 'keys'}
-			<Resizable.PaneGroup direction="horizontal" class="h-full">
-				<Resizable.Pane defaultSize={25} minSize={15} maxSize={50} collapsible={true}>
-					<div class="flex h-full flex-col overflow-hidden border-r border-border">
-						<KeyList
-							onselect={handleKeySelect}
-							selected={selectedKey}
-							oncreated={handleKeyCreated}
-							{readOnly}
-							{prefix}
-							{dbSize}
-						/>
-					</div>
-				</Resizable.Pane>
-				<Resizable.Handle withHandle />
-				<Resizable.Pane defaultSize={75}>
-					<div class="h-full overflow-auto">
-						{#if selectedKey}
-							<KeyEditor key={selectedKey} ondeleted={handleKeyDeleted} {readOnly} />
-						{:else}
-							<Empty.Root class="h-full">
-								<Empty.Header>
-									<Empty.Media variant="icon">
-										<Database />
-									</Empty.Media>
-									<Empty.Title>No Key Selected</Empty.Title>
-									<Empty.Description>
-										Select a key from the list to view or edit its value.
-									</Empty.Description>
-								</Empty.Header>
-							</Empty.Root>
-						{/if}
-					</div>
-				</Resizable.Pane>
-			</Resizable.PaneGroup>
-		{:else}
-			<ServerInfo {readOnly} {disableFlush} clearSelectedKey={() => (selectedKey = null)} />
-		{/if}
+		<Resizable.PaneGroup direction="horizontal" class="h-full">
+			<Resizable.Pane defaultSize={25} minSize={15} maxSize={50} collapsible={true}>
+				<div class="flex h-full flex-col overflow-hidden border-r border-border">
+					<KeyList
+						onselect={handleKeySelect}
+						selected={selectedKey}
+						oncreated={handleKeyCreated}
+						{readOnly}
+						{prefix}
+						{dbSize}
+						{disableFlush}
+					/>
+				</div>
+			</Resizable.Pane>
+			<Resizable.Handle withHandle />
+			<Resizable.Pane defaultSize={75}>
+				<div class="h-full overflow-auto">
+					{#if selectedKey}
+						<KeyEditor key={selectedKey} ondeleted={handleKeyDeleted} {readOnly} />
+					{:else}
+						<Empty.Root class="h-full">
+							<Empty.Header>
+								<Empty.Media variant="icon">
+									<Database />
+								</Empty.Media>
+								<Empty.Title>No Key Selected</Empty.Title>
+								<Empty.Description>
+									Select a key from the list to view or edit its value.
+								</Empty.Description>
+							</Empty.Header>
+						</Empty.Root>
+					{/if}
+				</div>
+			</Resizable.Pane>
+		</Resizable.PaneGroup>
 	</main>
 </div>
 
