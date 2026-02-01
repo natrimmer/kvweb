@@ -309,7 +309,7 @@
 	}
 </script>
 
-<div class="flex h-full flex-col gap-4 overflow-hidden p-6">
+<div class="flex h-full flex-col overflow-hidden p-6">
 	{#if showLoading}
 		<div class="flex h-full items-center justify-center text-muted-foreground">Loading...</div>
 	{:else if error}

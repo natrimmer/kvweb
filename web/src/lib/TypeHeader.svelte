@@ -10,7 +10,7 @@
 </script>
 
 {#if expanded && children}
-	<div class="flex flex-col gap-2 pt-2">
+	<div class="flex flex-col border-t border-dashed py-3">
 		{@render children()}
 	</div>
 {/if}

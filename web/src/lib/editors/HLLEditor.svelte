@@ -42,7 +42,7 @@
 	}
 </script>
 
-<div class="flex min-h-0 flex-1 flex-col gap-2">
+<div class="flex min-h-0 flex-1 flex-col">
 	<TypeHeader expanded={typeHeaderExpanded}>
 		<div class="flex items-center justify-between">
 			<div class="flex-1"></div>
