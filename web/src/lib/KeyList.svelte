@@ -4,7 +4,7 @@
 	import * as ButtonGroup from '$lib/components/ui/button-group';
 	import { Input } from '$lib/components/ui/input';
 	import * as Select from '$lib/components/ui/select';
-	import { ArrowUpFromDot, CircleX, Funnel, ListTree, Regex } from '@lucide/svelte';
+	import { ArrowUpFromDot, CirclePlus, CircleX, Funnel, ListTree, Regex } from '@lucide/svelte';
 	import { onMount } from 'svelte';
 	import { api, type KeyMeta } from './api';
 	import KeyTree from './KeyTree.svelte';
@@ -194,9 +194,6 @@
 	<KeyTree {selected} {onselect} onclose={() => (viewMode = 'list')} />
 {:else}
 	<div class="flex h-full flex-col gap-3 p-4">
-		<div class="flex items-center justify-between">
-			<span class="text-xs text-muted-foreground">{dbSize} total keys</span>
-		</div>
 		<div class="flex gap-2">
 			<div class="relative flex-1">
 				<Input
@@ -300,11 +297,27 @@
 			</ButtonGroup.Root>
 		{/if}
 
-		{#if !readOnly}
-			<div class="flex gap-2">
-				<Button variant="secondary" onclick={() => (showNewKey = !showNewKey)}>+ New Key</Button>
-			</div>
-		{/if}
+		<div class="flex items-center justify-between">
+			<span class="text-sm text-muted-foreground">
+				{#if pattern !== '*' || typeFilter}
+					{sortedKeys.length} of {dbSize} key{dbSize === 1 ? '' : 's'}
+				{:else}
+					{dbSize} total key{dbSize === 1 ? '' : 's'}
+				{/if}
+			</span>
+			<span>
+				{#if !readOnly}
+					<Button
+						variant="outline"
+						size="sm"
+						class="cursor-pointer hover:bg-accent"
+						onclick={() => (showNewKey = !showNewKey)}
+					>
+						<CirclePlus /> New Key
+					</Button>
+				{/if}
+			</span>
+		</div>
 
 		{#if showNewKey && !readOnly}
 			<div class="flex gap-2 rounded bg-muted p-2">
@@ -338,7 +351,7 @@
 			</div>
 		{/if}
 
-		<ul class="flex-1 list-none overflow-y-auto">
+		<ul class="flex-1 list-none overflow-y-auto border-t border-muted py-2">
 			{#each sortedKeys as item, i (item.key)}
 				{@const hasTtlBoundary =
 					sortBy === 'ttl' &&

@@ -323,6 +323,7 @@
 			{updatingTtl}
 			{renamingKey}
 			{typeHeaderExpanded}
+			typeHeaderHasContent={keyInfo.type !== 'string' || isJsonValue || (!readOnly && hasChanges)}
 			geoViewActive={keyInfo.type === 'zset' && zsetGeoViewActive}
 			onToggleTypeHeader={toggleTypeHeader}
 			onDelete={openDeleteDialog}
@@ -333,41 +334,43 @@
 
 		{#if keyInfo.type === 'string'}
 			<div class="flex min-h-0 flex-1 flex-col gap-2">
-				<TypeHeader expanded={typeHeaderExpanded}>
-					<div class="flex items-center justify-between">
-						<label for="value-textarea">Value:</label>
-						<div class="flex items-center gap-2">
-							{#if isJsonValue}
-								<Button
-									size="sm"
-									variant="outline"
-									onclick={() => (prettyPrint = !prettyPrint)}
-									class="cursor-pointer"
-									title={prettyPrint ? 'Compact JSON formatting' : 'Pretty-print JSON formatting'}
-									aria-label={prettyPrint
-										? 'Compact JSON formatting'
-										: 'Pretty-print JSON formatting'}
-								>
-									{prettyPrint ? 'Compact JSON' : 'Format JSON'}
-								</Button>
-							{/if}
-							{#if !readOnly && hasChanges}
-								<Button
-									size="sm"
-									onclick={saveValue}
-									disabled={saving}
-									class="cursor-pointer"
-									title="Save changes"
-									aria-label="Save changes"
-								>
-									{saving ? 'Saving...' : 'Save'}
-								</Button>
-							{/if}
+				<!-- Only render TypeHeader when there's content to display. If more controls are added in the future that should always show, update this condition accordingly. -->
+				{#if isJsonValue || (!readOnly && hasChanges)}
+					<TypeHeader expanded={typeHeaderExpanded}>
+						<div class="flex items-center justify-between">
+							<div class="flex items-center gap-2">
+								{#if isJsonValue}
+									<Button
+										size="sm"
+										variant="outline"
+										onclick={() => (prettyPrint = !prettyPrint)}
+										class="cursor-pointer"
+										title={prettyPrint ? 'Compact JSON formatting' : 'Pretty-print JSON formatting'}
+										aria-label={prettyPrint
+											? 'Compact JSON formatting'
+											: 'Pretty-print JSON formatting'}
+									>
+										{prettyPrint ? 'Compact JSON' : 'Format JSON'}
+									</Button>
+								{/if}
+								{#if !readOnly && hasChanges}
+									<Button
+										size="sm"
+										onclick={saveValue}
+										disabled={saving}
+										class="cursor-pointer"
+										title="Save changes"
+										aria-label="Save changes"
+									>
+										{saving ? 'Saving...' : 'Save'}
+									</Button>
+								{/if}
+							</div>
 						</div>
-					</div>
-				</TypeHeader>
+					</TypeHeader>
+				{/if}
 
-				<div class="-mx-6 min-h-0 flex-1 overflow-auto border-t border-border px-6 pt-2">
+				<div class="-mx-6 min-h-0 flex-1 overflow-auto border-t border-border px-6 pt-6">
 					{#if isJsonValue && highlightedHtml}
 						<div
 							class="rounded border border-border [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:p-4 [&>pre]:text-sm"
