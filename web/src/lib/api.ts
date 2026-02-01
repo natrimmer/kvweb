@@ -86,6 +86,12 @@ export interface PrefixResponse {
 	prefix: string;
 }
 
+export interface HealthResponse {
+	status: 'ok' | 'degraded';
+	database: boolean;
+	timestamp: number;
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
 	const res = await fetch(`${BASE_URL}${path}`, {
 		...options,
@@ -104,6 +110,10 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
+	getHealth(): Promise<HealthResponse> {
+		return request('/health');
+	},
+
 	getConfig(): Promise<AppConfig> {
 		return request('/config');
 	},

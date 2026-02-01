@@ -42,6 +42,7 @@ func New(cfg *config.Config, client *valkey.Client) *Server {
 	// API routes
 	s.apiHandler = api.New(cfg, client)
 	s.apiHandler.SetOnNotificationsEnabled(s.enableLiveUpdates)
+	s.apiHandler.SetOnNotificationsDisabled(s.disableLiveUpdates)
 	mux.Handle("/api/", s.apiHandler)
 
 	// WebSocket for real-time updates
@@ -146,6 +147,22 @@ func (s *Server) enableLiveUpdates() {
 	s.wsHub.Broadcast(ws.Message{
 		Type: "status",
 		Data: ws.StatusData{Live: true},
+	})
+}
+
+// disableLiveUpdates stops the keyspace subscription at runtime
+func (s *Server) disableLiveUpdates() {
+	if !s.liveUpdates {
+		return // Already disabled
+	}
+
+	s.liveUpdates = false
+	log.Println("Live updates disabled at runtime")
+
+	// Broadcast updated status to all connected clients
+	s.wsHub.Broadcast(ws.Message{
+		Type: "status",
+		Data: ws.StatusData{Live: false},
 	})
 }
 

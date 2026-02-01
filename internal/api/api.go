@@ -15,10 +15,11 @@ import (
 
 // Handler handles API requests
 type Handler struct {
-	cfg                    *config.Config
-	client                 *valkey.Client
-	mux                    *http.ServeMux
-	onNotificationsEnabled func() // Callback when notifications are enabled at runtime
+	cfg                     *config.Config
+	client                  *valkey.Client
+	mux                     *http.ServeMux
+	onNotificationsEnabled  func() // Callback when notifications are enabled at runtime
+	onNotificationsDisabled func() // Callback when notifications are disabled at runtime
 }
 
 // New creates a new API handler
@@ -30,6 +31,7 @@ func New(cfg *config.Config, client *valkey.Client) *Handler {
 	}
 
 	// Register routes
+	h.mux.HandleFunc("GET /api/health", h.handleHealth)
 	h.mux.HandleFunc("GET /api/config", h.handleConfig)
 	h.mux.HandleFunc("GET /api/info", h.handleInfo)
 	h.mux.HandleFunc("GET /api/keys", h.handleKeys)
@@ -78,6 +80,11 @@ func New(cfg *config.Config, client *valkey.Client) *Handler {
 // SetOnNotificationsEnabled sets the callback for when notifications are enabled at runtime
 func (h *Handler) SetOnNotificationsEnabled(fn func()) {
 	h.onNotificationsEnabled = fn
+}
+
+// SetOnNotificationsDisabled sets the callback for when notifications are disabled at runtime
+func (h *Handler) SetOnNotificationsDisabled(fn func()) {
+	h.onNotificationsDisabled = fn
 }
 
 // ServeHTTP implements http.Handler
@@ -145,6 +152,25 @@ func (h *Handler) applyPrefixToPattern(pattern string) string {
 }
 
 // Handlers
+
+func (h *Handler) handleHealth(w http.ResponseWriter, r *http.Request) {
+	// Check database connectivity by pinging
+	err := h.client.Ping(r.Context())
+
+	status := "ok"
+	dbConnected := true
+
+	if err != nil {
+		status = "degraded"
+		dbConnected = false
+	}
+
+	jsonResponse(w, map[string]any{
+		"status":    status,
+		"database":  dbConnected,
+		"timestamp": time.Now().Unix(),
+	})
+}
 
 func (h *Handler) handleConfig(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, map[string]any{
@@ -792,9 +818,11 @@ func (h *Handler) handleSetNotifications(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// Trigger callback if enabling notifications
+	// Trigger callbacks based on enabled/disabled state
 	if body.Enabled && h.onNotificationsEnabled != nil {
 		h.onNotificationsEnabled()
+	} else if !body.Enabled && h.onNotificationsDisabled != nil {
+		h.onNotificationsDisabled()
 	}
 
 	jsonResponse(w, map[string]any{

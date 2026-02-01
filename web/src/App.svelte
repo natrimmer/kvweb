@@ -3,8 +3,7 @@
 	import * as Empty from '$lib/components/ui/empty';
 	import * as Resizable from '$lib/components/ui/resizable';
 	import { Toaster } from '$lib/components/ui/sonner';
-	import DatabaseIcon from '@lucide/svelte/icons/database';
-	import RadioIcon from '@lucide/svelte/icons/radio';
+	import { CloudOff, Database, Radio } from '@lucide/svelte/icons';
 	import { onMount } from 'svelte';
 	import { api } from './lib/api';
 	import KeyEditor from './lib/KeyEditor.svelte';
@@ -15,15 +14,30 @@
 	let selectedKey = $state<string | null>(null);
 	let view = $state<'keys' | 'info'>('keys');
 	let dbSize = $state(0);
-	let connected = $state(false);
+	let apiConnected = $state<boolean | null>(null); // null = not checked yet
+	let dbConnected = $state<boolean | null>(null); // null = not checked yet
+	let wsConnected = $state(false);
 	let readOnly = $state(false);
 	let prefix = $state('');
 	let disableFlush = $state(false);
 	let liveUpdates = $state(false);
+	let healthCheckInterval: ReturnType<typeof setInterval> | null = null;
 
 	function resetToHome() {
 		selectedKey = null;
 		view = 'keys';
+	}
+
+	async function checkHealth() {
+		try {
+			const health = await api.getHealth();
+			apiConnected = true;
+			dbConnected = health.database;
+		} catch {
+			apiConnected = false;
+			dbConnected = false;
+		}
+		wsConnected = ws.isConnected();
 	}
 
 	onMount(() => {
@@ -34,25 +48,38 @@
 				readOnly = config.readOnly;
 				prefix = config.prefix;
 				disableFlush = config.disableFlush;
-				connected = true;
+				apiConnected = true;
 			})
 			.catch(() => {
-				connected = false;
+				apiConnected = false;
 			});
+
+		// Initial health check
+		checkHealth();
+
+		// Periodic health check every 5 seconds
+		healthCheckInterval = setInterval(checkHealth, 5000);
 
 		// Connect WebSocket
 		ws.connect();
 
 		ws.onStatus((status) => {
 			liveUpdates = status.live;
+			wsConnected = ws.isConnected();
 		});
 
 		ws.onStats((stats) => {
 			dbSize = stats.dbSize;
 			liveUpdates = stats.notificationsOn;
+			wsConnected = ws.isConnected();
 		});
 
-		return () => ws.disconnect();
+		return () => {
+			ws.disconnect();
+			if (healthCheckInterval) {
+				clearInterval(healthCheckInterval);
+			}
+		};
 	});
 
 	function handleKeySelect(key: string) {
@@ -70,6 +97,23 @@
 </script>
 
 <div class="flex h-screen flex-col">
+	<!-- Error notification bar for critical connection issues -->
+	{#if apiConnected === false || dbConnected === false}
+		{@const message = apiConnected === false ? 'Server is unreachable' : 'Database connection lost'}
+		<div
+			class="relative flex items-center gap-3 overflow-hidden bg-destructive px-4 py-3 text-white"
+		>
+			<CloudOff class="z-10 h-6 w-6 shrink-0" />
+			<div class="marquee-container flex-1 overflow-hidden">
+				<div class="marquee-content flex text-sm font-medium whitespace-nowrap uppercase">
+					{#each Array(20) as _}
+						<span class="mr-4">{message} •</span>
+					{/each}
+				</div>
+			</div>
+		</div>
+	{/if}
+
 	<header class="flex items-center gap-6 border-b border-border px-6 py-4">
 		<button
 			type="button"
@@ -132,18 +176,24 @@
 				>
 			{/if}
 			{#if liveUpdates}
-				<div
-					class="flex items-center gap-1.5 text-xs text-primary"
-					title="Receiving real-time updates from server"
-				>
-					<RadioIcon class="h-3.5 w-3.5 animate-pulse" />
-					<span>Live</span>
-				</div>
+				{#if wsConnected}
+					<div
+						class="flex items-center gap-1.5 text-xs text-primary"
+						title="Receiving real-time updates from server"
+					>
+						<Radio class="h-3.5 w-3.5 animate-pulse" />
+						<span>Live</span>
+					</div>
+				{:else}
+					<div
+						class="flex items-center gap-1.5 text-xs text-yellow-600"
+						title="Live updates enabled but WebSocket disconnected (reconnecting...)"
+					>
+						<Radio class="h-3.5 w-3.5 opacity-50" />
+						<span>Live (reconnecting...)</span>
+					</div>
+				{/if}
 			{/if}
-			<span
-				class="h-2 w-2 cursor-help rounded-full {connected ? 'bg-green-500' : 'bg-destructive'}"
-				title={connected ? 'Connected to server' : 'Disconnected from server'}
-			></span>
 		</div>
 	</header>
 
@@ -171,7 +221,7 @@
 							<Empty.Root class="h-full">
 								<Empty.Header>
 									<Empty.Media variant="icon">
-										<DatabaseIcon />
+										<Database />
 									</Empty.Media>
 									<Empty.Title>No Key Selected</Empty.Title>
 									<Empty.Description>
@@ -190,3 +240,18 @@
 </div>
 
 <Toaster />
+
+<style>
+	@keyframes marquee {
+		from {
+			transform: translateX(0);
+		}
+		to {
+			transform: translateX(-50%);
+		}
+	}
+
+	.marquee-content {
+		animation: marquee 30s linear infinite;
+	}
+</style>
