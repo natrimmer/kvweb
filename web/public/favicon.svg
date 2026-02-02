@@ -1,4 +1,9 @@
 <svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <clipPath id="cell-clip">
+      <rect x="32" y="8" width="24" height="16" rx="3"/>
+    </clipPath>
+  </defs>
   <!-- Outer square with rounded corners -->
   <rect x="8" y="8" width="48" height="48" rx="6" fill="none" stroke="#003dcc" stroke-width="3"/>
 
@@ -7,6 +12,6 @@
   <line x1="8" y1="24" x2="56" y2="24" stroke="#003dcc" stroke-width="3"/>
   <line x1="8" y1="40" x2="56" y2="40" stroke="#003dcc" stroke-width="3"/>
 
-  <!-- Filled cell (top-right) -->
-  <rect x="32" y="8" width="24" height="16" fill="#003dcc"/>
+  <!-- Filled cell (top-right) with clipped rounded corners -->
+  <rect x="32" y="8" width="24" height="16" fill="#003dcc" clip-path="url(#cell-clip)"/>
 </svg>

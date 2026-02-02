@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Logo from '$lib/components/Logo.svelte';
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Empty from '$lib/components/ui/empty';
 	import * as Resizable from '$lib/components/ui/resizable';
@@ -118,28 +119,7 @@
 			class="group flex cursor-pointer items-center gap-2 text-xl font-semibold text-foreground transition-colors hover:text-primary"
 			title="Return to home"
 		>
-			<svg
-				width="24"
-				height="24"
-				viewBox="0 0 64 64"
-				xmlns="http://www.w3.org/2000/svg"
-				class="text-primary transition-colors group-hover:text-primary"
-			>
-				<rect
-					x="8"
-					y="8"
-					width="48"
-					height="48"
-					rx="6"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="3"
-				/>
-				<line x1="32" y1="8" x2="32" y2="56" stroke="currentColor" stroke-width="3" />
-				<line x1="8" y1="24" x2="56" y2="24" stroke="currentColor" stroke-width="3" />
-				<line x1="8" y1="40" x2="56" y2="40" stroke="currentColor" stroke-width="3" />
-				<rect x="32" y="8" width="24" height="16" fill="currentColor" />
-			</svg>
+			<Logo size={24} class="text-primary transition-colors group-hover:text-primary" />
 			kvweb
 		</button>
 
@@ -191,6 +171,14 @@
 				<div class="h-full overflow-auto">
 					{#if selectedKey}
 						<KeyEditor key={selectedKey} ondeleted={handleKeyDeleted} {readOnly} />
+					{:else if dbSize === 0}
+						<Empty.Root class="h-full">
+							<Empty.Header>
+								<Empty.Media variant="default">
+									<Logo size={240} class="text-alabaster-grey-100" />
+								</Empty.Media>
+							</Empty.Header>
+						</Empty.Root>
 					{:else}
 						<Empty.Root class="h-full">
 							<Empty.Header>

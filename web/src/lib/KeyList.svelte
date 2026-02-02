@@ -4,6 +4,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as ButtonGroup from '$lib/components/ui/button-group';
 	import * as Dialog from '$lib/components/ui/dialog';
+	import * as Empty from '$lib/components/ui/empty';
 	import { Input } from '$lib/components/ui/input';
 	import * as Select from '$lib/components/ui/select';
 	import {
@@ -11,10 +12,12 @@
 		CircleAlert,
 		CirclePlus,
 		CircleX,
+		DatabaseZap,
 		Funnel,
 		Info,
 		ListTree,
 		Regex,
+		Search,
 		Settings
 	} from '@lucide/svelte';
 	import { onMount } from 'svelte';
@@ -120,10 +123,22 @@
 
 	let sortedKeys = $derived(sortKeys(keys));
 
+	// Determine empty state type
+	let hasActiveFilters = $derived(pattern !== '*' || typeFilter !== '');
+	let isEmpty = $derived(sortedKeys.length === 0 && !loading);
+	let isEmptyDatabase = $derived(isEmpty && dbSize === 0 && !hasActiveFilters);
+	let isEmptySearch = $derived(isEmpty && hasActiveFilters);
+
 	function selectHistory(entry: HistoryEntry) {
 		pattern = entry.pattern;
 		useRegex = entry.regex;
 		showHistory = false;
+	}
+
+	function clearFilters() {
+		pattern = '*';
+		typeFilter = '';
+		inputRef?.focus();
 	}
 
 	function clearInput() {
@@ -381,46 +396,97 @@
 			</Alert.Root>
 		{/if}
 
-		<ul class="flex-1 list-none overflow-y-auto border-t border-muted py-1">
-			{#each sortedKeys as item, i (item.key)}
-				{@const hasTtlBoundary =
-					sortBy === 'ttl' &&
-					i < sortedKeys.length - 1 &&
-					item.ttl >= 0 !== sortedKeys[i + 1].ttl >= 0}
-				<li class={hasTtlBoundary ? 'mb-1 border-b border-border pb-1' : ''}>
-					<Button
-						variant="ghost"
-						class="w-full cursor-pointer justify-start overflow-hidden rounded p-2 font-mono text-sm text-ellipsis whitespace-nowrap text-foreground hover:bg-primary/10 {item.key ===
-						selected
-							? 'bg-primary/20 hover:bg-primary/20'
-							: ''}"
-						onclick={() => onselect(item.key)}
-						title={`View key: ${item.key}`}
-						aria-label={`View key: ${item.key}`}
-					>
-						<span class="flex-1 overflow-hidden text-left text-ellipsis">{item.key}</span>
-						<Badge variant="secondary" class="ml-2 text-xs opacity-60">{item.type}</Badge>
-					</Button>
-				</li>
-			{/each}
-		</ul>
+		<div class="flex-1 overflow-y-auto border-t border-muted">
+			{#if sortedKeys.length > 0}
+				<ul class="list-none py-1">
+					{#each sortedKeys as item, i (item.key)}
+						{@const hasTtlBoundary =
+							sortBy === 'ttl' &&
+							i < sortedKeys.length - 1 &&
+							item.ttl >= 0 !== sortedKeys[i + 1].ttl >= 0}
+						<li class={hasTtlBoundary ? 'mb-1 border-b border-border pb-1' : ''}>
+							<Button
+								variant="ghost"
+								class="w-full cursor-pointer justify-start overflow-hidden rounded p-2 font-mono text-sm text-ellipsis whitespace-nowrap text-foreground hover:bg-primary/10 {item.key ===
+								selected
+									? 'bg-primary/20 hover:bg-primary/20'
+									: ''}"
+								onclick={() => onselect(item.key)}
+								title={`View key: ${item.key}`}
+								aria-label={`View key: ${item.key}`}
+							>
+								<span class="flex-1 overflow-hidden text-left text-ellipsis">{item.key}</span>
+								<Badge variant="secondary" class="ml-2 text-xs opacity-60">{item.type}</Badge>
+							</Button>
+						</li>
+					{/each}
+				</ul>
 
-		{#if hasMore}
-			<Button
-				variant="secondary"
-				class="w-full"
-				onclick={() => loadKeys(false)}
-				disabled={loading}
-				title="Load more keys"
-				aria-label="Load more keys"
-			>
-				{loading ? 'Loading...' : 'Load more'}
-			</Button>
-		{/if}
-
-		{#if sortedKeys.length === 0 && !loading}
-			<div class="py-8 text-center text-muted-foreground">No keys found</div>
-		{/if}
+				{#if hasMore}
+					<div class="border-t border-muted px-1 py-1">
+						<Button
+							variant="secondary"
+							class="w-full"
+							onclick={() => loadKeys(false)}
+							disabled={loading}
+							title="Load more keys"
+							aria-label="Load more keys"
+						>
+							{loading ? 'Loading...' : 'Load more'}
+						</Button>
+					</div>
+				{/if}
+			{:else if loading}
+				<Empty.Root>
+					<Empty.Header>
+						<Empty.Media variant="icon">
+							<Search class="animate-pulse" />
+						</Empty.Media>
+						<Empty.Title>Loading Keys...</Empty.Title>
+						<Empty.Description>Searching database for matching keys</Empty.Description>
+					</Empty.Header>
+				</Empty.Root>
+			{:else if isEmptyDatabase}
+				<Empty.Root>
+					<Empty.Header>
+						<Empty.Media variant="icon">
+							<DatabaseZap />
+						</Empty.Media>
+						<Empty.Title>No Keys in Database</Empty.Title>
+						<Empty.Description>
+							{!readOnly ? 'Create your first key to get started.' : 'No keys available to view.'}
+						</Empty.Description>
+					</Empty.Header>
+					{#if !readOnly}
+						<Empty.Content>
+							<Button onclick={() => (showNewKey = true)} class="w-full">
+								<CirclePlus />
+								Create First Key
+							</Button>
+						</Empty.Content>
+					{/if}
+				</Empty.Root>
+			{:else if isEmptySearch}
+				<Empty.Root>
+					<Empty.Header>
+						<Empty.Media variant="icon">
+							<Search />
+						</Empty.Media>
+						<Empty.Title>No Keys Found</Empty.Title>
+						<Empty.Description>
+							No keys match your current search pattern
+							{typeFilter ? `and type filter "${typeFilterLabel}"` : ''}.
+						</Empty.Description>
+					</Empty.Header>
+					<Empty.Content>
+						<Button variant="outline" onclick={clearFilters} class="w-full">
+							<CircleX />
+							Clear Filters
+						</Button>
+					</Empty.Content>
+				</Empty.Root>
+			{/if}
+		</div>
 
 		<!-- Footer with about and settings -->
 		<div class="mt-0 flex items-center justify-between border-t border-border pt-3 text-xs">
