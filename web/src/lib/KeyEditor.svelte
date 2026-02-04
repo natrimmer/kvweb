@@ -322,6 +322,7 @@
 			{readOnly}
 			{updatingTtl}
 			{renamingKey}
+			{loading}
 			{typeHeaderExpanded}
 			typeHeaderHasContent={keyInfo.type !== 'string' || isJsonValue || (!readOnly && hasChanges)}
 			geoViewActive={keyInfo.type === 'zset' && zsetGeoViewActive}
@@ -330,6 +331,7 @@
 			onTtlChange={updateTtl}
 			onCopyValue={copyValue}
 			onRename={renameKey}
+			onRefresh={() => loadKey(key)}
 		/>
 
 		{#if keyInfo.type === 'string'}

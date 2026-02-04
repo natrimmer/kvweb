@@ -8,6 +8,7 @@
 	import ChevronUpIcon from '@lucide/svelte/icons/chevron-up';
 	import CopyIcon from '@lucide/svelte/icons/copy';
 	import PencilIcon from '@lucide/svelte/icons/pencil';
+	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
 	import XIcon from '@lucide/svelte/icons/x';
 	import type { KeyType } from './api';
 	import { copyToClipboard, formatTtl } from './utils';
@@ -19,6 +20,7 @@
 		readOnly: boolean;
 		updatingTtl: boolean;
 		renamingKey: boolean;
+		loading: boolean;
 		typeHeaderExpanded: boolean;
 		typeHeaderHasContent?: boolean;
 		geoViewActive?: boolean;
@@ -27,6 +29,7 @@
 		onTtlChange: (ttl: number) => void;
 		onCopyValue: () => void;
 		onRename: (newKey: string) => void;
+		onRefresh: () => void;
 	}
 
 	let {
@@ -36,6 +39,7 @@
 		readOnly,
 		updatingTtl,
 		renamingKey,
+		loading,
 		typeHeaderExpanded,
 		typeHeaderHasContent = true,
 		geoViewActive = false,
@@ -43,7 +47,8 @@
 		onDelete,
 		onTtlChange,
 		onCopyValue,
-		onRename
+		onRename,
+		onRefresh
 	}: Props = $props();
 
 	let editTtl = $state('');
@@ -224,6 +229,17 @@
 				</span>
 			{/if}
 		</div>
+		<Button
+			variant="outline"
+			size="sm"
+			onclick={onRefresh}
+			disabled={loading}
+			title="Refresh key data"
+			aria-label="Refresh key data"
+			class="cursor-pointer"
+		>
+			<RefreshCwIcon class={loading ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} />
+		</Button>
 		<ButtonGroup.Root class="shrink-0">
 			<Button
 				variant="outline"
