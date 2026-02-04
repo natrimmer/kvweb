@@ -7,6 +7,7 @@
 	import { CloudOff, Database, Radio } from '@lucide/svelte/icons';
 	import { onMount } from 'svelte';
 	import { api } from './lib/api';
+	import { matchesShortcut } from './lib/keyboard';
 	import KeyEditor from './lib/KeyEditor.svelte';
 	import KeyList from './lib/KeyList.svelte';
 	import { ws } from './lib/ws';
@@ -72,11 +73,30 @@
 			wsConnected = ws.isConnected();
 		});
 
+		// Keyboard shortcuts
+		function handleKeydown(e: KeyboardEvent) {
+			// Escape: Clear selected key (return to home)
+			if (matchesShortcut(e, 'Escape')) {
+				if (selectedKey) {
+					// Only if not focused on an input
+					const activeElement = document.activeElement;
+					if (activeElement?.tagName !== 'INPUT' && activeElement?.tagName !== 'TEXTAREA') {
+						e.preventDefault();
+						resetToHome();
+					}
+				}
+				return;
+			}
+		}
+
+		window.addEventListener('keydown', handleKeydown);
+
 		return () => {
 			ws.disconnect();
 			if (healthCheckInterval) {
 				clearInterval(healthCheckInterval);
 			}
+			window.removeEventListener('keydown', handleKeydown);
 		};
 	});
 

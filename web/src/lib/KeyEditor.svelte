@@ -19,6 +19,7 @@
 		StreamEditor,
 		ZSetEditor
 	} from './editors';
+	import { formatShortcut, matchesShortcut } from './keyboard';
 	import KeyHeader from './KeyHeader.svelte';
 	import TypeHeader from './TypeHeader.svelte';
 	import {
@@ -205,6 +206,34 @@
 		return unsubscribe;
 	});
 
+	// Keyboard shortcuts
+	$effect(() => {
+		function handleKeydown(e: KeyboardEvent) {
+			// Ctrl/Cmd+S: Save string value
+			if (matchesShortcut(e, 's', true)) {
+				if (!readOnly && keyInfo?.type === 'string' && hasChanges) {
+					e.preventDefault();
+					saveValue();
+				}
+				return;
+			}
+
+			// Delete: Delete key with confirmation
+			if (e.key === 'Delete' && !readOnly && keyInfo) {
+				// Only if not focused on an input
+				const activeElement = document.activeElement;
+				if (activeElement?.tagName !== 'INPUT' && activeElement?.tagName !== 'TEXTAREA') {
+					e.preventDefault();
+					openDeleteDialog();
+				}
+				return;
+			}
+		}
+
+		window.addEventListener('keydown', handleKeydown);
+		return () => window.removeEventListener('keydown', handleKeydown);
+	});
+
 	async function loadKey(k: string) {
 		loading = true;
 		error = '';
@@ -361,7 +390,7 @@
 										onclick={saveValue}
 										disabled={saving}
 										class="cursor-pointer"
-										title="Save changes"
+										title={`Save changes (${formatShortcut('S', true)})`}
 										aria-label="Save changes"
 									>
 										{saving ? 'Saving...' : 'Save'}

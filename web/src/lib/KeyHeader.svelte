@@ -11,6 +11,7 @@
 	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
 	import XIcon from '@lucide/svelte/icons/x';
 	import type { KeyType } from './api';
+	import { formatShortcut } from './keyboard';
 	import { copyToClipboard, formatTtl } from './utils';
 
 	interface Props {
@@ -289,7 +290,7 @@
 					size="sm"
 					onclick={onDelete}
 					class="shrink-0 cursor-pointer"
-					title="Delete this key"
+					title={`Delete this key (${formatShortcut('Delete')})`}
 					aria-label="Delete this key"
 				>
 					Delete
