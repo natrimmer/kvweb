@@ -11,9 +11,10 @@
 	import DeleteItemDialog from '$lib/DeleteItemDialog.svelte';
 	import InlineEditor from '$lib/InlineEditor.svelte';
 	import ItemActions from '$lib/ItemActions.svelte';
+	import LargeValueWarningDialog from '$lib/LargeValueWarningDialog.svelte';
 	import PaginationControls from '$lib/PaginationControls.svelte';
 	import TypeHeader from '$lib/TypeHeader.svelte';
-	import { highlightJson, showPaginationControls, toastError } from '$lib/utils';
+	import { highlightJson, isLargeValue, showPaginationControls, toastError } from '$lib/utils';
 	import { Plus, TableIcon } from '@lucide/svelte/icons';
 	import { toast } from 'svelte-sonner';
 
@@ -64,6 +65,12 @@
 	let deleteDialogOpen = $state(false);
 	let deleteTarget = $state<{ field: string } | null>(null);
 
+	// Large value warning
+	let largeValueWarningOpen = $state(false);
+	let largeValueSize = $state(0);
+	let pendingAddField: { field: string; value: string } | null = null;
+	let pendingEditField: { field: string; value: string } | null = null;
+
 	let rawJsonHtml = $derived.by(() => {
 		if (!rawView) return '';
 		const obj: Record<string, string> = {};
@@ -113,6 +120,16 @@
 	async function saveEdit(value: string) {
 		if (editingField === null) return;
 
+		// Check if we're editing a value and it's large
+		if (editMode === 'value') {
+			if (isLargeValue(value) && (pendingEditField === null || pendingEditField.value !== value)) {
+				largeValueSize = new Blob([value]).size;
+				pendingEditField = { field: editingField, value };
+				largeValueWarningOpen = true;
+				return;
+			}
+		}
+
 		saving = true;
 		try {
 			if (editMode === 'value') {
@@ -139,6 +156,7 @@
 			toastError(e, editMode === 'value' ? 'Failed to update field' : 'Failed to rename field');
 		} finally {
 			saving = false;
+			pendingEditField = null;
 		}
 	}
 
@@ -147,6 +165,18 @@
 			toast.error('Field name cannot be empty');
 			return;
 		}
+
+		// Check if value is large and needs confirmation
+		if (
+			isLargeValue(addValue) &&
+			(pendingAddField === null || pendingAddField.value !== addValue)
+		) {
+			largeValueSize = new Blob([addValue]).size;
+			pendingAddField = { field: addField, value: addValue };
+			largeValueWarningOpen = true;
+			return;
+		}
+
 		adding = true;
 		try {
 			await api.hashSet(keyName, addField, addValue);
@@ -158,7 +188,23 @@
 			toastError(e, 'Failed to add field');
 		} finally {
 			adding = false;
+			pendingAddField = null;
 		}
+	}
+
+	function confirmLargeValue() {
+		largeValueWarningOpen = false;
+		if (pendingAddField !== null) {
+			addItem();
+		} else if (pendingEditField !== null) {
+			saveEdit(pendingEditField.value);
+		}
+	}
+
+	function cancelLargeValue() {
+		largeValueWarningOpen = false;
+		pendingAddField = null;
+		pendingEditField = null;
 	}
 
 	function openDeleteDialog(field: string) {
@@ -347,4 +393,11 @@
 	itemDisplay={deleteTarget?.field ?? ''}
 	onConfirm={confirmDelete}
 	onCancel={() => (deleteDialogOpen = false)}
+/>
+
+<LargeValueWarningDialog
+	bind:open={largeValueWarningOpen}
+	valueSize={largeValueSize}
+	onConfirm={confirmLargeValue}
+	onCancel={cancelLargeValue}
 />

@@ -21,12 +21,14 @@
 	} from './editors';
 	import { formatShortcut, matchesShortcut } from './keyboard';
 	import KeyHeader from './KeyHeader.svelte';
+	import LargeValueWarningDialog from './LargeValueWarningDialog.svelte';
 	import TypeHeader from './TypeHeader.svelte';
 	import {
 		copyToClipboard,
 		deleteOps,
 		getErrorMessage,
 		highlightJson,
+		isLargeValue,
 		modifyOps,
 		toastError
 	} from './utils';
@@ -62,6 +64,11 @@
 
 	// Delete confirmation dialog
 	let deleteDialogOpen = $state(false);
+
+	// Large value warning dialog
+	let largeValueWarningOpen = $state(false);
+	let largeValueSize = $state(0);
+	let pendingSaveValue: string | null = null;
 
 	// Type header expand/collapse state
 	let typeHeaderExpanded = $state(true);
@@ -275,6 +282,16 @@
 
 	async function saveValue() {
 		if (!keyInfo) return;
+
+		// Check if value is large and needs confirmation
+		if (isLargeValue(editValue) && pendingSaveValue !== editValue) {
+			largeValueSize = new Blob([editValue]).size;
+			pendingSaveValue = editValue;
+			largeValueWarningOpen = true;
+			return;
+		}
+
+		// Proceed with save
 		saving = true;
 		error = '';
 		try {
@@ -285,7 +302,18 @@
 			toastError(e, 'Failed to save');
 		} finally {
 			saving = false;
+			pendingSaveValue = null;
 		}
+	}
+
+	function confirmLargeValueSave() {
+		largeValueWarningOpen = false;
+		saveValue();
+	}
+
+	function cancelLargeValueSave() {
+		largeValueWarningOpen = false;
+		pendingSaveValue = null;
 	}
 
 	async function deleteKey() {
@@ -524,6 +552,13 @@
 				</AlertDialog.Footer>
 			</AlertDialog.Content>
 		</AlertDialog.Root>
+
+		<LargeValueWarningDialog
+			bind:open={largeValueWarningOpen}
+			valueSize={largeValueSize}
+			onConfirm={confirmLargeValueSave}
+			onCancel={cancelLargeValueSave}
+		/>
 	{/if}
 </div>
 

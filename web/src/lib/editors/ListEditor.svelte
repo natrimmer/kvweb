@@ -12,9 +12,10 @@
 	import DeleteItemDialog from '$lib/DeleteItemDialog.svelte';
 	import InlineEditor from '$lib/InlineEditor.svelte';
 	import ItemActions from '$lib/ItemActions.svelte';
+	import LargeValueWarningDialog from '$lib/LargeValueWarningDialog.svelte';
 	import PaginationControls from '$lib/PaginationControls.svelte';
 	import TypeHeader from '$lib/TypeHeader.svelte';
-	import { highlightJson, showPaginationControls, toastError } from '$lib/utils';
+	import { highlightJson, isLargeValue, showPaginationControls, toastError } from '$lib/utils';
 	import { Plus, TableIcon } from '@lucide/svelte/icons';
 	import { toast } from 'svelte-sonner';
 
@@ -64,6 +65,12 @@
 	// Delete state
 	let deleteDialogOpen = $state(false);
 	let deleteTarget = $state<{ index: number; display: string } | null>(null);
+
+	// Large value warning
+	let largeValueWarningOpen = $state(false);
+	let largeValueSize = $state(0);
+	let pendingAddValue: string | null = null;
+	let pendingEditValue: { index: number; value: string } | null = null;
 
 	const positionOptions = [
 		{ value: 'tail', label: 'Append (tail)' },
@@ -124,6 +131,15 @@
 
 	async function saveEdit(value: string) {
 		if (editingIndex === null) return;
+
+		// Check if value is large and needs confirmation
+		if (isLargeValue(value) && (pendingEditValue === null || pendingEditValue.value !== value)) {
+			largeValueSize = new Blob([value]).size;
+			pendingEditValue = { index: editingIndex, value };
+			largeValueWarningOpen = true;
+			return;
+		}
+
 		saving = true;
 		try {
 			await api.listSet(keyName, editingIndex, value);
@@ -134,6 +150,7 @@
 			toastError(e, 'Failed to update item');
 		} finally {
 			saving = false;
+			pendingEditValue = null;
 		}
 	}
 
@@ -142,6 +159,15 @@
 			toast.error('Value cannot be empty');
 			return;
 		}
+
+		// Check if value is large and needs confirmation
+		if (isLargeValue(addValue) && pendingAddValue !== addValue) {
+			largeValueSize = new Blob([addValue]).size;
+			pendingAddValue = addValue;
+			largeValueWarningOpen = true;
+			return;
+		}
+
 		adding = true;
 		try {
 			await api.listPush(keyName, addValue, addPosition);
@@ -152,7 +178,23 @@
 			toastError(e, 'Failed to add item');
 		} finally {
 			adding = false;
+			pendingAddValue = null;
 		}
+	}
+
+	function confirmLargeValue() {
+		largeValueWarningOpen = false;
+		if (pendingAddValue !== null) {
+			addItem();
+		} else if (pendingEditValue !== null) {
+			saveEdit(pendingEditValue.value);
+		}
+	}
+
+	function cancelLargeValue() {
+		largeValueWarningOpen = false;
+		pendingAddValue = null;
+		pendingEditValue = null;
 	}
 
 	function openDeleteDialog(index: number, value: string) {
@@ -342,4 +384,11 @@
 	itemDisplay={deleteTarget?.display ?? ''}
 	onConfirm={confirmDelete}
 	onCancel={() => (deleteDialogOpen = false)}
+/>
+
+<LargeValueWarningDialog
+	bind:open={largeValueWarningOpen}
+	valueSize={largeValueSize}
+	onConfirm={confirmLargeValue}
+	onCancel={cancelLargeValue}
 />

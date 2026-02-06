@@ -11,11 +11,13 @@
 	import DeleteItemDialog from '$lib/DeleteItemDialog.svelte';
 	import InlineEditor from '$lib/InlineEditor.svelte';
 	import ItemActions from '$lib/ItemActions.svelte';
+	import LargeValueWarningDialog from '$lib/LargeValueWarningDialog.svelte';
 	import PaginationControls from '$lib/PaginationControls.svelte';
 	import TypeHeader from '$lib/TypeHeader.svelte';
 	import {
 		formatCoordinate,
 		highlightJson,
+		isLargeValue,
 		isValidLatitude,
 		isValidLongitude,
 		isValidScore,
@@ -82,6 +84,12 @@
 	// Delete state
 	let deleteDialogOpen = $state(false);
 	let deleteTarget = $state<{ member: string; display: string } | null>(null);
+
+	// Large value warning
+	let largeValueWarningOpen = $state(false);
+	let largeValueSize = $state(0);
+	let pendingAddMember: string | null = null;
+	let pendingEditMember: { old: string; new: string } | null = null;
 
 	let rawJsonHtml = $derived(rawView ? highlightJson(JSON.stringify(members, null, 2), true) : '');
 	let geoJsonHtml = $derived(
@@ -177,6 +185,18 @@
 					cancelEditing();
 					return;
 				}
+
+				// Check if value is large and needs confirmation
+				if (
+					isLargeValue(value) &&
+					(pendingEditMember === null || pendingEditMember.new !== value)
+				) {
+					largeValueSize = new Blob([value]).size;
+					pendingEditMember = { old: editingMember, new: value };
+					largeValueWarningOpen = true;
+					return;
+				}
+
 				await api.zsetRename(keyName, editingMember, value.trim());
 				toast.success('Member renamed');
 			}
@@ -186,6 +206,7 @@
 			toastError(e, editMode === 'score' ? 'Failed to update score' : 'Failed to rename member');
 		} finally {
 			saving = false;
+			pendingEditMember = null;
 		}
 	}
 
@@ -198,6 +219,15 @@
 			toast.error('Invalid score value');
 			return;
 		}
+
+		// Check if value is large and needs confirmation
+		if (isLargeValue(addMember) && pendingAddMember !== addMember) {
+			largeValueSize = new Blob([addMember]).size;
+			pendingAddMember = addMember;
+			largeValueWarningOpen = true;
+			return;
+		}
+
 		adding = true;
 		try {
 			await api.zsetAdd(keyName, addMember, parseScore(addScore));
@@ -209,6 +239,7 @@
 			toastError(e, 'Failed to add member');
 		} finally {
 			adding = false;
+			pendingAddMember = null;
 		}
 	}
 
@@ -242,6 +273,21 @@
 		} finally {
 			adding = false;
 		}
+	}
+
+	function confirmLargeValue() {
+		largeValueWarningOpen = false;
+		if (pendingAddMember !== null) {
+			addItem();
+		} else if (pendingEditMember !== null) {
+			saveEdit(pendingEditMember.new);
+		}
+	}
+
+	function cancelLargeValue() {
+		largeValueWarningOpen = false;
+		pendingAddMember = null;
+		pendingEditMember = null;
 	}
 
 	function openDeleteDialog(member: string) {
@@ -567,4 +613,11 @@
 	itemDisplay={deleteTarget?.display ?? ''}
 	onConfirm={confirmDelete}
 	onCancel={() => (deleteDialogOpen = false)}
+/>
+
+<LargeValueWarningDialog
+	bind:open={largeValueWarningOpen}
+	valueSize={largeValueSize}
+	onConfirm={confirmLargeValue}
+	onCancel={cancelLargeValue}
 />

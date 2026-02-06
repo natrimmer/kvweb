@@ -10,7 +10,8 @@
 	import { CirclePlus, Trash2 } from '@lucide/svelte/icons';
 	import { toast } from 'svelte-sonner';
 	import { api, type KeyType } from './api';
-	import { formatTtl, isValidScore, toastError } from './utils';
+	import LargeValueWarningDialog from './LargeValueWarningDialog.svelte';
+	import { formatTtl, isLargeValue, isValidScore, toastError } from './utils';
 
 	interface Props {
 		open: boolean;
@@ -41,6 +42,11 @@
 
 	// Validation errors
 	let errors = $state<Record<string, string>>({});
+
+	// Large value warning
+	let largeValueWarningOpen = $state(false);
+	let largeValueSize = $state(0);
+	let pendingSubmit = $state(false);
 
 	// Type options for selector
 	const typeOptions = [
@@ -249,9 +255,121 @@
 		return Object.keys(errors).length === 0;
 	}
 
+	// Check for large values before submitting
+	function checkForLargeValues(): boolean {
+		let largestValue = '';
+		let largestSize = 0;
+
+		switch (selectedType) {
+			case 'string':
+				if (isLargeValue(stringValue)) {
+					largestValue = stringValue;
+					largestSize = new Blob([stringValue]).size;
+				}
+				break;
+
+			case 'list': {
+				const validItems = listItems.filter((item) => item.trim());
+				for (const item of validItems) {
+					if (isLargeValue(item)) {
+						const size = new Blob([item]).size;
+						if (size > largestSize) {
+							largestValue = item;
+							largestSize = size;
+						}
+					}
+				}
+				break;
+			}
+
+			case 'set': {
+				const validMembers = setMembers.filter((m) => m.trim());
+				for (const member of validMembers) {
+					if (isLargeValue(member)) {
+						const size = new Blob([member]).size;
+						if (size > largestSize) {
+							largestValue = member;
+							largestSize = size;
+						}
+					}
+				}
+				break;
+			}
+
+			case 'hash': {
+				const validFields = hashFields.filter((f) => f.field.trim());
+				for (const field of validFields) {
+					if (isLargeValue(field.value)) {
+						const size = new Blob([field.value]).size;
+						if (size > largestSize) {
+							largestValue = field.value;
+							largestSize = size;
+						}
+					}
+				}
+				break;
+			}
+
+			case 'zset': {
+				const validMembers = zsetMembers.filter((m) => m.member.trim());
+				for (const member of validMembers) {
+					if (isLargeValue(member.member)) {
+						const size = new Blob([member.member]).size;
+						if (size > largestSize) {
+							largestValue = member.member;
+							largestSize = size;
+						}
+					}
+				}
+				break;
+			}
+
+			case 'stream': {
+				const validFields = streamFields.filter((f) => f.key.trim());
+				for (const field of validFields) {
+					if (isLargeValue(field.value)) {
+						const size = new Blob([field.value]).size;
+						if (size > largestSize) {
+							largestValue = field.value;
+							largestSize = size;
+						}
+					}
+				}
+				break;
+			}
+
+			case 'hyperloglog': {
+				const validElements = hllElements.filter((e) => e.trim());
+				for (const element of validElements) {
+					if (isLargeValue(element)) {
+						const size = new Blob([element]).size;
+						if (size > largestSize) {
+							largestValue = element;
+							largestSize = size;
+						}
+					}
+				}
+				break;
+			}
+		}
+
+		if (largestSize > 0) {
+			largeValueSize = largestSize;
+			return true;
+		}
+
+		return false;
+	}
+
 	// Creation flow
 	async function handleCreate() {
 		if (!validateInputs()) return;
+
+		// Check for large values and prompt for confirmation if needed
+		if (!pendingSubmit && checkForLargeValues()) {
+			largeValueWarningOpen = true;
+			return;
+		}
 
 		creating = true;
 		const fullKeyName = prefix + keyName;
@@ -352,7 +470,19 @@
 			toastError(e, 'Failed to create key');
 		} finally {
 			creating = false;
+			pendingSubmit = false;
 		}
+	}
+
+	function confirmLargeValue() {
+		largeValueWarningOpen = false;
+		pendingSubmit = true;
+		handleCreate();
+	}
+
+	function cancelLargeValue() {
+		largeValueWarningOpen = false;
+		pendingSubmit = false;
 	}
 
 	async function addRemainingItems(fullKeyName: string) {
@@ -707,3 +837,10 @@
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
+
+<LargeValueWarningDialog
+	bind:open={largeValueWarningOpen}
+	valueSize={largeValueSize}
+	onConfirm={confirmLargeValue}
+	onCancel={cancelLargeValue}
+/>

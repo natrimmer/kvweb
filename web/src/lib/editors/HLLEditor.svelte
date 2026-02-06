@@ -3,8 +3,9 @@
 	import { api, type HLLData } from '$lib/api';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
+	import LargeValueWarningDialog from '$lib/LargeValueWarningDialog.svelte';
 	import TypeHeader from '$lib/TypeHeader.svelte';
-	import { toastError } from '$lib/utils';
+	import { isLargeValue, toastError } from '$lib/utils';
 	import { Plus } from '@lucide/svelte/icons';
 	import { toast } from 'svelte-sonner';
 
@@ -23,11 +24,25 @@
 	let addElement = $state('');
 	let adding = $state(false);
 
+	// Large value warning
+	let largeValueWarningOpen = $state(false);
+	let largeValueSize = $state(0);
+	let pendingAddElement: string | null = null;
+
 	async function addItem() {
 		if (!addElement.trim()) {
 			toast.error('Element cannot be empty');
 			return;
 		}
+
+		// Check if value is large and needs confirmation
+		if (isLargeValue(addElement) && pendingAddElement !== addElement) {
+			largeValueSize = new Blob([addElement]).size;
+			pendingAddElement = addElement;
+			largeValueWarningOpen = true;
+			return;
+		}
+
 		adding = true;
 		try {
 			await api.hllAdd(keyName, addElement);
@@ -38,7 +53,20 @@
 			toastError(e, 'Failed to add element');
 		} finally {
 			adding = false;
+			pendingAddElement = null;
 		}
+	}
+
+	function confirmLargeValue() {
+		largeValueWarningOpen = false;
+		if (pendingAddElement !== null) {
+			addItem();
+		}
+	}
+
+	function cancelLargeValue() {
+		largeValueWarningOpen = false;
+		pendingAddElement = null;
 	}
 </script>
 
@@ -92,3 +120,10 @@
 		</div>
 	</div>
 </div>
+
+<LargeValueWarningDialog
+	bind:open={largeValueWarningOpen}
+	valueSize={largeValueSize}
+	onConfirm={confirmLargeValue}
+	onCancel={cancelLargeValue}
+/>

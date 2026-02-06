@@ -6,9 +6,16 @@
 	import * as ButtonGroup from '$lib/components/ui/button-group';
 	import { Input } from '$lib/components/ui/input';
 	import DeleteItemDialog from '$lib/DeleteItemDialog.svelte';
+	import LargeValueWarningDialog from '$lib/LargeValueWarningDialog.svelte';
 	import PaginationControls from '$lib/PaginationControls.svelte';
 	import TypeHeader from '$lib/TypeHeader.svelte';
-	import { highlightJson, isNonEmpty, showPaginationControls, toastError } from '$lib/utils';
+	import {
+		highlightJson,
+		isLargeValue,
+		isNonEmpty,
+		showPaginationControls,
+		toastError
+	} from '$lib/utils';
 	import { LayoutList, Plus, Trash2, X } from '@lucide/svelte/icons';
 	import { toast } from 'svelte-sonner';
 
@@ -51,6 +58,11 @@
 	let deleteDialogOpen = $state(false);
 	let deleteTarget = $state<{ id: string; display: string } | null>(null);
 
+	// Large value warning
+	let largeValueWarningOpen = $state(false);
+	let largeValueSize = $state(0);
+	let pendingAddFields: Record<string, string> | null = null;
+
 	let rawJsonHtml = $derived(rawView ? highlightJson(JSON.stringify(entries, null, 2), true) : '');
 
 	function addField() {
@@ -84,6 +96,22 @@
 			toast.error('At least one field is required');
 			return;
 		}
+
+		// Check if any field value is large and needs confirmation
+		const fieldsString = JSON.stringify(fields);
+		if (isLargeValue(fieldsString) && pendingAddFields !== fields) {
+			// Find the largest value to report accurate size
+			let maxSize = 0;
+			for (const value of Object.values(fields)) {
+				const size = new Blob([value]).size;
+				if (size > maxSize) maxSize = size;
+			}
+			largeValueSize = maxSize;
+			pendingAddFields = fields;
+			largeValueWarningOpen = true;
+			return;
+		}
+
 		adding = true;
 		try {
 			const result = await api.streamAdd(keyName, fields);
@@ -94,7 +122,20 @@
 			toastError(e, 'Failed to add entry');
 		} finally {
 			adding = false;
+			pendingAddFields = null;
 		}
+	}
+
+	function confirmLargeValue() {
+		largeValueWarningOpen = false;
+		if (pendingAddFields !== null) {
+			addItem();
+		}
+	}
+
+	function cancelLargeValue() {
+		largeValueWarningOpen = false;
+		pendingAddFields = null;
 	}
 
 	function openDeleteDialog(id: string) {
@@ -292,4 +333,11 @@
 	itemDisplay={deleteTarget?.display ?? ''}
 	onConfirm={confirmDelete}
 	onCancel={() => (deleteDialogOpen = false)}
+/>
+
+<LargeValueWarningDialog
+	bind:open={largeValueWarningOpen}
+	valueSize={largeValueSize}
+	onConfirm={confirmLargeValue}
+	onCancel={cancelLargeValue}
 />
