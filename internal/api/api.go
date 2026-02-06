@@ -73,6 +73,7 @@ func New(cfg *config.Config, client *valkey.Client) *Handler {
 
 	// Stream operations
 	h.mux.HandleFunc("POST /api/key/{key}/stream", h.handleStreamAdd)
+	h.mux.HandleFunc("DELETE /api/key/{key}/stream/{id}", h.handleStreamRemove)
 
 	// HyperLogLog operations
 	h.mux.HandleFunc("POST /api/key/{key}/hll", h.handleHLLAdd)
@@ -1434,6 +1435,36 @@ func (h *Handler) handleStreamAdd(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jsonResponse(w, map[string]string{"status": "ok", "id": id})
+}
+
+func (h *Handler) handleStreamRemove(w http.ResponseWriter, r *http.Request) {
+	if h.checkReadOnly(w) {
+		return
+	}
+
+	key := r.PathValue("key")
+	if h.checkKeyPrefix(w, key) {
+		return
+	}
+
+	id := r.PathValue("id")
+	if id == "" {
+		jsonError(w, "Entry ID cannot be empty", http.StatusBadRequest)
+		return
+	}
+
+	deleted, err := h.client.XDel(r.Context(), key, id)
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if deleted == 0 {
+		jsonError(w, "Entry not found", http.StatusNotFound)
+		return
+	}
+
+	jsonResponse(w, map[string]string{"status": "ok"})
 }
 
 // HyperLogLog operation handlers

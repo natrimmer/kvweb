@@ -304,6 +304,12 @@ export const api = {
 		});
 	},
 
+	streamRemove(key: string, id: string): Promise<void> {
+		return request(`/key/${encodeURIComponent(key)}/stream/${encodeURIComponent(id)}`, {
+			method: 'DELETE'
+		});
+	},
+
 	// HyperLogLog operations
 	hllAdd(key: string, element: string): Promise<void> {
 		return request(`/key/${encodeURIComponent(key)}/hll`, {

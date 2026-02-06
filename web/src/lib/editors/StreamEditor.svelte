@@ -1,13 +1,15 @@
 <script lang="ts">
 	import { api, type PaginationInfo, type StreamEntry } from '$lib/api';
 	import CollapsibleValue from '$lib/CollapsibleValue.svelte';
+	import ActionsToggle from '$lib/components/ActionsToggle.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as ButtonGroup from '$lib/components/ui/button-group';
 	import { Input } from '$lib/components/ui/input';
+	import DeleteItemDialog from '$lib/DeleteItemDialog.svelte';
 	import PaginationControls from '$lib/PaginationControls.svelte';
 	import TypeHeader from '$lib/TypeHeader.svelte';
 	import { highlightJson, isNonEmpty, showPaginationControls, toastError } from '$lib/utils';
-	import { LayoutList, Plus, X } from '@lucide/svelte/icons';
+	import { LayoutList, Plus, Trash2, X } from '@lucide/svelte/icons';
 	import { toast } from 'svelte-sonner';
 
 	interface Props {
@@ -38,11 +40,16 @@
 
 	// View state
 	let rawView = $state(false);
+	let showActions = $state(true);
 
 	// Add form state
 	let showAddForm = $state(false);
 	let streamFields = $state<{ key: string; value: string }[]>([{ key: '', value: '' }]);
 	let adding = $state(false);
+
+	// Delete state
+	let deleteDialogOpen = $state(false);
+	let deleteTarget = $state<{ id: string; display: string } | null>(null);
 
 	let rawJsonHtml = $derived(rawView ? highlightJson(JSON.stringify(entries, null, 2), true) : '');
 
@@ -87,6 +94,28 @@
 			toastError(e, 'Failed to add entry');
 		} finally {
 			adding = false;
+		}
+	}
+
+	function openDeleteDialog(id: string) {
+		deleteTarget = {
+			id,
+			display: id.length > 30 ? id.slice(0, 30) + '...' : id
+		};
+		deleteDialogOpen = true;
+	}
+
+	async function confirmDelete() {
+		if (!deleteTarget) return;
+		try {
+			await api.streamRemove(keyName, deleteTarget.id);
+			toast.success('Entry deleted');
+			onDataChange();
+		} catch (e) {
+			toastError(e, 'Failed to delete entry');
+		} finally {
+			deleteDialogOpen = false;
+			deleteTarget = null;
 		}
 	}
 </script>
@@ -148,6 +177,9 @@
 						{'{ }'}
 					</Button>
 				</ButtonGroup.Root>
+				{#if !readOnly}
+					<ActionsToggle {showActions} onToggle={(sa) => (showActions = sa)} disabled={rawView} />
+				{/if}
 			</div>
 		</div>
 
@@ -224,7 +256,21 @@
 			<div class="flex flex-col gap-2">
 				{#each entries as entry}
 					<div class="rounded border border-border p-3">
-						<div class="mb-2 font-mono text-xs text-muted-foreground">{entry.id}</div>
+						<div class="mb-2 flex items-center justify-between gap-2">
+							<div class="font-mono text-xs text-muted-foreground">{entry.id}</div>
+							{#if !readOnly && showActions}
+								<Button
+									size="sm"
+									variant="ghost"
+									onclick={() => openDeleteDialog(entry.id)}
+									title="Delete entry"
+									aria-label="Delete entry"
+									class="h-6 w-6 cursor-pointer p-0 text-destructive hover:text-destructive"
+								>
+									<Trash2 class="h-4 w-4" />
+								</Button>
+							{/if}
+						</div>
 						<div class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
 							{#each Object.entries(entry.fields) as [field, val]}
 								<span class="font-mono text-muted-foreground">{field}</span>
@@ -239,3 +285,11 @@
 		{/if}
 	</div>
 </div>
+
+<DeleteItemDialog
+	bind:open={deleteDialogOpen}
+	itemType="stream entry"
+	itemDisplay={deleteTarget?.display ?? ''}
+	onConfirm={confirmDelete}
+	onCancel={() => (deleteDialogOpen = false)}
+/>

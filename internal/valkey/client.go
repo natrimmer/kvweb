@@ -430,6 +430,14 @@ func (c *Client) XAddMulti(ctx context.Context, key string, fields map[string]st
 	return c.client.Do(ctx, c.client.B().Arbitrary(args...).Build()).ToString()
 }
 
+// XDel removes one or more entries from a stream by ID
+func (c *Client) XDel(ctx context.Context, key string, ids ...string) (int64, error) {
+	if len(ids) == 0 {
+		return 0, fmt.Errorf("at least one ID is required")
+	}
+	return c.client.Do(ctx, c.client.B().Xdel().Key(key).Id(ids...).Build()).ToInt64()
+}
+
 // HyperLogLog operations
 
 // PFCount returns the approximate cardinality of the HyperLogLog
