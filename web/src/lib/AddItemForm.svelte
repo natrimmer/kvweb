@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
-	import XIcon from '@lucide/svelte/icons/x';
+	import { X } from '@lucide/svelte/icons';
 	import type { Snippet } from 'svelte';
 
 	interface Props {
@@ -33,6 +33,6 @@
 		title="Cancel"
 		aria-label="Cancel"
 	>
-		<XIcon class="h-4 w-4" />
+		<X class="h-4 w-4" />
 	</Button>
 </div>

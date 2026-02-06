@@ -3,10 +3,7 @@
 	import * as ButtonGroup from '$lib/components/ui/button-group';
 	import * as Select from '$lib/components/ui/select';
 	import { pageSizes } from '$lib/utils';
-	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
-	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
-	import ChevronsLeftIcon from '@lucide/svelte/icons/chevrons-left';
-	import ChevronsRightIcon from '@lucide/svelte/icons/chevrons-right';
+	import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from '@lucide/svelte/icons';
 
 	interface Props {
 		page: number;
@@ -64,7 +61,7 @@
 				aria-label="First page"
 				class="size-9 cursor-pointer p-0"
 			>
-				<ChevronsLeftIcon class="h-4 w-4" />
+				<ChevronsLeft class="h-4 w-4" />
 			</Button>
 			<Button
 				size="sm"
@@ -75,7 +72,7 @@
 				aria-label="Previous page"
 				class="size-9 cursor-pointer p-0"
 			>
-				<ChevronLeftIcon class="h-4 w-4" />
+				<ChevronLeft class="h-4 w-4" />
 			</Button>
 		</ButtonGroup.Root>
 
@@ -92,7 +89,7 @@
 				aria-label="Next page"
 				class="size-9 cursor-pointer p-0"
 			>
-				<ChevronRightIcon class="h-4 w-4" />
+				<ChevronRight class="h-4 w-4" />
 			</Button>
 			<Button
 				size="sm"
@@ -103,7 +100,7 @@
 				aria-label="Last page"
 				class="size-9 cursor-pointer p-0"
 			>
-				<ChevronsRightIcon class="h-4 w-4" />
+				<ChevronsRight class="h-4 w-4" />
 			</Button>
 		</ButtonGroup.Root>
 	</div>

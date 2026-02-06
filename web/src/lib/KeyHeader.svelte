@@ -3,13 +3,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as ButtonGroup from '$lib/components/ui/button-group';
 	import { Input } from '$lib/components/ui/input';
-	import CheckIcon from '@lucide/svelte/icons/check';
-	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
-	import ChevronUpIcon from '@lucide/svelte/icons/chevron-up';
-	import CopyIcon from '@lucide/svelte/icons/copy';
-	import PencilIcon from '@lucide/svelte/icons/pencil';
-	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
-	import XIcon from '@lucide/svelte/icons/x';
+	import { Check, ChevronDown, ChevronUp, Copy, Pencil, RefreshCw, X } from '@lucide/svelte/icons';
 	import type { KeyType } from './api';
 	import { formatShortcut } from './keyboard';
 	import { copyToClipboard, formatTtl } from './utils';
@@ -151,7 +145,7 @@
 						{#if renamingKey}
 							...
 						{:else}
-							<CheckIcon class="size-4" />
+							<Check class="size-4" />
 						{/if}
 					</Button>
 					<Button
@@ -163,7 +157,7 @@
 						aria-label="Cancel rename"
 						class="h-8 cursor-pointer"
 					>
-						<XIcon class="size-4" />
+						<X class="size-4" />
 					</Button>
 				</span>
 			{:else}
@@ -183,7 +177,7 @@
 							aria-label="Edit TTL"
 							class="ml-1 cursor-pointer text-muted-foreground hover:text-foreground"
 						>
-							<PencilIcon class="inline h-3 w-3" />
+							<Pencil class="inline h-3 w-3" />
 						</button>
 					{/if}
 				</span>
@@ -214,7 +208,7 @@
 						{#if updatingTtl}
 							...
 						{:else}
-							<CheckIcon class="size-4" />
+							<Check class="size-4" />
 						{/if}
 					</Button>
 					<Button
@@ -225,7 +219,7 @@
 						aria-label="Cancel TTL edit"
 						class="h-8 cursor-pointer"
 					>
-						<XIcon class="size-4" />
+						<X class="size-4" />
 					</Button>
 				</span>
 			{/if}
@@ -239,7 +233,7 @@
 			aria-label="Refresh key data"
 			class="cursor-pointer"
 		>
-			<RefreshCwIcon class={loading ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} />
+			<RefreshCw class={loading ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} />
 		</Button>
 		<ButtonGroup.Root class="shrink-0">
 			<Button
@@ -251,9 +245,9 @@
 				class="cursor-pointer"
 			>
 				{#if copiedKey}
-					<CheckIcon class="h-4 w-4 text-primary" />
+					<Check class="h-4 w-4 text-primary" />
 				{:else}
-					<CopyIcon class="h-4 w-4" />
+					<Copy class="h-4 w-4" />
 				{/if}
 				Key
 			</Button>
@@ -266,9 +260,9 @@
 				class="cursor-pointer"
 			>
 				{#if copiedValue}
-					<CheckIcon class="h-4 w-4 text-primary" />
+					<Check class="h-4 w-4 text-primary" />
 				{:else}
-					<CopyIcon class="h-4 w-4" />
+					<Copy class="h-4 w-4" />
 				{/if}
 				Value
 			</Button>
@@ -311,9 +305,9 @@
 			class="shrink-0 cursor-pointer text-muted-foreground hover:text-foreground"
 		>
 			{#if typeHeaderExpanded}
-				<ChevronUpIcon class="h-5 w-5" />
+				<ChevronUp class="h-5 w-5" />
 			{:else}
-				<ChevronDownIcon class="h-5 w-5" />
+				<ChevronDown class="h-5 w-5" />
 			{/if}
 		</Button>
 	</div>

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
-	import { CheckIcon, FileEdit, PencilIcon, Trash2Icon, XIcon } from '@lucide/svelte/icons';
+	import { Check, FileEdit, Pencil, Trash2, X } from '@lucide/svelte/icons';
 
 	interface Props {
 		editing?: boolean;
@@ -41,7 +41,7 @@
 			aria-label="Save"
 			class="h-8 w-8 cursor-pointer p-0"
 		>
-			<CheckIcon class="h-4 w-4" />
+			<Check class="h-4 w-4" />
 		</Button>
 		<Button
 			size="sm"
@@ -51,7 +51,7 @@
 			aria-label="Cancel"
 			class="h-8 w-8 cursor-pointer p-0"
 		>
-			<XIcon class="h-4 w-4" />
+			<X class="h-4 w-4" />
 		</Button>
 	{:else}
 		{#if showEdit && onEdit}
@@ -63,7 +63,7 @@
 				aria-label={editLabel}
 				class="h-8 w-8 cursor-pointer p-0"
 			>
-				<PencilIcon class="h-4 w-4" />
+				<Pencil class="h-4 w-4" />
 			</Button>
 		{/if}
 		{#if showRename && onRename}
@@ -87,7 +87,7 @@
 				aria-label="Delete"
 				class="h-8 w-8 cursor-pointer p-0 text-destructive hover:text-destructive"
 			>
-				<Trash2Icon class="h-4 w-4" />
+				<Trash2 class="h-4 w-4" />
 			</Button>
 		{/if}
 	{/if}
