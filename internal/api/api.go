@@ -39,6 +39,7 @@ func New(cfg *config.Config, client *valkey.Client) *Handler {
 	h.mux.HandleFunc("GET /api/key/{key}", h.handleGetKey)
 	h.mux.HandleFunc("PUT /api/key/{key}", h.handleSetKey)
 	h.mux.HandleFunc("DELETE /api/key/{key}", h.handleDeleteKey)
+	h.mux.HandleFunc("POST /api/key/{key}/incr", h.handleIncrKey)
 	h.mux.HandleFunc("POST /api/key/{key}/expire", h.handleExpire)
 	h.mux.HandleFunc("POST /api/key/{key}/rename", h.handleRename)
 	h.mux.HandleFunc("POST /api/flush", h.handleFlush)
@@ -710,6 +711,36 @@ func (h *Handler) handleDeleteKey(w http.ResponseWriter, r *http.Request) {
 
 	jsonResponse(w, map[string]any{
 		"deleted": deleted,
+	})
+}
+
+func (h *Handler) handleIncrKey(w http.ResponseWriter, r *http.Request) {
+	if h.checkReadOnly(w) {
+		return
+	}
+
+	key := r.PathValue("key")
+	if h.checkKeyPrefix(w, key) {
+		return
+	}
+
+	var body struct {
+		Amount float64 `json:"amount"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		jsonError(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	newValue, err := h.client.IncrByFloat(r.Context(), key, body.Amount)
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	jsonResponse(w, map[string]string{
+		"value": newValue,
 	})
 }
 

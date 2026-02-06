@@ -7,7 +7,7 @@
 	import { formatShortcut } from '$lib/keyboard';
 	import TypeHeader from '$lib/TypeHeader.svelte';
 	import { highlightJson, isLargeValue, toastError } from '$lib/utils';
-	import { Braces, Pencil, RemoveFormatting, View } from '@lucide/svelte/icons';
+	import { Braces, Minus, Pencil, Plus, RemoveFormatting, View } from '@lucide/svelte/icons';
 	import { toast } from 'svelte-sonner';
 
 	interface Props {
@@ -61,6 +61,14 @@
 
 	let isJsonValue = $derived(isJson(editValue));
 
+	// Check if value is numeric (integer or float)
+	let isNumeric = $derived.by(() => {
+		const trimmed = editValue.trim();
+		if (!trimmed) return false;
+		// Check if it's a valid number (int or float)
+		return !isNaN(Number(trimmed)) && trimmed !== '';
+	});
+
 	// Highlight string value when it changes or prettyPrint toggles
 	let highlightedHtml = $derived.by(() => {
 		if (isJsonValue) {
@@ -101,12 +109,53 @@
 		largeValueWarningOpen = false;
 		pendingSaveValue = null;
 	}
+
+	async function increment(amount: number) {
+		saving = true;
+		try {
+			const result = await api.incrKey(keyName, amount);
+			toast.success(`Value ${amount > 0 ? 'incremented' : 'decremented'}`);
+			editValue = result.value;
+			originalValue = result.value;
+			onDataChange();
+		} catch (e) {
+			toastError(e, 'Failed to modify value');
+		} finally {
+			saving = false;
+		}
+	}
 </script>
 
 <div class="flex min-h-0 flex-1 flex-col">
 	<TypeHeader expanded={typeHeaderExpanded}>
 		<div class="flex items-center justify-between gap-2">
 			<div class="flex-1"></div>
+			{#if !readOnly && isNumeric && !isJsonValue}
+				<ButtonGroup.Root>
+					<Button
+						size="sm"
+						variant="outline"
+						onclick={() => increment(-1)}
+						disabled={saving}
+						class="cursor-pointer"
+						title="Decrement by 1"
+						aria-label="Decrement by 1"
+					>
+						<Minus class="h-4 w-4" />
+					</Button>
+					<Button
+						size="sm"
+						variant="outline"
+						onclick={() => increment(1)}
+						disabled={saving}
+						class="cursor-pointer"
+						title="Increment by 1"
+						aria-label="Increment by 1"
+					>
+						<Plus class="h-4 w-4" />
+					</Button>
+				</ButtonGroup.Root>
+			{/if}
 			{#if !readOnly && hasChanges}
 				<Button
 					size="sm"

@@ -160,6 +160,13 @@ export const api = {
 		});
 	},
 
+	incrKey(key: string, amount: number): Promise<{ value: string }> {
+		return request(`/key/${encodeURIComponent(key)}/incr`, {
+			method: 'POST',
+			body: JSON.stringify({ amount })
+		});
+	},
+
 	deleteKey(key: string): Promise<{ deleted: number }> {
 		return request(`/key/${encodeURIComponent(key)}`, {
 			method: 'DELETE'

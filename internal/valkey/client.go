@@ -103,6 +103,15 @@ func (c *Client) Set(ctx context.Context, key, value string, ttl time.Duration) 
 	return c.client.Do(ctx, cmd.Build()).Error()
 }
 
+// IncrByFloat increments a key by a float amount (handles both int and float)
+func (c *Client) IncrByFloat(ctx context.Context, key string, amount float64) (string, error) {
+	result, err := c.client.Do(ctx, c.client.B().Incrbyfloat().Key(key).Increment(amount).Build()).AsFloat64()
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%g", result), nil
+}
+
 // Del deletes keys
 func (c *Client) Del(ctx context.Context, keys ...string) (int64, error) {
 	return c.client.Do(ctx, c.client.B().Del().Key(keys...).Build()).ToInt64()
