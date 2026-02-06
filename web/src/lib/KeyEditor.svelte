@@ -1,10 +1,5 @@
 <script lang="ts">
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
-	import { Button } from '$lib/components/ui/button';
-	import * as ButtonGroup from '$lib/components/ui/button-group';
-	import { Textarea } from '$lib/components/ui/textarea';
-	import LargeValueWarningDialog from '$lib/dialogs/LargeValueWarningDialog.svelte';
-	import { Braces, Pencil, RemoveFormatting, View } from '@lucide/svelte/icons';
 	import { toast } from 'svelte-sonner';
 	import {
 		api,
@@ -20,20 +15,11 @@
 		ListEditor,
 		SetEditor,
 		StreamEditor,
+		StringEditor,
 		ZSetEditor
 	} from './editors';
-	import { formatShortcut, matchesShortcut } from './keyboard';
 	import KeyHeader from './KeyHeader.svelte';
-	import TypeHeader from './TypeHeader.svelte';
-	import {
-		copyToClipboard,
-		deleteOps,
-		getErrorMessage,
-		highlightJson,
-		isLargeValue,
-		modifyOps,
-		toastError
-	} from './utils';
+	import { copyToClipboard, deleteOps, getErrorMessage, modifyOps, toastError } from './utils';
 	import { ws } from './ws';
 
 	interface Props {
@@ -48,18 +34,11 @@
 	let loading = $state(false);
 	let showLoading = $state(false);
 	let loadingTimeout: ReturnType<typeof setTimeout> | null = null;
-	let saving = $state(false);
 	let updatingTtl = $state(false);
-	let editValue = $state('');
 	let error = $state('');
 	let liveTtl = $state<number | null>(null);
 	let ttlInterval: ReturnType<typeof setInterval> | null = null;
 	let expiresAt: number | null = null;
-
-	// String editor state
-	let stringEditMode = $state(false); // false = view, true = edit
-	let prettyPrint = $state(false);
-	let highlightedHtml = $state('');
 
 	// Pagination state
 	let currentPage = $state(1);
@@ -67,11 +46,6 @@
 
 	// Delete confirmation dialog
 	let deleteDialogOpen = $state(false);
-
-	// Large value warning dialog
-	let largeValueWarningOpen = $state(false);
-	let largeValueSize = $state(0);
-	let pendingSaveValue: string | null = null;
 
 	// Type header expand/collapse state
 	let typeHeaderExpanded = $state(true);
@@ -146,40 +120,6 @@
 		return (keyInfo?.value as HLLData) ?? { count: 0 };
 	}
 
-	function isJson(str: string): boolean {
-		if (!str || str.length < 2) return false;
-		const trimmed = str.trim();
-		if (
-			!(
-				(trimmed.startsWith('{') && trimmed.endsWith('}')) ||
-				(trimmed.startsWith('[') && trimmed.endsWith(']'))
-			)
-		) {
-			return false;
-		}
-		try {
-			JSON.parse(str);
-			return true;
-		} catch {
-			return false;
-		}
-	}
-
-	// Highlight string value when it changes or prettyPrint toggles
-	$effect(() => {
-		if (keyInfo?.type === 'string' && isJson(editValue)) {
-			highlightedHtml = highlightJson(editValue, prettyPrint);
-		} else {
-			highlightedHtml = '';
-		}
-	});
-
-	let isJsonValue = $derived(keyInfo?.type === 'string' && isJson(editValue));
-
-	// Track original value for dirty checking
-	let originalValue = $state('');
-	let hasChanges = $derived(editValue !== originalValue);
-
 	let previousKey = $state<string | null>(null);
 
 	$effect(() => {
@@ -206,10 +146,8 @@
 				// Key was deleted externally, close the editor
 				ondeleted();
 			} else if (modifyOps.has(event.op)) {
-				// Key was modified externally, auto-reload if we're not currently saving
-				if (!saving) {
-					loadKey(key);
-				}
+				// Key was modified externally, auto-reload
+				loadKey(key);
 			}
 		});
 
@@ -219,15 +157,6 @@
 	// Keyboard shortcuts
 	$effect(() => {
 		function handleKeydown(e: KeyboardEvent) {
-			// Ctrl/Cmd+S: Save string value
-			if (matchesShortcut(e, 's', true)) {
-				if (!readOnly && keyInfo?.type === 'string' && hasChanges) {
-					e.preventDefault();
-					saveValue();
-				}
-				return;
-			}
-
 			// Delete: Delete key with confirmation
 			if (e.key === 'Delete' && !readOnly && keyInfo) {
 				// Only if not focused on an input
@@ -254,10 +183,6 @@
 		}, 300);
 		try {
 			keyInfo = await api.getKey(k, currentPage, pageSize);
-			const value =
-				typeof keyInfo.value === 'string' ? keyInfo.value : JSON.stringify(keyInfo.value, null, 2);
-			editValue = value;
-			originalValue = value;
 			startTtlCountdown(keyInfo.ttl);
 		} catch (e) {
 			error = getErrorMessage(e, 'Failed to load key');
@@ -281,42 +206,6 @@
 		pageSize = newSize;
 		currentPage = 1;
 		loadKey(key);
-	}
-
-	async function saveValue() {
-		if (!keyInfo) return;
-
-		// Check if value is large and needs confirmation
-		if (isLargeValue(editValue) && pendingSaveValue !== editValue) {
-			largeValueSize = new Blob([editValue]).size;
-			pendingSaveValue = editValue;
-			largeValueWarningOpen = true;
-			return;
-		}
-
-		// Proceed with save
-		saving = true;
-		error = '';
-		try {
-			await api.setKey(key, editValue, liveTtl ?? 0);
-			await loadKey(key);
-			toast.success('Value saved');
-		} catch (e) {
-			toastError(e, 'Failed to save');
-		} finally {
-			saving = false;
-			pendingSaveValue = null;
-		}
-	}
-
-	function confirmLargeValueSave() {
-		largeValueWarningOpen = false;
-		saveValue();
-	}
-
-	function cancelLargeValueSave() {
-		largeValueWarningOpen = false;
-		pendingSaveValue = null;
 	}
 
 	async function deleteKey() {
@@ -394,106 +283,13 @@
 		/>
 
 		{#if keyInfo.type === 'string'}
-			<div class="flex min-h-0 flex-1 flex-col">
-				<TypeHeader expanded={typeHeaderExpanded}>
-					<div class="flex items-center justify-between gap-2">
-						<div class="flex-1"></div>
-						{#if !readOnly && hasChanges}
-							<Button
-								size="sm"
-								onclick={saveValue}
-								disabled={saving || !hasChanges}
-								class="cursor-pointer"
-								title={`Save changes (${formatShortcut('S', true)})`}
-								aria-label="Save changes"
-							>
-								{saving ? 'Saving...' : 'Save'}
-							</Button>
-						{/if}
-						{#if isJsonValue}
-							<ButtonGroup.Root>
-								<Button
-									size="sm"
-									variant="outline"
-									onclick={() => (prettyPrint = false)}
-									disabled={stringEditMode}
-									class="cursor-pointer {!prettyPrint ? 'bg-accent' : ''}"
-									title="Show compact JSON"
-									aria-label="Show compact JSON"
-								>
-									<RemoveFormatting class="h-4 w-4" />
-								</Button>
-								<Button
-									size="sm"
-									variant="outline"
-									onclick={() => (prettyPrint = true)}
-									disabled={stringEditMode}
-									class="cursor-pointer {prettyPrint ? 'bg-accent' : ''}"
-									title="Show formatted JSON"
-									aria-label="Show formatted JSON"
-								>
-									<Braces class="h-4 w-4" />
-								</Button>
-							</ButtonGroup.Root>
-						{/if}
-						{#if !readOnly}
-							<ButtonGroup.Root>
-								<Button
-									size="sm"
-									variant="outline"
-									onclick={() => (stringEditMode = false)}
-									class="cursor-pointer {!stringEditMode ? 'bg-accent' : ''}"
-									title="View mode"
-									aria-label="View mode"
-								>
-									<View class="h-4 w-4" />
-								</Button>
-								<Button
-									size="sm"
-									variant="outline"
-									onclick={() => (stringEditMode = true)}
-									class="cursor-pointer {stringEditMode ? 'bg-accent' : ''}"
-									title="Edit mode"
-									aria-label="Edit mode"
-								>
-									<Pencil class="h-4 w-4" />
-								</Button>
-							</ButtonGroup.Root>
-						{/if}
-					</div>
-				</TypeHeader>
-
-				<div class="-mx-6 min-h-0 flex-1 overflow-auto border-t border-border px-6 pt-6">
-					{#if !stringEditMode && isJsonValue && highlightedHtml}
-						<!-- View mode: JSON highlighted -->
-						<div
-							class="rounded border border-border [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:p-4 [&>pre]:text-sm"
-						>
-							{@html highlightedHtml}
-						</div>
-					{:else if !stringEditMode}
-						<!-- View mode: Plain text -->
-						<Textarea
-							id="value-textarea"
-							value={editValue}
-							readonly={true}
-							title="Key value"
-							aria-label="Key value"
-							class="min-h-75 flex-1 resize-none text-sm"
-						/>
-					{:else}
-						<!-- Edit mode: Always editable textarea -->
-						<Textarea
-							id="value-textarea"
-							bind:value={editValue}
-							readonly={readOnly}
-							title="Key value"
-							aria-label="Key value"
-							class="min-h-75 flex-1 resize-none text-sm"
-						/>
-					{/if}
-				</div>
-			</div>
+			<StringEditor
+				keyName={key}
+				value={keyInfo.value as string}
+				{readOnly}
+				{typeHeaderExpanded}
+				onDataChange={handleDataChange}
+			/>
 		{:else if keyInfo.type === 'list'}
 			<ListEditor
 				keyName={key}
@@ -598,13 +394,6 @@
 				</AlertDialog.Footer>
 			</AlertDialog.Content>
 		</AlertDialog.Root>
-
-		<LargeValueWarningDialog
-			bind:open={largeValueWarningOpen}
-			valueSize={largeValueSize}
-			onConfirm={confirmLargeValueSave}
-			onCancel={cancelLargeValueSave}
-		/>
 	{/if}
 </div>
 
