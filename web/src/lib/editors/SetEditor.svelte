@@ -182,17 +182,6 @@
 
 <div class="flex min-h-0 flex-1 flex-col">
 	<TypeHeader expanded={typeHeaderExpanded}>
-		{#if pagination && showPaginationControls(pagination.total)}
-			<PaginationControls
-				page={currentPage}
-				{pageSize}
-				total={pagination.total}
-				itemLabel="members"
-				{onPageChange}
-				{onPageSizeChange}
-			/>
-		{/if}
-
 		<div class="flex items-center justify-between">
 			<div class="flex-1">
 				{#if pagination && !showPaginationControls(pagination.total)}
@@ -244,16 +233,31 @@
 		</div>
 
 		{#if showAddForm}
-			<AddItemForm {adding} onAdd={addItem} onClose={() => (showAddForm = false)}>
-				<Input
-					bind:value={addMember}
-					placeholder="Member"
-					class="flex-1"
-					onkeydown={(e) => e.key === 'Enter' && addItem()}
-					title="Member"
-					aria-label="Member"
+			<div class="pt-3">
+				<AddItemForm {adding} onAdd={addItem} onClose={() => (showAddForm = false)}>
+					<Input
+						bind:value={addMember}
+						placeholder="Member"
+						class="flex-1"
+						onkeydown={(e) => e.key === 'Enter' && addItem()}
+						title="Member"
+						aria-label="Member"
+					/>
+				</AddItemForm>
+			</div>
+		{/if}
+
+		{#if pagination && showPaginationControls(pagination.total)}
+			<div class="pt-3">
+				<PaginationControls
+					page={currentPage}
+					{pageSize}
+					total={pagination.total}
+					itemLabel="members"
+					{onPageChange}
+					{onPageSizeChange}
 				/>
-			</AddItemForm>
+			</div>
 		{/if}
 	</TypeHeader>
 

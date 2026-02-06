@@ -34,7 +34,7 @@
 	}
 </script>
 
-<div class="flex items-center justify-between gap-4 pb-2">
+<div class="flex items-center justify-between gap-4">
 	<span class="text-sm text-muted-foreground">
 		Showing {showingStart}–{showingEnd} of {total}
 		{itemLabel}

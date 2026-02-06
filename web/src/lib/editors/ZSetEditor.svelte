@@ -318,17 +318,6 @@
 
 <div class="flex min-h-0 flex-1 flex-col">
 	<TypeHeader expanded={typeHeaderExpanded}>
-		{#if pagination && showPaginationControls(pagination.total)}
-			<PaginationControls
-				page={currentPage}
-				{pageSize}
-				total={pagination.total}
-				itemLabel="members"
-				{onPageChange}
-				{onPageSizeChange}
-			/>
-		{/if}
-
 		<div class="flex items-center justify-between">
 			<div class="flex-1">
 				{#if pagination && !showPaginationControls(pagination.total)}
@@ -434,53 +423,68 @@
 		</div>
 
 		{#if showAddForm}
-			<AddItemForm
-				{adding}
-				onAdd={viewMode === 'geo' ? addGeoItem : addItem}
-				onClose={() => (showAddForm = false)}
-			>
-				<Input
-					bind:value={addMember}
-					placeholder="Member"
-					class="flex-1"
-					onkeydown={(e) => e.key === 'Enter' && (viewMode === 'geo' ? addGeoItem() : addItem())}
-					title="Member"
-					aria-label="Member"
+			<div class="pt-3">
+				<AddItemForm
+					{adding}
+					onAdd={viewMode === 'geo' ? addGeoItem : addItem}
+					onClose={() => (showAddForm = false)}
+				>
+					<Input
+						bind:value={addMember}
+						placeholder="Member"
+						class="flex-1"
+						onkeydown={(e) => e.key === 'Enter' && (viewMode === 'geo' ? addGeoItem() : addItem())}
+						title="Member"
+						aria-label="Member"
+					/>
+					{#if viewMode === 'geo'}
+						<Input
+							bind:value={addLongitude}
+							placeholder="Longitude"
+							type="number"
+							step="any"
+							class="w-28"
+							onkeydown={(e) => e.key === 'Enter' && addGeoItem()}
+							title="Longitude (-180 to 180)"
+							aria-label="Longitude"
+						/>
+						<Input
+							bind:value={addLatitude}
+							placeholder="Latitude"
+							type="number"
+							step="any"
+							class="w-28"
+							onkeydown={(e) => e.key === 'Enter' && addGeoItem()}
+							title="Latitude (-85.05 to 85.05)"
+							aria-label="Latitude"
+						/>
+					{:else}
+						<Input
+							bind:value={addScore}
+							placeholder="Score"
+							type="number"
+							step="any"
+							class="w-32"
+							onkeydown={(e) => e.key === 'Enter' && addItem()}
+							title="Score"
+							aria-label="Score"
+						/>
+					{/if}
+				</AddItemForm>
+			</div>
+		{/if}
+
+		{#if pagination && showPaginationControls(pagination.total)}
+			<div class="pt-3">
+				<PaginationControls
+					page={currentPage}
+					{pageSize}
+					total={pagination.total}
+					itemLabel="members"
+					{onPageChange}
+					{onPageSizeChange}
 				/>
-				{#if viewMode === 'geo'}
-					<Input
-						bind:value={addLongitude}
-						placeholder="Longitude"
-						type="number"
-						step="any"
-						class="w-28"
-						onkeydown={(e) => e.key === 'Enter' && addGeoItem()}
-						title="Longitude (-180 to 180)"
-						aria-label="Longitude"
-					/>
-					<Input
-						bind:value={addLatitude}
-						placeholder="Latitude"
-						type="number"
-						step="any"
-						class="w-28"
-						onkeydown={(e) => e.key === 'Enter' && addGeoItem()}
-						title="Latitude (-85.05 to 85.05)"
-						aria-label="Latitude"
-					/>
-				{:else}
-					<Input
-						bind:value={addScore}
-						placeholder="Score"
-						type="number"
-						step="any"
-						class="w-32"
-						onkeydown={(e) => e.key === 'Enter' && addItem()}
-						title="Score"
-						aria-label="Score"
-					/>
-				{/if}
-			</AddItemForm>
+			</div>
 		{/if}
 	</TypeHeader>
 

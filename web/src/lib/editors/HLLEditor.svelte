@@ -92,19 +92,21 @@
 		</div>
 
 		{#if showAddForm}
-			<AddItemForm {adding} onAdd={addItem} onClose={() => (showAddForm = false)}>
-				<Input
-					bind:value={addElement}
-					placeholder="Element"
-					class="flex-1"
-					onkeydown={(e) => e.key === 'Enter' && addItem()}
-					title="Element"
-					aria-label="Element"
-				/>
-			</AddItemForm>
+			<div class="pt-3">
+				<AddItemForm {adding} onAdd={addItem} onClose={() => (showAddForm = false)}>
+					<Input
+						bind:value={addElement}
+						placeholder="Element"
+						class="flex-1"
+						onkeydown={(e) => e.key === 'Enter' && addItem()}
+						title="Element"
+						aria-label="Element"
+					/>
+				</AddItemForm>
+			</div>
 		{/if}
 
-		<div class="mt-2 mb-4 rounded bg-muted p-4 text-sm text-muted-foreground">
+		<div class="mt-3 rounded bg-muted p-3 text-sm text-muted-foreground">
 			<p>
 				HyperLogLog is a probabilistic data structure that estimates cardinality with ~0.81%
 				standard error using only ~12KB of memory.

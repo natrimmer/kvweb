@@ -163,17 +163,6 @@
 
 <div class="flex min-h-0 flex-1 flex-col">
 	<TypeHeader expanded={typeHeaderExpanded}>
-		{#if pagination && showPaginationControls(pagination.total)}
-			<PaginationControls
-				page={currentPage}
-				{pageSize}
-				total={pagination.total}
-				itemLabel="entries"
-				{onPageChange}
-				{onPageSizeChange}
-			/>
-		{/if}
-
 		<div class="flex items-center justify-between">
 			<div class="flex-1">
 				{#if pagination && !showPaginationControls(pagination.total)}
@@ -225,7 +214,7 @@
 		</div>
 
 		{#if showAddForm}
-			<div class="flex flex-col gap-2 rounded border border-border bg-muted/50 p-3">
+			<div class="mt-3 flex flex-col gap-2 rounded border border-border bg-muted/50 p-3">
 				<div class="text-sm text-muted-foreground">Add stream entry (append-only)</div>
 				{#each streamFields as field, i}
 					<div class="flex items-center gap-2">
@@ -282,6 +271,19 @@
 						<X class="h-4 w-4" />
 					</Button>
 				</div>
+			</div>
+		{/if}
+
+		{#if pagination && showPaginationControls(pagination.total)}
+			<div class="pt-3">
+				<PaginationControls
+					page={currentPage}
+					{pageSize}
+					total={pagination.total}
+					itemLabel="entries"
+					{onPageChange}
+					{onPageSizeChange}
+				/>
 			</div>
 		{/if}
 	</TypeHeader>

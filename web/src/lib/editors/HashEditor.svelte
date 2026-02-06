@@ -229,17 +229,6 @@
 
 <div class="flex min-h-0 flex-1 flex-col">
 	<TypeHeader expanded={typeHeaderExpanded}>
-		{#if pagination && showPaginationControls(pagination.total)}
-			<PaginationControls
-				page={currentPage}
-				{pageSize}
-				total={pagination.total}
-				itemLabel="fields"
-				{onPageChange}
-				{onPageSizeChange}
-			/>
-		{/if}
-
 		<div class="flex items-center justify-between">
 			<div class="flex-1">
 				{#if pagination && !showPaginationControls(pagination.total)}
@@ -292,24 +281,39 @@
 		</div>
 
 		{#if showAddForm}
-			<AddItemForm {adding} onAdd={addItem} onClose={() => (showAddForm = false)}>
-				<Input
-					bind:value={addField}
-					placeholder="Field name"
-					class="w-48"
-					onkeydown={(e) => e.key === 'Enter' && addItem()}
-					title="Field name"
-					aria-label="Field name"
+			<div class="mt-3">
+				<AddItemForm {adding} onAdd={addItem} onClose={() => (showAddForm = false)}>
+					<Input
+						bind:value={addField}
+						placeholder="Field name"
+						class="w-48"
+						onkeydown={(e) => e.key === 'Enter' && addItem()}
+						title="Field name"
+						aria-label="Field name"
+					/>
+					<Input
+						bind:value={addValue}
+						placeholder="Value"
+						class="flex-1"
+						onkeydown={(e) => e.key === 'Enter' && addItem()}
+						title="Value"
+						aria-label="Value"
+					/>
+				</AddItemForm>
+			</div>
+		{/if}
+
+		{#if pagination && showPaginationControls(pagination.total)}
+			<div class="pt-3">
+				<PaginationControls
+					page={currentPage}
+					{pageSize}
+					total={pagination.total}
+					itemLabel="fields"
+					{onPageChange}
+					{onPageSizeChange}
 				/>
-				<Input
-					bind:value={addValue}
-					placeholder="Value"
-					class="flex-1"
-					onkeydown={(e) => e.key === 'Enter' && addItem()}
-					title="Value"
-					aria-label="Value"
-				/>
-			</AddItemForm>
+			</div>
 		{/if}
 	</TypeHeader>
 

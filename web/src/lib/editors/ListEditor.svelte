@@ -222,17 +222,6 @@
 
 <div class="flex min-h-0 flex-1 flex-col">
 	<TypeHeader expanded={typeHeaderExpanded}>
-		{#if pagination && showPaginationControls(pagination.total)}
-			<PaginationControls
-				page={currentPage}
-				{pageSize}
-				total={pagination.total}
-				itemLabel="items"
-				{onPageChange}
-				{onPageSizeChange}
-			/>
-		{/if}
-
 		<div class="flex items-center justify-between">
 			<div class="flex-1">
 				{#if pagination && !showPaginationControls(pagination.total)}
@@ -297,26 +286,41 @@
 		</div>
 
 		{#if showAddForm}
-			<AddItemForm {adding} onAdd={addItem} onClose={() => (showAddForm = false)}>
-				<Input
-					bind:value={addValue}
-					placeholder="Value"
-					class="flex-1"
-					onkeydown={(e) => e.key === 'Enter' && addItem()}
-					title="Value"
-					aria-label="Value"
+			<div class="pt-3">
+				<AddItemForm {adding} onAdd={addItem} onClose={() => (showAddForm = false)}>
+					<Input
+						bind:value={addValue}
+						placeholder="Value"
+						class="flex-1"
+						onkeydown={(e) => e.key === 'Enter' && addItem()}
+						title="Value"
+						aria-label="Value"
+					/>
+					<Select.Root type="single" value={addPosition} onValueChange={handlePositionChange}>
+						<Select.Trigger class="w-36">
+							{positionLabel}
+						</Select.Trigger>
+						<Select.Content>
+							{#each positionOptions as opt}
+								<Select.Item value={opt.value}>{opt.label}</Select.Item>
+							{/each}
+						</Select.Content>
+					</Select.Root>
+				</AddItemForm>
+			</div>
+		{/if}
+
+		{#if pagination && showPaginationControls(pagination.total)}
+			<div class="pt-3">
+				<PaginationControls
+					page={currentPage}
+					{pageSize}
+					total={pagination.total}
+					itemLabel="items"
+					{onPageChange}
+					{onPageSizeChange}
 				/>
-				<Select.Root type="single" value={addPosition} onValueChange={handlePositionChange}>
-					<Select.Trigger class="w-36">
-						{positionLabel}
-					</Select.Trigger>
-					<Select.Content>
-						{#each positionOptions as opt}
-							<Select.Item value={opt.value}>{opt.label}</Select.Item>
-						{/each}
-					</Select.Content>
-				</Select.Root>
-			</AddItemForm>
+			</div>
 		{/if}
 	</TypeHeader>
 
