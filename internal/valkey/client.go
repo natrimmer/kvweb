@@ -317,6 +317,42 @@ func (c *Client) XRange(ctx context.Context, key, start, stop string, count int6
 	return entries, nil
 }
 
+// XRangePage fetches a specific page of stream entries using ID-based pagination
+// startAfterID: if provided, starts after this ID (for cursor-based pagination)
+// If startAfterID is empty, starts from beginning
+func (c *Client) XRangePage(ctx context.Context, key string, startAfterID string, pageSize int64) ([]StreamEntry, string, error) {
+	if pageSize < 1 {
+		pageSize = 10
+	}
+
+	startID := "-"
+	if startAfterID != "" {
+		startID = startAfterID
+	}
+
+	// Fetch pageSize + 1 entries to determine if there are more
+	fetchCount := pageSize + 1
+	entries, err := c.XRange(ctx, key, startID, "+", fetchCount)
+	if err != nil {
+		return nil, "", err
+	}
+
+	// If we started from a specific ID, skip the first entry (which would be that ID)
+	if startAfterID != "" && len(entries) > 0 && entries[0].ID == startAfterID {
+		entries = entries[1:]
+	}
+
+	// Determine the cursor for the next page
+	var nextCursor string
+	if int64(len(entries)) > pageSize {
+		// We have more entries, so set cursor to the last entry we're returning
+		nextCursor = entries[pageSize-1].ID
+		entries = entries[:pageSize]
+	}
+
+	return entries, nextCursor, nil
+}
+
 // List write operations
 
 // LPush prepends values to a list

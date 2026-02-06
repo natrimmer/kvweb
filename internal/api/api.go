@@ -598,16 +598,38 @@ func (h *Handler) handleGetKey(w http.ResponseWriter, r *http.Request) {
 		}
 	case "stream":
 		length, _ = h.client.XLen(ctx, key)
-		// Streams are append-only and ordered by ID, we use count for pagination
-		// For now, we'll just use the count parameter (simple pagination)
-		// A more sophisticated approach would track stream IDs for cursor-based pagination
-		value, err = h.client.XRange(ctx, key, "-", "+", pageSize)
+		// Streams use ID-based pagination for efficiency
+		// We fetch only the entries needed using XRANGE with cursor
+
+		// To support page jumping, we need to find the starting ID for the requested page
+		// For page 1, start from beginning. For others, we need to skip entries.
+		var startAfterID string
+		if page > 1 {
+			// We need to skip (page-1) * pageSize entries to find the start ID
+			skipCount := (page - 1) * pageSize
+			if skipCount < length {
+				// Fetch entries up to but not including the target page to get the cursor
+				skipEntries, err := h.client.XRange(ctx, key, "-", "+", skipCount)
+				if err != nil {
+					jsonError(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				if len(skipEntries) > 0 {
+					startAfterID = skipEntries[len(skipEntries)-1].ID
+				}
+			}
+		}
+
+		// Now fetch the actual page using the cursor
+		entries, nextCursor, err := h.client.XRangePage(ctx, key, startAfterID, pageSize)
 		if err == nil {
+			value = entries
 			pagination = map[string]any{
-				"page":     page,
-				"pageSize": pageSize,
-				"total":    length,
-				"hasMore":  length > pageSize,
+				"page":       page,
+				"pageSize":   pageSize,
+				"total":      length,
+				"hasMore":    nextCursor != "",
+				"nextCursor": nextCursor,
 			}
 		}
 	default:
