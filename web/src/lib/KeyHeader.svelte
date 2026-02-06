@@ -17,7 +17,6 @@
 		renamingKey: boolean;
 		loading: boolean;
 		typeHeaderExpanded: boolean;
-		typeHeaderHasContent?: boolean;
 		geoViewActive?: boolean;
 		onToggleTypeHeader: () => void;
 		onDelete: () => void;
@@ -36,7 +35,6 @@
 		renamingKey,
 		loading,
 		typeHeaderExpanded,
-		typeHeaderHasContent = true,
 		geoViewActive = false,
 		onToggleTypeHeader,
 		onDelete,
@@ -295,13 +293,8 @@
 			variant="outline"
 			size="sm"
 			onclick={onToggleTypeHeader}
-			disabled={!typeHeaderHasContent}
 			aria-label={typeHeaderExpanded ? 'Collapse type controls' : 'Expand type controls'}
-			title={typeHeaderHasContent
-				? typeHeaderExpanded
-					? 'Collapse type controls'
-					: 'Expand type controls'
-				: 'No type controls available'}
+			title={typeHeaderExpanded ? 'Collapse type controls' : 'Expand type controls'}
 			class="shrink-0 cursor-pointer text-muted-foreground hover:text-foreground"
 		>
 			{#if typeHeaderExpanded}
