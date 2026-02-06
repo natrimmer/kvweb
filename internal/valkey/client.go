@@ -334,15 +334,27 @@ func (c *Client) LSet(ctx context.Context, key string, index int64, value string
 	return c.client.Do(ctx, c.client.B().Lset().Key(key).Index(index).Element(value).Build()).Error()
 }
 
-// LRemByIndex removes the element at the given index by replacing it with a tombstone and removing
+// LRemByIndex removes the element at the given index atomically using a Lua script
+// This prevents race conditions where the list could be modified between LSET and LREM
 func (c *Client) LRemByIndex(ctx context.Context, key string, index int64) error {
-	// Redis doesn't have a direct "remove by index" command
-	// We use a unique tombstone, set it at the index, then remove it
-	tombstone := "__KVWEB_DELETE_TOMBSTONE__" + strconv.FormatInt(time.Now().UnixNano(), 10)
-	if err := c.LSet(ctx, key, index, tombstone); err != nil {
+	tombstoneID := strconv.FormatInt(time.Now().UnixNano(), 10)
+	result, err := scriptListRemoveByIndex.Eval(
+		ctx,
+		c,
+		[]string{key},
+		[]string{strconv.FormatInt(index, 10), tombstoneID},
+	)
+	if err != nil {
 		return err
 	}
-	return c.client.Do(ctx, c.client.B().Lrem().Key(key).Count(1).Element(tombstone).Build()).Error()
+
+	// Check if operation succeeded
+	success, ok := result.(int64)
+	if !ok || success == 0 {
+		return fmt.Errorf("failed to remove list element at index %d", index)
+	}
+
+	return nil
 }
 
 // Set write operations
@@ -444,4 +456,135 @@ func (c *Client) GetNotifyKeyspaceEvents(ctx context.Context) (string, error) {
 // SetNotifyKeyspaceEvents enables/disables keyspace notifications
 func (c *Client) SetNotifyKeyspaceEvents(ctx context.Context, value string) error {
 	return c.client.Do(ctx, c.client.B().ConfigSet().ParameterValue().ParameterValue("notify-keyspace-events", value).Build()).Error()
+}
+
+// Script-based atomic operations
+
+// SAddIfNotExists atomically adds a member to a set only if it doesn't exist
+// Returns true if added, false if already exists
+func (c *Client) SAddIfNotExists(ctx context.Context, key, member string) (bool, error) {
+	result, err := scriptSetAddIfNotExists.Eval(
+		ctx,
+		c,
+		[]string{key},
+		[]string{member},
+	)
+	if err != nil {
+		return false, err
+	}
+
+	added, ok := result.(int64)
+	if !ok {
+		return false, fmt.Errorf("unexpected result type from script")
+	}
+
+	return added == 1, nil
+}
+
+// ZRename atomically renames a sorted set member, preserving its score
+// Returns an error if the old member doesn't exist or the new member already exists
+func (c *Client) ZRename(ctx context.Context, key, oldMember, newMember string) (float64, error) {
+	result, err := scriptZSetRename.Eval(
+		ctx,
+		c,
+		[]string{key},
+		[]string{oldMember, newMember},
+	)
+	if err != nil {
+		return 0, err
+	}
+
+	// Result should be the score (as string)
+	score, ok := result.(string)
+	if !ok {
+		return 0, fmt.Errorf("unexpected result type from script")
+	}
+
+	// Parse score to float64
+	scoreFloat, err := strconv.ParseFloat(score, 64)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse score: %w", err)
+	}
+
+	return scoreFloat, nil
+}
+
+// HRename atomically renames a hash field, preserving its value
+// Returns the value and an error if the old field doesn't exist or the new field already exists
+func (c *Client) HRename(ctx context.Context, key, oldField, newField string) (string, error) {
+	result, err := scriptHashRename.Eval(
+		ctx,
+		c,
+		[]string{key},
+		[]string{oldField, newField},
+	)
+	if err != nil {
+		return "", err
+	}
+
+	// Result should be the value (as string or bulk string)
+	value, ok := result.(string)
+	if !ok {
+		return "", fmt.Errorf("unexpected result type from script")
+	}
+
+	return value, nil
+}
+
+// KeyMetadata represents metadata about a key
+type KeyMetadata struct {
+	Type string
+	Size int64
+	TTL  int64
+}
+
+// GetKeyMetadata atomically retrieves key type, size, and TTL
+// Returns nil if the key doesn't exist
+func (c *Client) GetKeyMetadata(ctx context.Context, key string) (*KeyMetadata, error) {
+	result, err := scriptGetKeyMetadata.Eval(
+		ctx,
+		c,
+		[]string{key},
+		[]string{},
+	)
+
+	// Valkey returns error "valkey nil message" when script returns nil
+	if err != nil {
+		if err.Error() == "valkey nil message" {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	// If key doesn't exist, script returns nil
+	if result == nil {
+		return nil, nil
+	}
+
+	// Result should be an array: [type, size, ttl]
+	arr, ok := result.([]interface{})
+	if !ok || len(arr) != 3 {
+		return nil, fmt.Errorf("unexpected result format from script")
+	}
+
+	ktype, ok := arr[0].(string)
+	if !ok {
+		return nil, fmt.Errorf("unexpected type format in result")
+	}
+
+	size, ok := arr[1].(int64)
+	if !ok {
+		return nil, fmt.Errorf("unexpected size format in result")
+	}
+
+	ttl, ok := arr[2].(int64)
+	if !ok {
+		return nil, fmt.Errorf("unexpected ttl format in result")
+	}
+
+	return &KeyMetadata{
+		Type: ktype,
+		Size: size,
+		TTL:  ttl,
+	}, nil
 }
