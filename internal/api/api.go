@@ -58,10 +58,12 @@ func New(cfg *config.Config, client *valkey.Client) *Handler {
 	// Hash operations
 	h.mux.HandleFunc("POST /api/key/{key}/hash", h.handleHashSet)
 	h.mux.HandleFunc("DELETE /api/key/{key}/hash/{field}", h.handleHashRemove)
+	h.mux.HandleFunc("PATCH /api/key/{key}/hash/{field}", h.handleHashRename)
 
 	// ZSet operations
 	h.mux.HandleFunc("POST /api/key/{key}/zset", h.handleZSetAdd)
 	h.mux.HandleFunc("DELETE /api/key/{key}/zset/{member}", h.handleZSetRemove)
+	h.mux.HandleFunc("PATCH /api/key/{key}/zset/{member}", h.handleZSetRename)
 
 	// Geo operations (uses zset internally, provides coordinate view)
 	h.mux.HandleFunc("GET /api/key/{key}/geo", h.handleGeoGet)
@@ -1055,6 +1057,56 @@ func (h *Handler) handleHashRemove(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, map[string]string{"status": "ok"})
 }
 
+func (h *Handler) handleHashRename(w http.ResponseWriter, r *http.Request) {
+	if h.checkReadOnly(w) {
+		return
+	}
+
+	key := r.PathValue("key")
+	if h.checkKeyPrefix(w, key) {
+		return
+	}
+
+	oldField := r.PathValue("field")
+	if oldField == "" {
+		jsonError(w, "Field name cannot be empty", http.StatusBadRequest)
+		return
+	}
+
+	var body struct {
+		NewField string `json:"newField"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		jsonError(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if body.NewField == "" {
+		jsonError(w, "New field name cannot be empty", http.StatusBadRequest)
+		return
+	}
+
+	value, err := h.client.HRename(r.Context(), key, oldField, body.NewField)
+	if err != nil {
+		// Check for specific error messages from Lua script
+		switch err.Error() {
+		case "Field does not exist":
+			jsonError(w, "Field does not exist", http.StatusNotFound)
+		case "New field already exists":
+			jsonError(w, "New field already exists", http.StatusConflict)
+		default:
+			jsonError(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	jsonResponse(w, map[string]interface{}{
+		"status": "ok",
+		"value":  value,
+	})
+}
+
 // ZSet operation handlers
 
 func (h *Handler) handleZSetAdd(w http.ResponseWriter, r *http.Request) {
@@ -1112,6 +1164,56 @@ func (h *Handler) handleZSetRemove(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jsonResponse(w, map[string]string{"status": "ok"})
+}
+
+func (h *Handler) handleZSetRename(w http.ResponseWriter, r *http.Request) {
+	if h.checkReadOnly(w) {
+		return
+	}
+
+	key := r.PathValue("key")
+	if h.checkKeyPrefix(w, key) {
+		return
+	}
+
+	oldMember := r.PathValue("member")
+	if oldMember == "" {
+		jsonError(w, "Member cannot be empty", http.StatusBadRequest)
+		return
+	}
+
+	var body struct {
+		NewMember string `json:"newMember"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		jsonError(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if body.NewMember == "" {
+		jsonError(w, "New member name cannot be empty", http.StatusBadRequest)
+		return
+	}
+
+	score, err := h.client.ZRename(r.Context(), key, oldMember, body.NewMember)
+	if err != nil {
+		// Check for specific error messages from Lua script
+		switch err.Error() {
+		case "Member does not exist":
+			jsonError(w, "Member does not exist", http.StatusNotFound)
+		case "New member already exists":
+			jsonError(w, "New member already exists", http.StatusConflict)
+		default:
+			jsonError(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	jsonResponse(w, map[string]interface{}{
+		"status": "ok",
+		"score":  score,
+	})
 }
 
 // Geo operation handlers

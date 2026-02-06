@@ -1,17 +1,18 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
-	import CheckIcon from '@lucide/svelte/icons/check';
-	import PencilIcon from '@lucide/svelte/icons/pencil';
-	import Trash2Icon from '@lucide/svelte/icons/trash-2';
-	import XIcon from '@lucide/svelte/icons/x';
+	import { CheckIcon, FileEdit, PencilIcon, Trash2Icon, XIcon } from '@lucide/svelte/icons';
 
 	interface Props {
 		editing?: boolean;
 		saving?: boolean;
 		showEdit?: boolean;
+		showRename?: boolean;
+		editLabel?: string;
+		renameLabel?: string;
 		onEdit?: () => void;
 		onSave?: () => void;
 		onCancel?: () => void;
+		onRename?: () => void;
 		onDelete?: () => void;
 	}
 
@@ -19,9 +20,13 @@
 		editing = false,
 		saving = false,
 		showEdit = true,
+		showRename = false,
+		editLabel = 'Edit',
+		renameLabel = 'Rename',
 		onEdit,
 		onSave,
 		onCancel,
+		onRename,
 		onDelete
 	}: Props = $props();
 </script>
@@ -54,11 +59,23 @@
 				size="sm"
 				variant="ghost"
 				onclick={onEdit}
-				title="Edit"
-				aria-label="Edit"
+				title={editLabel}
+				aria-label={editLabel}
 				class="h-8 w-8 cursor-pointer p-0"
 			>
 				<PencilIcon class="h-4 w-4" />
+			</Button>
+		{/if}
+		{#if showRename && onRename}
+			<Button
+				size="sm"
+				variant="ghost"
+				onclick={onRename}
+				title={renameLabel}
+				aria-label={renameLabel}
+				class="h-8 w-8 cursor-pointer p-0"
+			>
+				<FileEdit class="h-4 w-4" />
 			</Button>
 		{/if}
 		{#if onDelete}

@@ -244,6 +244,13 @@ export const api = {
 		});
 	},
 
+	hashRename(key: string, oldField: string, newField: string): Promise<{ value: string }> {
+		return request(`/key/${encodeURIComponent(key)}/hash/${encodeURIComponent(oldField)}`, {
+			method: 'PATCH',
+			body: JSON.stringify({ newField })
+		});
+	},
+
 	// ZSet operations
 	zsetAdd(key: string, member: string, score: number): Promise<void> {
 		return request(`/key/${encodeURIComponent(key)}/zset`, {
@@ -255,6 +262,13 @@ export const api = {
 	zsetRemove(key: string, member: string): Promise<void> {
 		return request(`/key/${encodeURIComponent(key)}/zset/${encodeURIComponent(member)}`, {
 			method: 'DELETE'
+		});
+	},
+
+	zsetRename(key: string, oldMember: string, newMember: string): Promise<{ score: number }> {
+		return request(`/key/${encodeURIComponent(key)}/zset/${encodeURIComponent(oldMember)}`, {
+			method: 'PATCH',
+			body: JSON.stringify({ newMember })
 		});
 	},
 

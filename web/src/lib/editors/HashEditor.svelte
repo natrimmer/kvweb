@@ -52,6 +52,7 @@
 	let adding = $state(false);
 
 	// Edit state
+	let editMode = $state<'none' | 'value' | 'field'>('none');
 	let editingField = $state<string | null>(null);
 	let editingValue = $state('');
 	let saving = $state(false);
@@ -88,26 +89,51 @@
 		}
 	}
 
-	function startEditing(field: string, value: string) {
+	function startEditingValue(field: string, value: string) {
+		editMode = 'value';
 		editingField = field;
 		editingValue = value;
 	}
 
+	function startRenamingField(field: string) {
+		editMode = 'field';
+		editingField = field;
+		editingValue = field;
+	}
+
 	function cancelEditing() {
+		editMode = 'none';
 		editingField = null;
 		editingValue = '';
 	}
 
 	async function saveEdit(value: string) {
 		if (editingField === null) return;
+
 		saving = true;
 		try {
-			await api.hashSet(keyName, editingField, value);
-			toast.success('Field updated');
+			if (editMode === 'value') {
+				// Edit value
+				await api.hashSet(keyName, editingField, value);
+				toast.success('Value updated');
+			} else if (editMode === 'field') {
+				// Rename field
+				if (!value.trim()) {
+					toast.error('Field name cannot be empty');
+					return;
+				}
+				if (value === editingField) {
+					// No change, just cancel
+					cancelEditing();
+					return;
+				}
+				await api.hashRename(keyName, editingField, value.trim());
+				toast.success('Field renamed');
+			}
 			cancelEditing();
 			onDataChange();
 		} catch (e) {
-			toastError(e, 'Failed to update field');
+			toastError(e, editMode === 'value' ? 'Failed to update field' : 'Failed to rename field');
 		} finally {
 			saving = false;
 		}
@@ -255,9 +281,21 @@
 				<Table.Body>
 					{#each fields as { field, value }}
 						<Table.Row>
-							<Table.Cell class="align-top font-mono text-muted-foreground">{field}</Table.Cell>
+							<Table.Cell class="align-top font-mono text-muted-foreground">
+								{#if editMode === 'field' && editingField === field}
+									<InlineEditor
+										bind:value={editingValue}
+										type="text"
+										inputClass="w-full"
+										onSave={saveEdit}
+										onCancel={cancelEditing}
+									/>
+								{:else}
+									{field}
+								{/if}
+							</Table.Cell>
 							<Table.Cell class="font-mono">
-								{#if editingField === field}
+								{#if editMode === 'value' && editingField === field}
 									<InlineEditor
 										bind:value={editingValue}
 										onSave={saveEdit}
@@ -273,9 +311,13 @@
 							{#if !readOnly}
 								<Table.Cell class="align-top">
 									<ItemActions
-										editing={editingField === field}
+										editing={editMode !== 'none' && editingField === field}
 										{saving}
-										onEdit={() => startEditing(field, value)}
+										showRename={true}
+										editLabel="Edit value"
+										renameLabel="Rename field"
+										onEdit={() => startEditingValue(field, value)}
+										onRename={() => startRenamingField(field)}
 										onSave={() => saveEdit(editingValue)}
 										onCancel={cancelEditing}
 										onDelete={() => openDeleteDialog(field)}

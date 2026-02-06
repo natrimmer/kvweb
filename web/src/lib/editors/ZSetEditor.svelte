@@ -72,6 +72,7 @@
 	let adding = $state(false);
 
 	// Edit state
+	let editMode = $state<'none' | 'score' | 'member'>('none');
 	let editingMember = $state<string | null>(null);
 	let editingValue = $state('');
 	let saving = $state(false);
@@ -132,30 +133,55 @@
 		rawView = false;
 	}
 
-	function startEditing(member: string, score: number) {
+	function startEditingScore(member: string, score: number) {
+		editMode = 'score';
 		editingMember = member;
 		editingValue = String(score);
 	}
 
+	function startRenamingMember(member: string) {
+		editMode = 'member';
+		editingMember = member;
+		editingValue = member;
+	}
+
 	function cancelEditing() {
+		editMode = 'none';
 		editingMember = null;
 		editingValue = '';
 	}
 
 	async function saveEdit(value: string) {
 		if (editingMember === null) return;
-		if (!isValidScore(value)) {
-			toast.error('Invalid score value');
-			return;
-		}
+
 		saving = true;
 		try {
-			await api.zsetAdd(keyName, editingMember, parseScore(value));
-			toast.success('Score updated');
+			if (editMode === 'score') {
+				// Edit score
+				if (!isValidScore(value)) {
+					toast.error('Invalid score value');
+					return;
+				}
+				await api.zsetAdd(keyName, editingMember, parseScore(value));
+				toast.success('Score updated');
+			} else if (editMode === 'member') {
+				// Rename member
+				if (!value.trim()) {
+					toast.error('Member name cannot be empty');
+					return;
+				}
+				if (value === editingMember) {
+					// No change, just cancel
+					cancelEditing();
+					return;
+				}
+				await api.zsetRename(keyName, editingMember, value.trim());
+				toast.success('Member renamed');
+			}
 			cancelEditing();
 			onDataChange();
 		} catch (e) {
-			toastError(e, 'Failed to update score');
+			toastError(e, editMode === 'score' ? 'Failed to update score' : 'Failed to rename member');
 		} finally {
 			saving = false;
 		}
@@ -470,10 +496,20 @@
 					{#each members as { member, score }}
 						<Table.Row>
 							<Table.Cell class="font-mono">
-								<CollapsibleValue value={member} />
+								{#if editMode === 'member' && editingMember === member}
+									<InlineEditor
+										bind:value={editingValue}
+										type="text"
+										inputClass="w-full"
+										onSave={saveEdit}
+										onCancel={cancelEditing}
+									/>
+								{:else}
+									<CollapsibleValue value={member} />
+								{/if}
 							</Table.Cell>
 							<Table.Cell class="font-mono text-muted-foreground">
-								{#if editingMember === member}
+								{#if editMode === 'score' && editingMember === member}
 									<InlineEditor
 										bind:value={editingValue}
 										type="number"
@@ -488,9 +524,13 @@
 							{#if !readOnly}
 								<Table.Cell class="align-top">
 									<ItemActions
-										editing={editingMember === member}
+										editing={editMode !== 'none' && editingMember === member}
 										{saving}
-										onEdit={() => startEditing(member, score)}
+										showRename={true}
+										editLabel="Edit score"
+										renameLabel="Rename member"
+										onEdit={() => startEditingScore(member, score)}
+										onRename={() => startRenamingMember(member)}
 										onSave={() => saveEdit(editingValue)}
 										onCancel={cancelEditing}
 										onDelete={() => openDeleteDialog(member)}
