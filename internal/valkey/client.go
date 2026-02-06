@@ -445,6 +445,11 @@ func (c *Client) ZAdd(ctx context.Context, key string, member string, score floa
 	return c.client.Do(ctx, c.client.B().Zadd().Key(key).ScoreMember().ScoreMember(score, member).Build()).Error()
 }
 
+// ZIncrBy increments the score of a member in a sorted set
+func (c *Client) ZIncrBy(ctx context.Context, key string, member string, amount float64) (float64, error) {
+	return c.client.Do(ctx, c.client.B().Zincrby().Key(key).Increment(amount).Member(member).Build()).AsFloat64()
+}
+
 // ZRem removes members from a sorted set
 func (c *Client) ZRem(ctx context.Context, key string, members ...string) error {
 	return c.client.Do(ctx, c.client.B().Zrem().Key(key).Member(members...).Build()).Error()

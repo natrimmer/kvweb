@@ -25,7 +25,7 @@
 		showPaginationControls,
 		toastError
 	} from '$lib/utils';
-	import { Map, Plus, TableIcon } from '@lucide/svelte/icons';
+	import { Map, Minus, Plus, TableIcon } from '@lucide/svelte/icons';
 	import { toast } from 'svelte-sonner';
 	import GeoMapView from './GeoMapView.svelte';
 
@@ -76,9 +76,13 @@
 	let adding = $state(false);
 
 	// Edit state
-	let editMode = $state<'none' | 'score' | 'member'>('none');
+	let editMode = $state<'none' | 'score' | 'member' | 'longitude' | 'latitude' | 'coordinates'>(
+		'none'
+	);
 	let editingMember = $state<string | null>(null);
 	let editingValue = $state('');
+	let editingLongitude = $state('');
+	let editingLatitude = $state('');
 	let saving = $state(false);
 
 	// Delete state
@@ -155,10 +159,19 @@
 		editingValue = member;
 	}
 
+	function startEditingCoordinates(member: string, longitude: number, latitude: number) {
+		editMode = 'coordinates';
+		editingMember = member;
+		editingLongitude = String(longitude);
+		editingLatitude = String(latitude);
+	}
+
 	function cancelEditing() {
 		editMode = 'none';
 		editingMember = null;
 		editingValue = '';
+		editingLongitude = '';
+		editingLatitude = '';
 	}
 
 	async function saveEdit(value: string) {
@@ -199,11 +212,38 @@
 
 				await api.zsetRename(keyName, editingMember, value.trim());
 				toast.success('Member renamed');
+			} else if (editMode === 'coordinates') {
+				// Edit both geo coordinates
+				const lon = parseFloat(editingLongitude);
+				const lat = parseFloat(editingLatitude);
+
+				if (isNaN(lon) || isNaN(lat)) {
+					toast.error('Invalid coordinate values');
+					return;
+				}
+				if (!isValidLongitude(lon)) {
+					toast.error('Longitude must be between -180 and 180');
+					return;
+				}
+				if (!isValidLatitude(lat)) {
+					toast.error('Latitude must be between -85.05 and 85.05');
+					return;
+				}
+
+				await api.geoAdd(keyName, editingMember, lon, lat);
+				toast.success('Coordinates updated');
+				loadGeoData();
 			}
 			cancelEditing();
 			onDataChange();
 		} catch (e) {
-			toastError(e, editMode === 'score' ? 'Failed to update score' : 'Failed to rename member');
+			const errorMsg =
+				editMode === 'score'
+					? 'Failed to update score'
+					: editMode === 'coordinates'
+						? 'Failed to update coordinates'
+						: 'Failed to rename member';
+			toastError(e, errorMsg);
 		} finally {
 			saving = false;
 			pendingEditMember = null;
@@ -312,6 +352,19 @@
 		} finally {
 			deleteDialogOpen = false;
 			deleteTarget = null;
+		}
+	}
+
+	async function incrementScore(member: string, amount: number) {
+		saving = true;
+		try {
+			const result = await api.zsetIncrScore(keyName, member, amount);
+			toast.success(`Score ${amount > 0 ? 'incremented' : 'decremented'}`);
+			onDataChange();
+		} catch (e) {
+			toastError(e, 'Failed to modify score');
+		} finally {
+			saving = false;
 		}
 	}
 </script>
@@ -521,20 +574,56 @@
 							{#each geoMembers as { member, longitude, latitude }}
 								<Table.Row>
 									<Table.Cell class="font-mono">
-										<CollapsibleValue value={member} />
+										{#if editMode === 'member' && editingMember === member}
+											<InlineEditor
+												bind:value={editingValue}
+												type="text"
+												inputClass="w-full"
+												onSave={saveEdit}
+												onCancel={cancelEditing}
+											/>
+										{:else}
+											<CollapsibleValue value={member} />
+										{/if}
 									</Table.Cell>
 									<Table.Cell class="font-mono text-muted-foreground">
-										{formatCoordinate(longitude)}
+										{#if editMode === 'coordinates' && editingMember === member}
+											<InlineEditor
+												bind:value={editingLongitude}
+												type="number"
+												inputClass="w-32"
+												onSave={saveEdit}
+												onCancel={cancelEditing}
+											/>
+										{:else}
+											{formatCoordinate(longitude)}
+										{/if}
 									</Table.Cell>
 									<Table.Cell class="font-mono text-muted-foreground">
-										{formatCoordinate(latitude)}
+										{#if editMode === 'coordinates' && editingMember === member}
+											<InlineEditor
+												bind:value={editingLatitude}
+												type="number"
+												inputClass="w-32"
+												onSave={saveEdit}
+												onCancel={cancelEditing}
+											/>
+										{:else}
+											{formatCoordinate(latitude)}
+										{/if}
 									</Table.Cell>
 									{#if !readOnly && showActions}
 										<Table.Cell class="align-top">
 											<ItemActions
-												editing={false}
+												editing={editMode !== 'none' && editingMember === member}
 												{saving}
-												showEdit={false}
+												showRename={true}
+												editLabel="Edit coordinates"
+												renameLabel="Rename location"
+												onEdit={() => startEditingCoordinates(member, longitude, latitude)}
+												onRename={() => startRenamingMember(member)}
+												onSave={() => saveEdit(editingValue)}
+												onCancel={cancelEditing}
 												onDelete={() => openDeleteDialog(member)}
 											/>
 										</Table.Cell>
@@ -583,7 +672,39 @@
 											onCancel={cancelEditing}
 										/>
 									{:else}
-										{score}
+										<div class="flex items-center gap-1">
+											{#if !readOnly && showActions && viewMode === 'zset'}
+												<Button
+													size="sm"
+													variant="ghost"
+													onclick={() => incrementScore(member, -1)}
+													disabled={saving}
+													class="h-6 w-6 cursor-pointer p-0"
+													title="Decrement score by 1"
+													aria-label="Decrement score by 1"
+												>
+													<Minus class="h-3 w-3" />
+												</Button>
+											{:else}
+												<div class="h-6 w-6"></div>
+											{/if}
+											<span class="inline-block min-w-12 text-right">{score}</span>
+											{#if !readOnly && showActions && viewMode === 'zset'}
+												<Button
+													size="sm"
+													variant="ghost"
+													onclick={() => incrementScore(member, 1)}
+													disabled={saving}
+													class="h-6 w-6 cursor-pointer p-0"
+													title="Increment score by 1"
+													aria-label="Increment score by 1"
+												>
+													<Plus class="h-3 w-3" />
+												</Button>
+											{:else}
+												<div class="h-6 w-6"></div>
+											{/if}
+										</div>
 									{/if}
 								</Table.Cell>
 								{#if !readOnly && showActions}

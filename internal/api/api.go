@@ -66,6 +66,7 @@ func New(cfg *config.Config, client *valkey.Client) *Handler {
 	h.mux.HandleFunc("POST /api/key/{key}/zset", h.handleZSetAdd)
 	h.mux.HandleFunc("DELETE /api/key/{key}/zset/{member}", h.handleZSetRemove)
 	h.mux.HandleFunc("PATCH /api/key/{key}/zset/{member}", h.handleZSetRename)
+	h.mux.HandleFunc("POST /api/key/{key}/zset/{member}/incr", h.handleZSetIncrScore)
 
 	// Geo operations (uses zset internally, provides coordinate view)
 	h.mux.HandleFunc("GET /api/key/{key}/geo", h.handleGeoGet)
@@ -1314,6 +1315,42 @@ func (h *Handler) handleZSetRename(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, map[string]interface{}{
 		"status": "ok",
 		"score":  score,
+	})
+}
+
+func (h *Handler) handleZSetIncrScore(w http.ResponseWriter, r *http.Request) {
+	if h.checkReadOnly(w) {
+		return
+	}
+
+	key := r.PathValue("key")
+	if h.checkKeyPrefix(w, key) {
+		return
+	}
+
+	member := r.PathValue("member")
+	if member == "" {
+		jsonError(w, "Member cannot be empty", http.StatusBadRequest)
+		return
+	}
+
+	var body struct {
+		Amount float64 `json:"amount"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		jsonError(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	newScore, err := h.client.ZIncrBy(r.Context(), key, member, body.Amount)
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	jsonResponse(w, map[string]interface{}{
+		"score": newScore,
 	})
 }
 

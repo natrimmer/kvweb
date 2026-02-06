@@ -286,6 +286,13 @@ export const api = {
 		});
 	},
 
+	zsetIncrScore(key: string, member: string, amount: number): Promise<{ score: number }> {
+		return request(`/key/${encodeURIComponent(key)}/zset/${encodeURIComponent(member)}/incr`, {
+			method: 'POST',
+			body: JSON.stringify({ amount })
+		});
+	},
+
 	// Geo operations (view zset as coordinates)
 	geoGet(key: string, page?: number, pageSize?: number): Promise<KeyInfo> {
 		let url = `/key/${encodeURIComponent(key)}/geo`;
