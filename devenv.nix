@@ -160,7 +160,8 @@ in
 
     seed.exec = ''
       chmod +x ./seed_valkey.sh
-      ./seed_valkey.sh $PORT_VALKEY
+      TYPE="''${1:-all}"
+      ./seed_valkey.sh "$TYPE"
     '';
 
     commands.exec = ''
@@ -172,7 +173,8 @@ in
       echo "  test       - Run all tests"
       echo "  lint       - Run linters"
       echo "  deps       - Update dependencies"
-      echo "  seed       - Populate valkey with sample data"
+      echo "  seed [TYPE]- Populate valkey with sample data"
+      echo "               Types: all, string, hash, list, set, zset, geo, stream, hll, ttl"
       echo "  ports      - Show service ports"
       echo "  commands   - Show this help"
     '';
