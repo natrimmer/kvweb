@@ -21,6 +21,7 @@
 		Settings
 	} from '@lucide/svelte';
 	import { onMount } from 'svelte';
+	import AddKeyDialog from './AddKeyDialog.svelte';
 	import { api, type KeyMeta } from './api';
 	import KeyTree from './KeyTree.svelte';
 	import SearchHistory, { type HistoryEntry } from './SearchHistory.svelte';
@@ -59,9 +60,8 @@
 	let loading = $state(false);
 	let cursor = $state(0);
 	let hasMore = $state(false);
-	let showNewKey = $state(false);
+	let showAddDialog = $state(false);
 	let showSettings = $state(false);
-	let newKeyName = $state('');
 	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 	let showHistory = $state(false);
 	let searchHistoryRef: SearchHistory | undefined = $state();
@@ -212,19 +212,10 @@
 		}
 	}
 
-	async function createKey() {
-		if (!newKeyName.trim()) return;
-		try {
-			const fullKeyName = prefix + newKeyName;
-			await api.setKey(fullKeyName, '');
-			newKeyName = '';
-			showNewKey = false;
-			await loadKeys(true);
-			onselect(fullKeyName);
-			oncreated();
-		} catch (e) {
-			toastError(e, 'Failed to create key');
-		}
+	function handleKeyCreated(keyName: string) {
+		loadKeys(true);
+		onselect(keyName);
+		oncreated();
 	}
 </script>
 
@@ -346,38 +337,13 @@
 						variant="outline"
 						size="sm"
 						class="cursor-pointer hover:bg-accent"
-						onclick={() => (showNewKey = !showNewKey)}
+						onclick={() => (showAddDialog = true)}
 					>
 						<CirclePlus /> New Key
 					</Button>
 				{/if}
 			</span>
 		</div>
-
-		{#if showNewKey && !readOnly}
-			<div class="flex gap-2 rounded bg-muted p-2">
-				{#if prefix}
-					<Badge variant="secondary" class="font-mono text-muted-foreground">{prefix}</Badge>
-				{/if}
-				<Input
-					type="text"
-					bind:value={newKeyName}
-					placeholder="Key name"
-					onkeydown={(e) => e.key === 'Enter' && createKey()}
-					class="flex-1"
-					title="New key name"
-					aria-label="New key name"
-				/>
-				<Button
-					onclick={createKey}
-					disabled={!newKeyName.trim()}
-					title="Create new key"
-					aria-label="Create new key"
-				>
-					Create
-				</Button>
-			</div>
-		{/if}
 
 		{#if typeFilter === 'geo'}
 			<div class="mb-3 text-xs text-muted-foreground">
@@ -459,7 +425,7 @@
 					</Empty.Header>
 					{#if !readOnly}
 						<Empty.Content>
-							<Button onclick={() => (showNewKey = true)} class="w-full">
+							<Button onclick={() => (showAddDialog = true)} class="w-full">
 								<CirclePlus />
 								Create First Key
 							</Button>
@@ -524,3 +490,10 @@
 		</div>
 	</Dialog.Content>
 </Dialog.Root>
+
+<AddKeyDialog
+	bind:open={showAddDialog}
+	{prefix}
+	onCreated={handleKeyCreated}
+	onCancel={() => (showAddDialog = false)}
+/>
