@@ -1,8 +1,10 @@
 <script lang="ts">
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import { Button } from '$lib/components/ui/button';
+	import * as ButtonGroup from '$lib/components/ui/button-group';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import LargeValueWarningDialog from '$lib/dialogs/LargeValueWarningDialog.svelte';
+	import { Braces, Pencil, RemoveFormatting, View } from '@lucide/svelte/icons';
 	import { toast } from 'svelte-sonner';
 	import {
 		api,
@@ -54,7 +56,8 @@
 	let ttlInterval: ReturnType<typeof setInterval> | null = null;
 	let expiresAt: number | null = null;
 
-	// JSON highlighting state for string type
+	// String editor state
+	let stringEditMode = $state(false); // false = view, true = edit
 	let prettyPrint = $state(false);
 	let highlightedHtml = $state('');
 
@@ -395,21 +398,7 @@
 				<TypeHeader expanded={typeHeaderExpanded}>
 					<div class="flex items-center justify-between gap-2">
 						<div class="flex-1"></div>
-						{#if isJsonValue}
-							<Button
-								size="sm"
-								variant="outline"
-								onclick={() => (prettyPrint = !prettyPrint)}
-								class="cursor-pointer"
-								title={prettyPrint ? 'Compact JSON formatting' : 'Pretty-print JSON formatting'}
-								aria-label={prettyPrint
-									? 'Compact JSON formatting'
-									: 'Pretty-print JSON formatting'}
-							>
-								{prettyPrint ? 'Compact JSON' : 'Format JSON'}
-							</Button>
-						{/if}
-						{#if !readOnly}
+						{#if !readOnly && hasChanges}
 							<Button
 								size="sm"
 								onclick={saveValue}
@@ -421,17 +410,79 @@
 								{saving ? 'Saving...' : 'Save'}
 							</Button>
 						{/if}
+						{#if isJsonValue}
+							<ButtonGroup.Root>
+								<Button
+									size="sm"
+									variant="outline"
+									onclick={() => (prettyPrint = false)}
+									disabled={stringEditMode}
+									class="cursor-pointer {!prettyPrint ? 'bg-accent' : ''}"
+									title="Show compact JSON"
+									aria-label="Show compact JSON"
+								>
+									<RemoveFormatting class="h-4 w-4" />
+								</Button>
+								<Button
+									size="sm"
+									variant="outline"
+									onclick={() => (prettyPrint = true)}
+									disabled={stringEditMode}
+									class="cursor-pointer {prettyPrint ? 'bg-accent' : ''}"
+									title="Show formatted JSON"
+									aria-label="Show formatted JSON"
+								>
+									<Braces class="h-4 w-4" />
+								</Button>
+							</ButtonGroup.Root>
+						{/if}
+						{#if !readOnly}
+							<ButtonGroup.Root>
+								<Button
+									size="sm"
+									variant="outline"
+									onclick={() => (stringEditMode = false)}
+									class="cursor-pointer {!stringEditMode ? 'bg-accent' : ''}"
+									title="View mode"
+									aria-label="View mode"
+								>
+									<View class="h-4 w-4" />
+								</Button>
+								<Button
+									size="sm"
+									variant="outline"
+									onclick={() => (stringEditMode = true)}
+									class="cursor-pointer {stringEditMode ? 'bg-accent' : ''}"
+									title="Edit mode"
+									aria-label="Edit mode"
+								>
+									<Pencil class="h-4 w-4" />
+								</Button>
+							</ButtonGroup.Root>
+						{/if}
 					</div>
 				</TypeHeader>
 
 				<div class="-mx-6 min-h-0 flex-1 overflow-auto border-t border-border px-6 pt-6">
-					{#if isJsonValue && highlightedHtml}
+					{#if !stringEditMode && isJsonValue && highlightedHtml}
+						<!-- View mode: JSON highlighted -->
 						<div
 							class="rounded border border-border [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:p-4 [&>pre]:text-sm"
 						>
 							{@html highlightedHtml}
 						</div>
+					{:else if !stringEditMode}
+						<!-- View mode: Plain text -->
+						<Textarea
+							id="value-textarea"
+							value={editValue}
+							readonly={true}
+							title="Key value"
+							aria-label="Key value"
+							class="min-h-75 flex-1 resize-none text-sm"
+						/>
 					{:else}
+						<!-- Edit mode: Always editable textarea -->
 						<Textarea
 							id="value-textarea"
 							bind:value={editValue}
