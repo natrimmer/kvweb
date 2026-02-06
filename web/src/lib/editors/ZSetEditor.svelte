@@ -2,6 +2,7 @@
 	import AddItemForm from '$lib/AddItemForm.svelte';
 	import { api, type GeoMember, type PaginationInfo, type ZSetMember } from '$lib/api';
 	import CollapsibleValue from '$lib/CollapsibleValue.svelte';
+	import ActionsToggle from '$lib/components/ActionsToggle.svelte';
 	import TableWidthToggle from '$lib/components/TableWidthToggle.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as ButtonGroup from '$lib/components/ui/button-group';
@@ -22,9 +23,7 @@
 		showPaginationControls,
 		toastError
 	} from '$lib/utils';
-	import Map from '@lucide/svelte/icons/map';
-	import PlusIcon from '@lucide/svelte/icons/plus';
-	import TableIcon from '@lucide/svelte/icons/table';
+	import { Map, Plus, TableIcon } from '@lucide/svelte/icons';
 	import { toast } from 'svelte-sonner';
 	import GeoMapView from './GeoMapView.svelte';
 
@@ -61,6 +60,7 @@
 	// View state
 	let rawView = $state(false);
 	let fullWidth = $state(false);
+	let showActions = $state(true);
 	let viewMode = $state<'zset' | 'geo'>('zset');
 	let geoMembers = $state<GeoMember[]>([]);
 	let geoDisplayMode = $state<'table' | 'map' | 'json'>('table');
@@ -303,7 +303,7 @@
 							? 'Add location to geo index'
 							: 'Add member to sorted set'}
 					>
-						<PlusIcon class="mr-1 h-4 w-4" />
+						<Plus class="mr-1 h-4 w-4" />
 						{viewMode === 'geo' ? 'Add Location' : 'Add Member'}
 					</Button>
 				{/if}
@@ -338,11 +338,10 @@
 						variant="outline"
 						onclick={() => {
 							if (viewMode === 'geo') {
-								viewMode = 'zset';
-								geoViewActive = false;
+								geoDisplayMode = 'table';
+							} else {
+								rawView = false;
 							}
-							rawView = false;
-							geoDisplayMode = 'table';
 						}}
 						class="cursor-pointer {(viewMode === 'zset' && !rawView) ||
 						(viewMode === 'geo' && geoDisplayMode === 'table')
@@ -378,6 +377,13 @@
 					onToggle={(fw) => (fullWidth = fw)}
 					disabled={rawView || (viewMode === 'geo' && geoDisplayMode !== 'table')}
 				/>
+				{#if !readOnly}
+					<ActionsToggle
+						{showActions}
+						onToggle={(sa) => (showActions = sa)}
+						disabled={rawView || (viewMode === 'geo' && geoDisplayMode !== 'table')}
+					/>
+				{/if}
 			</div>
 		</div>
 
@@ -456,7 +462,7 @@
 								<Table.Head class="w-auto">Member</Table.Head>
 								<Table.Head class="w-36">Longitude</Table.Head>
 								<Table.Head class="w-36">Latitude</Table.Head>
-								{#if !readOnly}
+								{#if !readOnly && showActions}
 									<Table.Head class="w-24">Actions</Table.Head>
 								{/if}
 							</Table.Row>
@@ -473,7 +479,7 @@
 									<Table.Cell class="font-mono text-muted-foreground">
 										{formatCoordinate(latitude)}
 									</Table.Cell>
-									{#if !readOnly}
+									{#if !readOnly && showActions}
 										<Table.Cell class="align-top">
 											<ItemActions
 												editing={false}
@@ -496,7 +502,7 @@
 						<Table.Row>
 							<Table.Head class="w-auto">Member</Table.Head>
 							<Table.Head class="w-32">Score</Table.Head>
-							{#if !readOnly}
+							{#if !readOnly && showActions}
 								<Table.Head class="w-24">Actions</Table.Head>
 							{/if}
 						</Table.Row>
@@ -530,7 +536,7 @@
 										{score}
 									{/if}
 								</Table.Cell>
-								{#if !readOnly}
+								{#if !readOnly && showActions}
 									<Table.Cell class="align-top">
 										<ItemActions
 											editing={editMode !== 'none' && editingMember === member}

@@ -7,9 +7,7 @@
 	import PaginationControls from '$lib/PaginationControls.svelte';
 	import TypeHeader from '$lib/TypeHeader.svelte';
 	import { highlightJson, isNonEmpty, showPaginationControls, toastError } from '$lib/utils';
-	import LayoutListIcon from '@lucide/svelte/icons/layout-list';
-	import PlusIcon from '@lucide/svelte/icons/plus';
-	import XIcon from '@lucide/svelte/icons/x';
+	import { LayoutList, Plus, X } from '@lucide/svelte/icons';
 	import { toast } from 'svelte-sonner';
 
 	interface Props {
@@ -124,7 +122,7 @@
 						title="Add entry to stream"
 						aria-label="Add entry to stream"
 					>
-						<PlusIcon class="mr-1 h-4 w-4" />
+						<Plus class="mr-1 h-4 w-4" />
 						Add Entry
 					</Button>
 				{/if}
@@ -137,7 +135,7 @@
 						title="Show as Cards"
 						aria-label="Show as Cards"
 					>
-						<LayoutListIcon class="h-4 w-4" />
+						<LayoutList class="h-4 w-4" />
 					</Button>
 					<Button
 						size="sm"
@@ -169,7 +167,7 @@
 								aria-label="Remove field"
 								class="h-8 w-8 cursor-pointer p-0"
 							>
-								<XIcon class="h-4 w-4" />
+								<X class="h-4 w-4" />
 							</Button>
 						{/if}
 					</div>
@@ -183,7 +181,7 @@
 						title="Add another field"
 						aria-label="Add another field"
 					>
-						<PlusIcon class="mr-1 h-4 w-4" />
+						<Plus class="mr-1 h-4 w-4" />
 						Add Field
 					</Button>
 					<div class="flex-1"></div>
@@ -208,7 +206,7 @@
 						aria-label="Cancel"
 						class="cursor-pointer"
 					>
-						<XIcon class="h-4 w-4" />
+						<X class="h-4 w-4" />
 					</Button>
 				</div>
 			</div>

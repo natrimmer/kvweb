@@ -5,7 +5,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import TypeHeader from '$lib/TypeHeader.svelte';
 	import { toastError } from '$lib/utils';
-	import PlusIcon from '@lucide/svelte/icons/plus';
+	import { Plus } from '@lucide/svelte/icons';
 	import { toast } from 'svelte-sonner';
 
 	interface Props {
@@ -56,7 +56,7 @@
 						title="Add element to HyperLogLog"
 						aria-label="Add element to HyperLogLog"
 					>
-						<PlusIcon class="mr-1 h-4 w-4" />
+						<Plus class="mr-1 h-4 w-4" />
 						Add Element
 					</Button>
 				{/if}

@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import * as ButtonGroup from '$lib/components/ui/button-group';
-	import ChevronsLeftRightIcon from '@lucide/svelte/icons/chevrons-left-right';
-	import ChevronsRightLeftIcon from '@lucide/svelte/icons/chevrons-right-left';
+	import { ChevronsLeftRight, ChevronsRightLeft } from '@lucide/svelte/icons';
 
 	interface Props {
 		fullWidth: boolean;
@@ -23,7 +22,7 @@
 		aria-label="Full width"
 		{disabled}
 	>
-		<ChevronsLeftRightIcon class="h-4 w-4" />
+		<ChevronsLeftRight class="h-4 w-4" />
 	</Button>
 	<Button
 		size="sm"
@@ -34,6 +33,6 @@
 		aria-label="Fit content"
 		{disabled}
 	>
-		<ChevronsRightLeftIcon class="h-4 w-4" />
+		<ChevronsRightLeft class="h-4 w-4" />
 	</Button>
 </ButtonGroup.Root>

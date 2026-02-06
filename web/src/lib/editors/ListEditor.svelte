@@ -2,6 +2,7 @@
 	import AddItemForm from '$lib/AddItemForm.svelte';
 	import { api, type PaginationInfo } from '$lib/api';
 	import CollapsibleValue from '$lib/CollapsibleValue.svelte';
+	import ActionsToggle from '$lib/components/ActionsToggle.svelte';
 	import TableWidthToggle from '$lib/components/TableWidthToggle.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as ButtonGroup from '$lib/components/ui/button-group';
@@ -14,8 +15,7 @@
 	import PaginationControls from '$lib/PaginationControls.svelte';
 	import TypeHeader from '$lib/TypeHeader.svelte';
 	import { highlightJson, showPaginationControls, toastError } from '$lib/utils';
-	import PlusIcon from '@lucide/svelte/icons/plus';
-	import TableIcon from '@lucide/svelte/icons/table';
+	import { Plus, TableIcon } from '@lucide/svelte/icons';
 	import { toast } from 'svelte-sonner';
 
 	interface Props {
@@ -47,6 +47,7 @@
 	// View state
 	let rawView = $state(false);
 	let fullWidth = $state(false);
+	let showActions = $state(true);
 	let prettyPrint = $state(false);
 
 	// Add form state
@@ -208,7 +209,7 @@
 						title="Add item to list"
 						aria-label="Add item to list"
 					>
-						<PlusIcon class="mr-1 h-4 w-4" />
+						<Plus class="mr-1 h-4 w-4" />
 						Add Item
 					</Button>
 				{/if}
@@ -247,6 +248,9 @@
 					</Button>
 				</ButtonGroup.Root>
 				<TableWidthToggle {fullWidth} onToggle={(fw) => (fullWidth = fw)} disabled={rawView} />
+				{#if !readOnly}
+					<ActionsToggle {showActions} onToggle={(sa) => (showActions = sa)} disabled={rawView} />
+				{/if}
 			</div>
 		</div>
 
@@ -288,7 +292,7 @@
 						<Table.Row>
 							<Table.Head class="w-16">Index</Table.Head>
 							<Table.Head class="w-auto">Value</Table.Head>
-							{#if !readOnly}
+							{#if !readOnly && showActions}
 								<Table.Head class="w-24">Actions</Table.Head>
 							{/if}
 						</Table.Row>
@@ -311,7 +315,7 @@
 										<CollapsibleValue value={item} highlight={listHighlights[i]} />
 									{/if}
 								</Table.Cell>
-								{#if !readOnly}
+								{#if !readOnly && showActions}
 									<Table.Cell class="align-top">
 										<ItemActions
 											editing={editingIndex === realIndex}

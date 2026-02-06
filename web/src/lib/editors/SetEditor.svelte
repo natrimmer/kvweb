@@ -2,6 +2,7 @@
 	import AddItemForm from '$lib/AddItemForm.svelte';
 	import { api, type PaginationInfo } from '$lib/api';
 	import CollapsibleValue from '$lib/CollapsibleValue.svelte';
+	import ActionsToggle from '$lib/components/ActionsToggle.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as ButtonGroup from '$lib/components/ui/button-group';
 	import { Input } from '$lib/components/ui/input';
@@ -9,9 +10,7 @@
 	import PaginationControls from '$lib/PaginationControls.svelte';
 	import TypeHeader from '$lib/TypeHeader.svelte';
 	import { highlightJson, showPaginationControls, toastError } from '$lib/utils';
-	import ListIcon from '@lucide/svelte/icons/list';
-	import PlusIcon from '@lucide/svelte/icons/plus';
-	import Trash2Icon from '@lucide/svelte/icons/trash-2';
+	import { List, Plus, Trash2 } from '@lucide/svelte/icons';
 	import { toast } from 'svelte-sonner';
 
 	interface Props {
@@ -42,6 +41,7 @@
 
 	// View state
 	let rawView = $state(false);
+	let showActions = $state(true);
 
 	// Add form state
 	let showAddForm = $state(false);
@@ -126,7 +126,7 @@
 						title="Add member to set"
 						aria-label="Add member to set"
 					>
-						<PlusIcon class="mr-1 h-4 w-4" />
+						<Plus class="mr-1 h-4 w-4" />
 						Add Member
 					</Button>
 				{/if}
@@ -139,7 +139,7 @@
 						title="Show as List"
 						aria-label="Show as List"
 					>
-						<ListIcon class="h-4 w-4" />
+						<List class="h-4 w-4" />
 					</Button>
 					<Button
 						size="sm"
@@ -152,6 +152,9 @@
 						{'{ }'}
 					</Button>
 				</ButtonGroup.Root>
+				{#if !readOnly}
+					<ActionsToggle {showActions} onToggle={(sa) => (showActions = sa)} disabled={rawView} />
+				{/if}
 			</div>
 		</div>
 
@@ -183,7 +186,7 @@
 						class="flex items-center justify-between rounded bg-muted px-2 py-1 font-mono text-sm"
 					>
 						<CollapsibleValue value={member} maxLength={100} />
-						{#if !readOnly}
+						{#if !readOnly && showActions}
 							<Button
 								size="sm"
 								variant="ghost"
@@ -192,7 +195,7 @@
 								aria-label="Remove member"
 								class="h-6 w-6 cursor-pointer p-0 text-destructive hover:text-destructive"
 							>
-								<Trash2Icon class="h-4 w-4" />
+								<Trash2 class="h-4 w-4" />
 							</Button>
 						{/if}
 					</div>
