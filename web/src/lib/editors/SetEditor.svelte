@@ -7,10 +7,12 @@
 	import * as ButtonGroup from '$lib/components/ui/button-group';
 	import { Input } from '$lib/components/ui/input';
 	import DeleteItemDialog from '$lib/DeleteItemDialog.svelte';
+	import InlineEditor from '$lib/InlineEditor.svelte';
+	import ItemActions from '$lib/ItemActions.svelte';
 	import PaginationControls from '$lib/PaginationControls.svelte';
 	import TypeHeader from '$lib/TypeHeader.svelte';
 	import { highlightJson, showPaginationControls, toastError } from '$lib/utils';
-	import { List, Plus, Trash2 } from '@lucide/svelte/icons';
+	import { List, Plus } from '@lucide/svelte/icons';
 	import { toast } from 'svelte-sonner';
 
 	interface Props {
@@ -48,6 +50,11 @@
 	let addMember = $state('');
 	let adding = $state(false);
 
+	// Edit state
+	let editingMember = $state<string | null>(null);
+	let editingValue = $state('');
+	let saving = $state(false);
+
 	// Delete state
 	let deleteDialogOpen = $state(false);
 	let deleteTarget = $state<{ member: string; display: string } | null>(null);
@@ -69,6 +76,43 @@
 			toastError(e, 'Failed to add member');
 		} finally {
 			adding = false;
+		}
+	}
+
+	function startEditingMember(member: string) {
+		editingMember = member;
+		editingValue = member;
+	}
+
+	function cancelEditing() {
+		editingMember = null;
+		editingValue = '';
+	}
+
+	async function saveEdit(value: string) {
+		if (editingMember === null) return;
+
+		if (!value.trim()) {
+			toast.error('Member cannot be empty');
+			return;
+		}
+
+		if (value === editingMember) {
+			// No change, just cancel
+			cancelEditing();
+			return;
+		}
+
+		saving = true;
+		try {
+			await api.setRename(keyName, editingMember, value.trim());
+			toast.success('Member updated');
+			cancelEditing();
+			onDataChange();
+		} catch (e) {
+			toastError(e, 'Failed to update member');
+		} finally {
+			saving = false;
 		}
 	}
 
@@ -183,20 +227,29 @@
 			<div class="flex flex-col gap-1">
 				{#each members as member}
 					<div
-						class="flex items-center justify-between rounded bg-muted px-2 py-1 font-mono text-sm"
+						class="flex items-center justify-between gap-2 rounded bg-muted px-2 py-1 font-mono text-sm"
 					>
-						<CollapsibleValue value={member} maxLength={100} />
+						{#if editingMember === member}
+							<div class="flex-1">
+								<InlineEditor
+									bind:value={editingValue}
+									onSave={saveEdit}
+									onCancel={cancelEditing}
+								/>
+							</div>
+						{:else}
+							<CollapsibleValue value={member} maxLength={100} />
+						{/if}
 						{#if !readOnly && showActions}
-							<Button
-								size="sm"
-								variant="ghost"
-								onclick={() => openDeleteDialog(member)}
-								title="Remove member"
-								aria-label="Remove member"
-								class="h-6 w-6 cursor-pointer p-0 text-destructive hover:text-destructive"
-							>
-								<Trash2 class="h-4 w-4" />
-							</Button>
+							<ItemActions
+								editing={editingMember === member}
+								{saving}
+								editLabel="Edit member"
+								onEdit={() => startEditingMember(member)}
+								onSave={() => saveEdit(editingValue)}
+								onCancel={cancelEditing}
+								onDelete={() => openDeleteDialog(member)}
+							/>
 						{/if}
 					</div>
 				{/each}

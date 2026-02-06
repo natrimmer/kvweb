@@ -481,6 +481,17 @@ func (c *Client) SAddIfNotExists(ctx context.Context, key, member string) (bool,
 	return added == 1, nil
 }
 
+// SRename atomically renames a set member (removes old member, adds new member)
+func (c *Client) SRename(ctx context.Context, key, oldMember, newMember string) error {
+	_, err := scriptSetRename.Eval(
+		ctx,
+		c,
+		[]string{key},
+		[]string{oldMember, newMember},
+	)
+	return err
+}
+
 // ZRename atomically renames a sorted set member, preserving its score
 // Returns an error if the old member doesn't exist or the new member already exists
 func (c *Client) ZRename(ctx context.Context, key, oldMember, newMember string) (float64, error) {

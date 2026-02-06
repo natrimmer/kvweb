@@ -54,6 +54,7 @@ func New(cfg *config.Config, client *valkey.Client) *Handler {
 	// Set operations
 	h.mux.HandleFunc("POST /api/key/{key}/set", h.handleSetAdd)
 	h.mux.HandleFunc("DELETE /api/key/{key}/set/{member}", h.handleSetRemove)
+	h.mux.HandleFunc("PATCH /api/key/{key}/set/{member}", h.handleSetRename)
 
 	// Hash operations
 	h.mux.HandleFunc("POST /api/key/{key}/hash", h.handleHashSet)
@@ -992,6 +993,52 @@ func (h *Handler) handleSetRemove(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.client.SRem(r.Context(), key, member); err != nil {
 		jsonError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	jsonResponse(w, map[string]string{"status": "ok"})
+}
+
+func (h *Handler) handleSetRename(w http.ResponseWriter, r *http.Request) {
+	if h.checkReadOnly(w) {
+		return
+	}
+
+	key := r.PathValue("key")
+	if h.checkKeyPrefix(w, key) {
+		return
+	}
+
+	oldMember := r.PathValue("member")
+	if oldMember == "" {
+		jsonError(w, "Member cannot be empty", http.StatusBadRequest)
+		return
+	}
+
+	var body struct {
+		NewMember string `json:"newMember"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		jsonError(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if body.NewMember == "" {
+		jsonError(w, "New member cannot be empty", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.client.SRename(r.Context(), key, oldMember, body.NewMember); err != nil {
+		// Check for specific error messages from Lua script
+		switch err.Error() {
+		case "Member does not exist":
+			jsonError(w, "Member does not exist", http.StatusNotFound)
+		case "New member already exists":
+			jsonError(w, "New member already exists", http.StatusConflict)
+		default:
+			jsonError(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 

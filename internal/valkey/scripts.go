@@ -136,6 +136,33 @@ var (
 		return 1
 	`)
 
+	// scriptSetRename atomically renames a set member (removes old, adds new)
+	// KEYS[1] = key name
+	// ARGV[1] = old member value
+	// ARGV[2] = new member value
+	// Returns: 1 on success, error if old member doesn't exist or new member already exists
+	scriptSetRename = NewScript(`
+		local key = KEYS[1]
+		local oldMember = ARGV[1]
+		local newMember = ARGV[2]
+
+		-- Check if old member exists
+		if redis.call('SISMEMBER', key, oldMember) == 0 then
+			return redis.error_reply('Member does not exist')
+		end
+
+		-- Check if new member already exists
+		if redis.call('SISMEMBER', key, newMember) == 1 then
+			return redis.error_reply('New member already exists')
+		end
+
+		-- Remove old member and add new member
+		redis.call('SREM', key, oldMember)
+		redis.call('SADD', key, newMember)
+
+		return 1
+	`)
+
 	// scriptZSetRename atomically renames a sorted set member
 	// KEYS[1] = key name
 	// ARGV[1] = old member name
@@ -235,6 +262,7 @@ func LoadAllScripts(ctx context.Context, c *Client) error {
 	scripts := []*Script{
 		scriptListRemoveByIndex,
 		scriptSetAddIfNotExists,
+		scriptSetRename,
 		scriptZSetRename,
 		scriptHashRename,
 		scriptGetKeyMetadata,

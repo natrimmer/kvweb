@@ -230,6 +230,13 @@ export const api = {
 		});
 	},
 
+	setRename(key: string, oldMember: string, newMember: string): Promise<void> {
+		return request(`/key/${encodeURIComponent(key)}/set/${encodeURIComponent(oldMember)}`, {
+			method: 'PATCH',
+			body: JSON.stringify({ newMember })
+		});
+	},
+
 	// Hash operations
 	hashSet(key: string, field: string, value: string): Promise<void> {
 		return request(`/key/${encodeURIComponent(key)}/hash`, {
