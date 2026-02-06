@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { api, type KeyType } from '$lib/api';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
@@ -7,11 +8,10 @@
 	import * as RadioGroup from '$lib/components/ui/radio-group';
 	import * as Select from '$lib/components/ui/select';
 	import { Textarea } from '$lib/components/ui/textarea';
+	import LargeValueWarningDialog from '$lib/dialogs/LargeValueWarningDialog.svelte';
+	import { formatTtl, isLargeValue, isValidScore, toastError } from '$lib/utils';
 	import { CirclePlus, Trash2 } from '@lucide/svelte/icons';
 	import { toast } from 'svelte-sonner';
-	import { api, type KeyType } from './api';
-	import LargeValueWarningDialog from './LargeValueWarningDialog.svelte';
-	import { formatTtl, isLargeValue, isValidScore, toastError } from './utils';
 
 	interface Props {
 		open: boolean;

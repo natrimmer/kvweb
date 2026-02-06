@@ -2,6 +2,7 @@
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import { Button } from '$lib/components/ui/button';
 	import { Textarea } from '$lib/components/ui/textarea';
+	import LargeValueWarningDialog from '$lib/dialogs/LargeValueWarningDialog.svelte';
 	import { toast } from 'svelte-sonner';
 	import {
 		api,
@@ -21,7 +22,6 @@
 	} from './editors';
 	import { formatShortcut, matchesShortcut } from './keyboard';
 	import KeyHeader from './KeyHeader.svelte';
-	import LargeValueWarningDialog from './LargeValueWarningDialog.svelte';
 	import TypeHeader from './TypeHeader.svelte';
 	import {
 		copyToClipboard,

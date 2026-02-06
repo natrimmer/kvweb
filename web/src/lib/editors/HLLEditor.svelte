@@ -3,7 +3,7 @@
 	import { api, type HLLData } from '$lib/api';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
-	import LargeValueWarningDialog from '$lib/LargeValueWarningDialog.svelte';
+	import LargeValueWarningDialog from '$lib/dialogs/LargeValueWarningDialog.svelte';
 	import TypeHeader from '$lib/TypeHeader.svelte';
 	import { isLargeValue, toastError } from '$lib/utils';
 	import { Plus } from '@lucide/svelte/icons';

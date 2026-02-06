@@ -5,8 +5,8 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as ButtonGroup from '$lib/components/ui/button-group';
 	import { Input } from '$lib/components/ui/input';
-	import DeleteItemDialog from '$lib/DeleteItemDialog.svelte';
-	import LargeValueWarningDialog from '$lib/LargeValueWarningDialog.svelte';
+	import DeleteItemDialog from '$lib/dialogs/DeleteItemDialog.svelte';
+	import LargeValueWarningDialog from '$lib/dialogs/LargeValueWarningDialog.svelte';
 	import PaginationControls from '$lib/PaginationControls.svelte';
 	import TypeHeader from '$lib/TypeHeader.svelte';
 	import {

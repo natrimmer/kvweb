@@ -9,10 +9,10 @@
 	import { Input } from '$lib/components/ui/input';
 	import * as Select from '$lib/components/ui/select';
 	import * as Table from '$lib/components/ui/table';
-	import DeleteItemDialog from '$lib/DeleteItemDialog.svelte';
+	import DeleteItemDialog from '$lib/dialogs/DeleteItemDialog.svelte';
+	import LargeValueWarningDialog from '$lib/dialogs/LargeValueWarningDialog.svelte';
 	import InlineEditor from '$lib/InlineEditor.svelte';
 	import ItemActions from '$lib/ItemActions.svelte';
-	import LargeValueWarningDialog from '$lib/LargeValueWarningDialog.svelte';
 	import PaginationControls from '$lib/PaginationControls.svelte';
 	import TypeHeader from '$lib/TypeHeader.svelte';
 	import { highlightJson, isLargeValue, showPaginationControls, toastError } from '$lib/utils';

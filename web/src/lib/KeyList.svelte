@@ -7,6 +7,7 @@
 	import * as Empty from '$lib/components/ui/empty';
 	import { Input } from '$lib/components/ui/input';
 	import * as Select from '$lib/components/ui/select';
+	import AddKeyDialog from '$lib/dialogs/AddKeyDialog.svelte';
 	import {
 		ArrowUpFromDot,
 		CircleAlert,
@@ -21,7 +22,6 @@
 		Settings
 	} from '@lucide/svelte';
 	import { onMount } from 'svelte';
-	import AddKeyDialog from './AddKeyDialog.svelte';
 	import { api, type KeyMeta } from './api';
 	import KeyTree from './KeyTree.svelte';
 	import SearchHistory, { type HistoryEntry } from './SearchHistory.svelte';
