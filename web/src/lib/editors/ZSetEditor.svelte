@@ -2,6 +2,7 @@
 	import AddItemForm from '$lib/AddItemForm.svelte';
 	import { api, type GeoMember, type PaginationInfo, type ZSetMember } from '$lib/api';
 	import CollapsibleValue from '$lib/CollapsibleValue.svelte';
+	import TableWidthToggle from '$lib/components/TableWidthToggle.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as ButtonGroup from '$lib/components/ui/button-group';
 	import { Input } from '$lib/components/ui/input';
@@ -59,6 +60,7 @@
 
 	// View state
 	let rawView = $state(false);
+	let fullWidth = $state(false);
 	let viewMode = $state<'zset' | 'geo'>('zset');
 	let geoMembers = $state<GeoMember[]>([]);
 	let geoDisplayMode = $state<'table' | 'map' | 'json'>('table');
@@ -315,63 +317,67 @@
 				>
 					{viewMode === 'zset' ? 'View as Geo' : 'View as ZSet'}
 				</Button>
-				{#if viewMode === 'zset'}
-					<ButtonGroup.Root>
-						<Button
-							size="sm"
-							variant="outline"
-							onclick={() => (rawView = false)}
-							class="cursor-pointer {!rawView ? 'bg-accent' : ''}"
-							title="Show as Table"
-							aria-label="Show as Table"
-						>
-							<TableIcon class="h-4 w-4" />
-						</Button>
-						<Button
-							size="sm"
-							variant="outline"
-							onclick={() => (rawView = true)}
-							class="cursor-pointer {rawView ? 'bg-accent' : ''}"
-							title="Show as Raw JSON"
-							aria-label="Show as Raw JSON"
-						>
-							{'{ }'}
-						</Button>
-					</ButtonGroup.Root>
-				{:else}
-					<ButtonGroup.Root>
-						<Button
-							size="sm"
-							variant="outline"
-							onclick={() => (geoDisplayMode = 'table')}
-							class="cursor-pointer {geoDisplayMode === 'table' ? 'bg-accent' : ''}"
-							title="Show as Table"
-							aria-label="Show as Table"
-						>
-							<TableIcon class="h-4 w-4" />
-						</Button>
-						<Button
-							size="sm"
-							variant="outline"
-							onclick={() => (geoDisplayMode = 'map')}
-							class="cursor-pointer {geoDisplayMode === 'map' ? 'bg-accent' : ''}"
-							title="Show on Map"
-							aria-label="Show on Map"
-						>
-							<Map class="h-4 w-4" />
-						</Button>
-						<Button
-							size="sm"
-							variant="outline"
-							onclick={() => (geoDisplayMode = 'json')}
-							class="cursor-pointer {geoDisplayMode === 'json' ? 'bg-accent' : ''}"
-							title="Show as Raw JSON"
-							aria-label="Show as Raw JSON"
-						>
-							{'{ }'}
-						</Button>
-					</ButtonGroup.Root>
-				{/if}
+				<ButtonGroup.Root>
+					<Button
+						size="sm"
+						variant="outline"
+						onclick={() => {
+							if (viewMode === 'geo') {
+								geoDisplayMode = 'map';
+							}
+						}}
+						disabled={viewMode === 'zset'}
+						class={viewMode === 'geo' && geoDisplayMode === 'map' ? 'bg-accent' : ''}
+						title="Show on Map"
+						aria-label="Show on Map"
+					>
+						<Map class="h-4 w-4" />
+					</Button>
+					<Button
+						size="sm"
+						variant="outline"
+						onclick={() => {
+							if (viewMode === 'geo') {
+								viewMode = 'zset';
+								geoViewActive = false;
+							}
+							rawView = false;
+							geoDisplayMode = 'table';
+						}}
+						class="cursor-pointer {(viewMode === 'zset' && !rawView) ||
+						(viewMode === 'geo' && geoDisplayMode === 'table')
+							? 'bg-accent'
+							: ''}"
+						title="Show as Table"
+						aria-label="Show as Table"
+					>
+						<TableIcon class="h-4 w-4" />
+					</Button>
+					<Button
+						size="sm"
+						variant="outline"
+						onclick={() => {
+							if (viewMode === 'zset') {
+								rawView = true;
+							} else {
+								geoDisplayMode = 'json';
+							}
+						}}
+						class="cursor-pointer {(viewMode === 'zset' && rawView) ||
+						(viewMode === 'geo' && geoDisplayMode === 'json')
+							? 'bg-accent'
+							: ''}"
+						title="Show as Raw JSON"
+						aria-label="Show as Raw JSON"
+					>
+						{'{ }'}
+					</Button>
+				</ButtonGroup.Root>
+				<TableWidthToggle
+					{fullWidth}
+					onToggle={(fw) => (fullWidth = fw)}
+					disabled={rawView || (viewMode === 'geo' && geoDisplayMode !== 'table')}
+				/>
 			</div>
 		</div>
 
@@ -443,35 +449,99 @@
 					{@html geoJsonHtml}
 				</div>
 			{:else}
-				<Table.Root>
+				<div class={fullWidth ? '' : 'max-w-max'}>
+					<Table.Root class="table-auto">
+						<Table.Header>
+							<Table.Row>
+								<Table.Head class="w-auto">Member</Table.Head>
+								<Table.Head class="w-36">Longitude</Table.Head>
+								<Table.Head class="w-36">Latitude</Table.Head>
+								{#if !readOnly}
+									<Table.Head class="w-24">Actions</Table.Head>
+								{/if}
+							</Table.Row>
+						</Table.Header>
+						<Table.Body>
+							{#each geoMembers as { member, longitude, latitude }}
+								<Table.Row>
+									<Table.Cell class="font-mono">
+										<CollapsibleValue value={member} />
+									</Table.Cell>
+									<Table.Cell class="font-mono text-muted-foreground">
+										{formatCoordinate(longitude)}
+									</Table.Cell>
+									<Table.Cell class="font-mono text-muted-foreground">
+										{formatCoordinate(latitude)}
+									</Table.Cell>
+									{#if !readOnly}
+										<Table.Cell class="align-top">
+											<ItemActions
+												editing={false}
+												{saving}
+												showEdit={false}
+												onDelete={() => openDeleteDialog(member)}
+											/>
+										</Table.Cell>
+									{/if}
+								</Table.Row>
+							{/each}
+						</Table.Body>
+					</Table.Root>
+				</div>
+			{/if}
+		{:else}
+			<div class={fullWidth ? '' : 'max-w-max'}>
+				<Table.Root class="table-auto">
 					<Table.Header>
 						<Table.Row>
-							<Table.Head>Member</Table.Head>
-							<Table.Head class="w-36">Longitude</Table.Head>
-							<Table.Head class="w-36">Latitude</Table.Head>
+							<Table.Head class="w-auto">Member</Table.Head>
+							<Table.Head class="w-32">Score</Table.Head>
 							{#if !readOnly}
 								<Table.Head class="w-24">Actions</Table.Head>
 							{/if}
 						</Table.Row>
 					</Table.Header>
 					<Table.Body>
-						{#each geoMembers as { member, longitude, latitude }}
+						{#each members as { member, score }}
 							<Table.Row>
 								<Table.Cell class="font-mono">
-									<CollapsibleValue value={member} />
+									{#if editMode === 'member' && editingMember === member}
+										<InlineEditor
+											bind:value={editingValue}
+											type="text"
+											inputClass="w-full"
+											onSave={saveEdit}
+											onCancel={cancelEditing}
+										/>
+									{:else}
+										<CollapsibleValue value={member} />
+									{/if}
 								</Table.Cell>
 								<Table.Cell class="font-mono text-muted-foreground">
-									{formatCoordinate(longitude)}
-								</Table.Cell>
-								<Table.Cell class="font-mono text-muted-foreground">
-									{formatCoordinate(latitude)}
+									{#if editMode === 'score' && editingMember === member}
+										<InlineEditor
+											bind:value={editingValue}
+											type="number"
+											inputClass="w-24"
+											onSave={saveEdit}
+											onCancel={cancelEditing}
+										/>
+									{:else}
+										{score}
+									{/if}
 								</Table.Cell>
 								{#if !readOnly}
 									<Table.Cell class="align-top">
 										<ItemActions
-											editing={false}
+											editing={editMode !== 'none' && editingMember === member}
 											{saving}
-											showEdit={false}
+											showRename={true}
+											editLabel="Edit score"
+											renameLabel="Rename member"
+											onEdit={() => startEditingScore(member, score)}
+											onRename={() => startRenamingMember(member)}
+											onSave={() => saveEdit(editingValue)}
+											onCancel={cancelEditing}
 											onDelete={() => openDeleteDialog(member)}
 										/>
 									</Table.Cell>
@@ -480,67 +550,7 @@
 						{/each}
 					</Table.Body>
 				</Table.Root>
-			{/if}
-		{:else}
-			<Table.Root>
-				<Table.Header>
-					<Table.Row>
-						<Table.Head>Member</Table.Head>
-						<Table.Head class="w-32">Score</Table.Head>
-						{#if !readOnly}
-							<Table.Head class="w-24">Actions</Table.Head>
-						{/if}
-					</Table.Row>
-				</Table.Header>
-				<Table.Body>
-					{#each members as { member, score }}
-						<Table.Row>
-							<Table.Cell class="font-mono">
-								{#if editMode === 'member' && editingMember === member}
-									<InlineEditor
-										bind:value={editingValue}
-										type="text"
-										inputClass="w-full"
-										onSave={saveEdit}
-										onCancel={cancelEditing}
-									/>
-								{:else}
-									<CollapsibleValue value={member} />
-								{/if}
-							</Table.Cell>
-							<Table.Cell class="font-mono text-muted-foreground">
-								{#if editMode === 'score' && editingMember === member}
-									<InlineEditor
-										bind:value={editingValue}
-										type="number"
-										inputClass="w-24"
-										onSave={saveEdit}
-										onCancel={cancelEditing}
-									/>
-								{:else}
-									{score}
-								{/if}
-							</Table.Cell>
-							{#if !readOnly}
-								<Table.Cell class="align-top">
-									<ItemActions
-										editing={editMode !== 'none' && editingMember === member}
-										{saving}
-										showRename={true}
-										editLabel="Edit score"
-										renameLabel="Rename member"
-										onEdit={() => startEditingScore(member, score)}
-										onRename={() => startRenamingMember(member)}
-										onSave={() => saveEdit(editingValue)}
-										onCancel={cancelEditing}
-										onDelete={() => openDeleteDialog(member)}
-									/>
-								</Table.Cell>
-							{/if}
-						</Table.Row>
-					{/each}
-				</Table.Body>
-			</Table.Root>
+			</div>
 		{/if}
 	</div>
 </div>

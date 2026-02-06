@@ -2,6 +2,7 @@
 	import AddItemForm from '$lib/AddItemForm.svelte';
 	import { api, type PaginationInfo } from '$lib/api';
 	import CollapsibleValue from '$lib/CollapsibleValue.svelte';
+	import TableWidthToggle from '$lib/components/TableWidthToggle.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as ButtonGroup from '$lib/components/ui/button-group';
 	import { Input } from '$lib/components/ui/input';
@@ -45,6 +46,7 @@
 
 	// View state
 	let rawView = $state(false);
+	let fullWidth = $state(false);
 	let prettyPrint = $state(false);
 
 	// Add form state
@@ -244,6 +246,7 @@
 						{'{ }'}
 					</Button>
 				</ButtonGroup.Root>
+				<TableWidthToggle {fullWidth} onToggle={(fw) => (fullWidth = fw)} disabled={rawView} />
 			</div>
 		</div>
 
@@ -279,48 +282,52 @@
 				{@html rawJsonHtml}
 			</div>
 		{:else}
-			<Table.Root>
-				<Table.Header>
-					<Table.Row>
-						<Table.Head class="w-16">Index</Table.Head>
-						<Table.Head>Value</Table.Head>
-						{#if !readOnly}
-							<Table.Head class="w-24">Actions</Table.Head>
-						{/if}
-					</Table.Row>
-				</Table.Header>
-				<Table.Body>
-					{#each items as item, i}
-						{@const realIndex = (currentPage - 1) * pageSize + i}
+			<div class={fullWidth ? '' : 'max-w-max'}>
+				<Table.Root class="table-auto">
+					<Table.Header>
 						<Table.Row>
-							<Table.Cell class="align-top font-mono text-muted-foreground">{realIndex}</Table.Cell>
-							<Table.Cell class="font-mono">
-								{#if editingIndex === realIndex}
-									<InlineEditor
-										bind:value={editingValue}
-										onSave={saveEdit}
-										onCancel={cancelEditing}
-									/>
-								{:else}
-									<CollapsibleValue value={item} highlight={listHighlights[i]} />
-								{/if}
-							</Table.Cell>
+							<Table.Head class="w-16">Index</Table.Head>
+							<Table.Head class="w-auto">Value</Table.Head>
 							{#if !readOnly}
-								<Table.Cell class="align-top">
-									<ItemActions
-										editing={editingIndex === realIndex}
-										{saving}
-										onEdit={() => startEditing(realIndex, item)}
-										onSave={() => saveEdit(editingValue)}
-										onCancel={cancelEditing}
-										onDelete={() => openDeleteDialog(realIndex, item)}
-									/>
-								</Table.Cell>
+								<Table.Head class="w-24">Actions</Table.Head>
 							{/if}
 						</Table.Row>
-					{/each}
-				</Table.Body>
-			</Table.Root>
+					</Table.Header>
+					<Table.Body>
+						{#each items as item, i}
+							{@const realIndex = (currentPage - 1) * pageSize + i}
+							<Table.Row>
+								<Table.Cell class="align-top font-mono text-muted-foreground"
+									>{realIndex}</Table.Cell
+								>
+								<Table.Cell class="font-mono">
+									{#if editingIndex === realIndex}
+										<InlineEditor
+											bind:value={editingValue}
+											onSave={saveEdit}
+											onCancel={cancelEditing}
+										/>
+									{:else}
+										<CollapsibleValue value={item} highlight={listHighlights[i]} />
+									{/if}
+								</Table.Cell>
+								{#if !readOnly}
+									<Table.Cell class="align-top">
+										<ItemActions
+											editing={editingIndex === realIndex}
+											{saving}
+											onEdit={() => startEditing(realIndex, item)}
+											onSave={() => saveEdit(editingValue)}
+											onCancel={cancelEditing}
+											onDelete={() => openDeleteDialog(realIndex, item)}
+										/>
+									</Table.Cell>
+								{/if}
+							</Table.Row>
+						{/each}
+					</Table.Body>
+				</Table.Root>
+			</div>
 		{/if}
 	</div>
 </div>

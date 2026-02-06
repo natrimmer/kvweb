@@ -2,6 +2,7 @@
 	import AddItemForm from '$lib/AddItemForm.svelte';
 	import { api, type HashPair, type PaginationInfo } from '$lib/api';
 	import CollapsibleValue from '$lib/CollapsibleValue.svelte';
+	import TableWidthToggle from '$lib/components/TableWidthToggle.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as ButtonGroup from '$lib/components/ui/button-group';
 	import { Input } from '$lib/components/ui/input';
@@ -44,6 +45,7 @@
 
 	// View state
 	let rawView = $state(false);
+	let fullWidth = $state(false);
 
 	// Add form state
 	let showAddForm = $state(false);
@@ -235,6 +237,7 @@
 						{'{ }'}
 					</Button>
 				</ButtonGroup.Root>
+				<TableWidthToggle {fullWidth} onToggle={(fw) => (fullWidth = fw)} disabled={rawView} />
 			</div>
 		</div>
 
@@ -268,66 +271,68 @@
 				{@html rawJsonHtml}
 			</div>
 		{:else}
-			<Table.Root>
-				<Table.Header>
-					<Table.Row>
-						<Table.Head>Field</Table.Head>
-						<Table.Head>Value</Table.Head>
-						{#if !readOnly}
-							<Table.Head class="w-24">Actions</Table.Head>
-						{/if}
-					</Table.Row>
-				</Table.Header>
-				<Table.Body>
-					{#each fields as { field, value }}
+			<div class={fullWidth ? '' : 'max-w-max'}>
+				<Table.Root class="table-auto">
+					<Table.Header>
 						<Table.Row>
-							<Table.Cell class="align-top font-mono text-muted-foreground">
-								{#if editMode === 'field' && editingField === field}
-									<InlineEditor
-										bind:value={editingValue}
-										type="text"
-										inputClass="w-full"
-										onSave={saveEdit}
-										onCancel={cancelEditing}
-									/>
-								{:else}
-									{field}
-								{/if}
-							</Table.Cell>
-							<Table.Cell class="font-mono">
-								{#if editMode === 'value' && editingField === field}
-									<InlineEditor
-										bind:value={editingValue}
-										onSave={saveEdit}
-										onCancel={cancelEditing}
-									/>
-								{:else}
-									<CollapsibleValue
-										{value}
-										highlight={isJson(value) ? highlightJson(value, false) : undefined}
-									/>
-								{/if}
-							</Table.Cell>
+							<Table.Head class="w-auto">Field</Table.Head>
+							<Table.Head class="w-auto">Value</Table.Head>
 							{#if !readOnly}
-								<Table.Cell class="align-top">
-									<ItemActions
-										editing={editMode !== 'none' && editingField === field}
-										{saving}
-										showRename={true}
-										editLabel="Edit value"
-										renameLabel="Rename field"
-										onEdit={() => startEditingValue(field, value)}
-										onRename={() => startRenamingField(field)}
-										onSave={() => saveEdit(editingValue)}
-										onCancel={cancelEditing}
-										onDelete={() => openDeleteDialog(field)}
-									/>
-								</Table.Cell>
+								<Table.Head class="w-24">Actions</Table.Head>
 							{/if}
 						</Table.Row>
-					{/each}
-				</Table.Body>
-			</Table.Root>
+					</Table.Header>
+					<Table.Body>
+						{#each fields as { field, value }}
+							<Table.Row>
+								<Table.Cell class="align-top font-mono text-muted-foreground">
+									{#if editMode === 'field' && editingField === field}
+										<InlineEditor
+											bind:value={editingValue}
+											type="text"
+											inputClass="w-full"
+											onSave={saveEdit}
+											onCancel={cancelEditing}
+										/>
+									{:else}
+										{field}
+									{/if}
+								</Table.Cell>
+								<Table.Cell class="font-mono">
+									{#if editMode === 'value' && editingField === field}
+										<InlineEditor
+											bind:value={editingValue}
+											onSave={saveEdit}
+											onCancel={cancelEditing}
+										/>
+									{:else}
+										<CollapsibleValue
+											{value}
+											highlight={isJson(value) ? highlightJson(value, false) : undefined}
+										/>
+									{/if}
+								</Table.Cell>
+								{#if !readOnly}
+									<Table.Cell class="align-top">
+										<ItemActions
+											editing={editMode !== 'none' && editingField === field}
+											{saving}
+											showRename={true}
+											editLabel="Edit value"
+											renameLabel="Rename field"
+											onEdit={() => startEditingValue(field, value)}
+											onRename={() => startRenamingField(field)}
+											onSave={() => saveEdit(editingValue)}
+											onCancel={cancelEditing}
+											onDelete={() => openDeleteDialog(field)}
+										/>
+									</Table.Cell>
+								{/if}
+							</Table.Row>
+						{/each}
+					</Table.Body>
+				</Table.Root>
+			</div>
 		{/if}
 	</div>
 </div>
