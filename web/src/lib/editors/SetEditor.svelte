@@ -13,7 +13,7 @@
 	import PaginationControls from '$lib/PaginationControls.svelte';
 	import TypeHeader from '$lib/TypeHeader.svelte';
 	import { highlightJson, isLargeValue, showPaginationControls, toastError } from '$lib/utils';
-	import { List, Plus } from '@lucide/svelte/icons';
+	import { Braces, List, Plus, RemoveFormatting } from '@lucide/svelte/icons';
 	import { toast } from 'svelte-sonner';
 
 	interface Props {
@@ -45,6 +45,7 @@
 	// View state
 	let rawView = $state(false);
 	let showActions = $state(true);
+	let prettyPrint = $state(false);
 
 	// Add form state
 	let showAddForm = $state(false);
@@ -67,6 +68,36 @@
 	let pendingEditMember: { old: string; new: string } | null = null;
 
 	let rawJsonHtml = $derived(rawView ? highlightJson(JSON.stringify(members, null, 2), true) : '');
+
+	function isJson(str: string): boolean {
+		if (!str || str.length < 2) return false;
+		const trimmed = str.trim();
+		if (
+			!(
+				(trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+				(trimmed.startsWith('[') && trimmed.endsWith(']'))
+			)
+		) {
+			return false;
+		}
+		try {
+			JSON.parse(str);
+			return true;
+		} catch {
+			return false;
+		}
+	}
+
+	// JSON highlighting for members
+	let memberHighlights = $derived.by(() => {
+		const highlights: Record<string, string> = {};
+		for (const member of members) {
+			if (isJson(member)) {
+				highlights[member] = highlightJson(member, prettyPrint);
+			}
+		}
+		return highlights;
+	});
 
 	async function addItem() {
 		if (!addMember.trim()) {
@@ -208,6 +239,30 @@
 					<Button
 						size="sm"
 						variant="outline"
+						onclick={() => (prettyPrint = false)}
+						disabled={rawView}
+						class="cursor-pointer {!prettyPrint ? 'bg-accent' : ''}"
+						title="Show compact JSON"
+						aria-label="Show compact JSON"
+					>
+						<RemoveFormatting class="h-4 w-4" />
+					</Button>
+					<Button
+						size="sm"
+						variant="outline"
+						onclick={() => (prettyPrint = true)}
+						disabled={rawView}
+						class="cursor-pointer {prettyPrint ? 'bg-accent' : ''}"
+						title="Show formatted JSON"
+						aria-label="Show formatted JSON"
+					>
+						<Braces class="h-4 w-4" />
+					</Button>
+				</ButtonGroup.Root>
+				<ButtonGroup.Root>
+					<Button
+						size="sm"
+						variant="outline"
 						onclick={() => (rawView = false)}
 						class="cursor-pointer {!rawView ? 'bg-accent' : ''}"
 						title="Show as List"
@@ -283,7 +338,11 @@
 								/>
 							</div>
 						{:else}
-							<CollapsibleValue value={member} maxLength={100} />
+							<CollapsibleValue
+								value={member}
+								maxLength={100}
+								highlight={memberHighlights[member]}
+							/>
 						{/if}
 						{#if !readOnly && showActions}
 							<ItemActions

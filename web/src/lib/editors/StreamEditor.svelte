@@ -16,7 +16,7 @@
 		showPaginationControls,
 		toastError
 	} from '$lib/utils';
-	import { LayoutList, Plus, Trash2, X } from '@lucide/svelte/icons';
+	import { Braces, LayoutList, Plus, RemoveFormatting, Trash2, X } from '@lucide/svelte/icons';
 	import { toast } from 'svelte-sonner';
 
 	interface Props {
@@ -48,6 +48,7 @@
 	// View state
 	let rawView = $state(false);
 	let showActions = $state(true);
+	let prettyPrint = $state(false);
 
 	// Add form state
 	let showAddForm = $state(false);
@@ -64,6 +65,39 @@
 	let pendingAddFields: Record<string, string> | null = null;
 
 	let rawJsonHtml = $derived(rawView ? highlightJson(JSON.stringify(entries, null, 2), true) : '');
+
+	function isJson(str: string): boolean {
+		if (!str || str.length < 2) return false;
+		const trimmed = str.trim();
+		if (
+			!(
+				(trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+				(trimmed.startsWith('[') && trimmed.endsWith(']'))
+			)
+		) {
+			return false;
+		}
+		try {
+			JSON.parse(str);
+			return true;
+		} catch {
+			return false;
+		}
+	}
+
+	// JSON highlighting for stream field values
+	let fieldHighlights = $derived.by(() => {
+		const highlights: Record<string, Record<string, string>> = {};
+		for (const entry of entries) {
+			highlights[entry.id] = {};
+			for (const [field, value] of Object.entries(entry.fields)) {
+				if (isJson(value)) {
+					highlights[entry.id][field] = highlightJson(value, prettyPrint);
+				}
+			}
+		}
+		return highlights;
+	});
 
 	function addField() {
 		streamFields = [...streamFields, { key: '', value: '' }];
@@ -185,6 +219,30 @@
 						Add Entry
 					</Button>
 				{/if}
+				<ButtonGroup.Root>
+					<Button
+						size="sm"
+						variant="outline"
+						onclick={() => (prettyPrint = false)}
+						disabled={rawView}
+						class="cursor-pointer {!prettyPrint ? 'bg-accent' : ''}"
+						title="Show compact JSON"
+						aria-label="Show compact JSON"
+					>
+						<RemoveFormatting class="h-4 w-4" />
+					</Button>
+					<Button
+						size="sm"
+						variant="outline"
+						onclick={() => (prettyPrint = true)}
+						disabled={rawView}
+						class="cursor-pointer {prettyPrint ? 'bg-accent' : ''}"
+						title="Show formatted JSON"
+						aria-label="Show formatted JSON"
+					>
+						<Braces class="h-4 w-4" />
+					</Button>
+				</ButtonGroup.Root>
 				<ButtonGroup.Root>
 					<Button
 						size="sm"
@@ -318,7 +376,11 @@
 							{#each Object.entries(entry.fields) as [field, val]}
 								<span class="font-mono text-muted-foreground">{field}</span>
 								<span class="font-mono">
-									<CollapsibleValue value={val} maxLength={150} />
+									<CollapsibleValue
+										value={val}
+										maxLength={150}
+										highlight={fieldHighlights[entry.id]?.[field]}
+									/>
 								</span>
 							{/each}
 						</div>

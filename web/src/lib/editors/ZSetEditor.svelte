@@ -25,7 +25,7 @@
 		showPaginationControls,
 		toastError
 	} from '$lib/utils';
-	import { Map, Minus, Plus, TableIcon } from '@lucide/svelte/icons';
+	import { Braces, Map, Minus, Plus, RemoveFormatting, TableIcon } from '@lucide/svelte/icons';
 	import { toast } from 'svelte-sonner';
 	import GeoMapView from './GeoMapView.svelte';
 
@@ -63,6 +63,7 @@
 	let rawView = $state(false);
 	let fullWidth = $state(false);
 	let showActions = $state(true);
+	let prettyPrint = $state(false);
 	let viewMode = $state<'zset' | 'geo'>('zset');
 	let geoMembers = $state<GeoMember[]>([]);
 	let geoDisplayMode = $state<'table' | 'map' | 'json'>('table');
@@ -99,6 +100,36 @@
 	let geoJsonHtml = $derived(
 		geoDisplayMode === 'json' ? highlightJson(JSON.stringify(geoMembers, null, 2), true) : ''
 	);
+
+	function isJson(str: string): boolean {
+		if (!str || str.length < 2) return false;
+		const trimmed = str.trim();
+		if (
+			!(
+				(trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+				(trimmed.startsWith('[') && trimmed.endsWith(']'))
+			)
+		) {
+			return false;
+		}
+		try {
+			JSON.parse(str);
+			return true;
+		} catch {
+			return false;
+		}
+	}
+
+	// JSON highlighting for zset members
+	let memberHighlights = $derived.by(() => {
+		const highlights: Record<string, string> = {};
+		for (const { member } of members) {
+			if (isJson(member)) {
+				highlights[member] = highlightJson(member, prettyPrint);
+			}
+		}
+		return highlights;
+	});
 
 	// Reload geo data when key changes or when members change (if in geo mode)
 	let previousKeyName: string | null = null;
@@ -409,13 +440,39 @@
 					<Button
 						size="sm"
 						variant="outline"
+						onclick={() => (prettyPrint = false)}
+						disabled={rawView || viewMode === 'geo'}
+						class="cursor-pointer {!prettyPrint ? 'bg-accent' : ''}"
+						title="Compact JSON"
+						aria-label="Compact JSON"
+					>
+						<RemoveFormatting class="h-4 w-4" />
+					</Button>
+					<Button
+						size="sm"
+						variant="outline"
+						onclick={() => (prettyPrint = true)}
+						disabled={rawView || viewMode === 'geo'}
+						class="cursor-pointer {prettyPrint ? 'bg-accent' : ''}"
+						title="Format JSON"
+						aria-label="Format JSON"
+					>
+						<Braces class="h-4 w-4" />
+					</Button>
+				</ButtonGroup.Root>
+				<ButtonGroup.Root>
+					<Button
+						size="sm"
+						variant="outline"
 						onclick={() => {
 							if (viewMode === 'geo') {
 								geoDisplayMode = 'map';
 							}
 						}}
 						disabled={viewMode === 'zset'}
-						class={viewMode === 'geo' && geoDisplayMode === 'map' ? 'bg-accent' : ''}
+						class="cursor-pointer {viewMode === 'geo' && geoDisplayMode === 'map'
+							? 'bg-accent'
+							: ''}"
 						title="Show on Map"
 						aria-label="Show on Map"
 					>
@@ -583,7 +640,7 @@
 												onCancel={cancelEditing}
 											/>
 										{:else}
-											<CollapsibleValue value={member} />
+											<CollapsibleValue value={member} highlight={memberHighlights[member]} />
 										{/if}
 									</Table.Cell>
 									<Table.Cell class="font-mono text-muted-foreground">
@@ -659,7 +716,7 @@
 											onCancel={cancelEditing}
 										/>
 									{:else}
-										<CollapsibleValue value={member} />
+										<CollapsibleValue value={member} highlight={memberHighlights[member]} />
 									{/if}
 								</Table.Cell>
 								<Table.Cell class="font-mono text-muted-foreground">

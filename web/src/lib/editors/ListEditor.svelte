@@ -16,7 +16,7 @@
 	import PaginationControls from '$lib/PaginationControls.svelte';
 	import TypeHeader from '$lib/TypeHeader.svelte';
 	import { highlightJson, isLargeValue, showPaginationControls, toastError } from '$lib/utils';
-	import { Plus, TableIcon } from '@lucide/svelte/icons';
+	import { Braces, Plus, RemoveFormatting, TableIcon } from '@lucide/svelte/icons';
 	import { toast } from 'svelte-sonner';
 
 	interface Props {
@@ -244,18 +244,30 @@
 						Add Item
 					</Button>
 				{/if}
-				{#if !rawView && Object.keys(listHighlights).length > 0}
+				<ButtonGroup.Root>
 					<Button
 						size="sm"
 						variant="outline"
-						onclick={() => (prettyPrint = !prettyPrint)}
-						class="cursor-pointer"
-						title={prettyPrint ? 'Show compact JSON' : 'Show formatted JSON'}
-						aria-label={prettyPrint ? 'Show compact JSON' : 'Show formatted JSON'}
+						onclick={() => (prettyPrint = false)}
+						disabled={rawView}
+						class="cursor-pointer {!prettyPrint ? 'bg-accent' : ''}"
+						title="Show compact JSON"
+						aria-label="Show compact JSON"
 					>
-						{prettyPrint ? 'Compact JSON' : 'Format JSON'}
+						<RemoveFormatting class="h-4 w-4" />
 					</Button>
-				{/if}
+					<Button
+						size="sm"
+						variant="outline"
+						onclick={() => (prettyPrint = true)}
+						disabled={rawView}
+						class="cursor-pointer {prettyPrint ? 'bg-accent' : ''}"
+						title="Show formatted JSON"
+						aria-label="Show formatted JSON"
+					>
+						<Braces class="h-4 w-4" />
+					</Button>
+				</ButtonGroup.Root>
 				<ButtonGroup.Root>
 					<Button
 						size="sm"

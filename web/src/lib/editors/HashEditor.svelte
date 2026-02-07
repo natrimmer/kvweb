@@ -15,7 +15,7 @@
 	import PaginationControls from '$lib/PaginationControls.svelte';
 	import TypeHeader from '$lib/TypeHeader.svelte';
 	import { highlightJson, isLargeValue, showPaginationControls, toastError } from '$lib/utils';
-	import { Plus, TableIcon } from '@lucide/svelte/icons';
+	import { Braces, Plus, RemoveFormatting, TableIcon } from '@lucide/svelte/icons';
 	import { toast } from 'svelte-sonner';
 
 	interface Props {
@@ -48,6 +48,7 @@
 	let rawView = $state(false);
 	let fullWidth = $state(false);
 	let showActions = $state(true);
+	let prettyPrint = $state(false);
 
 	// Add form state
 	let showAddForm = $state(false);
@@ -255,6 +256,30 @@
 					<Button
 						size="sm"
 						variant="outline"
+						onclick={() => (prettyPrint = false)}
+						disabled={rawView}
+						class="cursor-pointer {!prettyPrint ? 'bg-accent' : ''}"
+						title="Show compact JSON"
+						aria-label="Show compact JSON"
+					>
+						<RemoveFormatting class="h-4 w-4" />
+					</Button>
+					<Button
+						size="sm"
+						variant="outline"
+						onclick={() => (prettyPrint = true)}
+						disabled={rawView}
+						class="cursor-pointer {prettyPrint ? 'bg-accent' : ''}"
+						title="Show formatted JSON"
+						aria-label="Show formatted JSON"
+					>
+						<Braces class="h-4 w-4" />
+					</Button>
+				</ButtonGroup.Root>
+				<ButtonGroup.Root>
+					<Button
+						size="sm"
+						variant="outline"
 						onclick={() => (rawView = false)}
 						class="cursor-pointer {!rawView ? 'bg-accent' : ''}"
 						title="Show as Table"
@@ -362,7 +387,7 @@
 									{:else}
 										<CollapsibleValue
 											{value}
-											highlight={isJson(value) ? highlightJson(value, false) : undefined}
+											highlight={isJson(value) ? highlightJson(value, prettyPrint) : undefined}
 										/>
 									{/if}
 								</Table.Cell>
