@@ -36,6 +36,7 @@ Thumbs.db
 .direnv/
 logs/
 local/
+.pre-commit-config.yaml
 
 # AI
 .claude/
