@@ -486,10 +486,9 @@
 
 <ExpandedItemDialog
 	bind:open={expandedDialogOpen}
-	title="Hash Field '{expandedField}': {expandedValue.slice(0, 50)}{expandedValue.length > 50
-		? '...'
-		: ''}"
+	title="Hash Value"
 	value={expandedValue}
+	metadata={[{ label: 'Field', value: expandedField }]}
 	{readOnly}
 	onSave={saveExpandedEdit}
 	onCancel={closeExpandedView}

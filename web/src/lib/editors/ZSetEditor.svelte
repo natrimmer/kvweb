@@ -107,6 +107,9 @@
 	// Expanded view state
 	let expandedDialogOpen = $state(false);
 	let expandedMember = $state<string>('');
+	let expandedScore = $state<number>(0);
+	let expandedLongitude = $state<number>(0);
+	let expandedLatitude = $state<number>(0);
 
 	let rawJsonHtml = $derived(rawView ? highlightJson(JSON.stringify(members, null, 2), true) : '');
 	let geoJsonHtml = $derived(
@@ -411,8 +414,11 @@
 		}
 	}
 
-	function openExpandedView(member: string) {
+	function openExpandedView(member: string, score: number, longitude?: number, latitude?: number) {
 		expandedMember = member;
+		expandedScore = score;
+		expandedLongitude = longitude ?? 0;
+		expandedLatitude = latitude ?? 0;
 		expandedDialogOpen = true;
 	}
 
@@ -431,6 +437,9 @@
 	function closeExpandedView() {
 		expandedDialogOpen = false;
 		expandedMember = '';
+		expandedScore = 0;
+		expandedLongitude = 0;
+		expandedLatitude = 0;
 	}
 </script>
 
@@ -669,7 +678,7 @@
 										<Button
 											size="sm"
 											variant="outline"
-											onclick={() => openExpandedView(member)}
+											onclick={() => openExpandedView(member, 0, longitude, latitude)}
 											class="h-6 w-6 shrink-0 cursor-pointer p-0"
 											title="Expand to full view"
 											aria-label="Expand to full view"
@@ -772,7 +781,7 @@
 									<Button
 										size="sm"
 										variant="outline"
-										onclick={() => openExpandedView(member)}
+										onclick={() => openExpandedView(member, score)}
 										class="size-6 cursor-pointer"
 										title="Expand to full view"
 										aria-label="Expand to full view"
@@ -894,8 +903,14 @@
 
 <ExpandedItemDialog
 	bind:open={expandedDialogOpen}
-	title="ZSet Member: {expandedMember.slice(0, 50)}{expandedMember.length > 50 ? '...' : ''}"
+	title={viewMode === 'geo' ? 'Geo Member' : 'ZSet Member'}
 	value={expandedMember}
+	metadata={viewMode === 'geo'
+		? [
+				{ label: 'Longitude', value: formatCoordinate(expandedLongitude) },
+				{ label: 'Latitude', value: formatCoordinate(expandedLatitude) }
+			]
+		: [{ label: 'Score', value: String(expandedScore) }]}
 	{readOnly}
 	onSave={saveExpandedEdit}
 	onCancel={closeExpandedView}

@@ -15,9 +15,20 @@
 		readOnly: boolean;
 		onSave?: (value: string) => Promise<void>;
 		onCancel: () => void;
+		metadata?: Array<{ label: string; value: string }>;
+		fields?: Record<string, string>;
 	}
 
-	let { open = $bindable(), title, value, readOnly, onSave, onCancel }: Props = $props();
+	let {
+		open = $bindable(),
+		title,
+		value,
+		readOnly,
+		onSave,
+		onCancel,
+		metadata,
+		fields
+	}: Props = $props();
 
 	// Editor state
 	let editMode = $state(false);
@@ -65,6 +76,18 @@
 			return highlightJson(editValue, prettyPrint);
 		}
 		return '';
+	});
+
+	// Per-field JSON highlighting for structured fields view
+	let fieldHighlightsMap = $derived.by(() => {
+		if (!fields) return {};
+		const highlights: Record<string, string> = {};
+		for (const [key, val] of Object.entries(fields)) {
+			if (isJson(val)) {
+				highlights[key] = highlightJson(val, prettyPrint);
+			}
+		}
+		return highlights;
 	});
 
 	let valueStats = $derived.by(() => {
@@ -131,6 +154,17 @@
 			</Dialog.Description>
 		</Dialog.Header>
 
+		{#if metadata && metadata.length > 0}
+			<div class="mb-4 flex flex-wrap gap-3">
+				{#each metadata as item}
+					<div class="flex items-baseline gap-1.5 text-sm">
+						<span class="text-muted-foreground">{item.label}:</span>
+						<span class="font-mono">{item.value}</span>
+					</div>
+				{/each}
+			</div>
+		{/if}
+
 		<div class="mb-4 flex items-center justify-between gap-2">
 			<div class="flex-1"></div>
 			{#if isJsonValue}
@@ -159,7 +193,7 @@
 					</Button>
 				</ButtonGroup.Root>
 			{/if}
-			{#if !readOnly}
+			{#if !readOnly && !fields}
 				<ButtonGroup.Root>
 					<Button
 						size="sm"
@@ -186,7 +220,25 @@
 		</div>
 
 		<div class="min-h-0 flex-1 overflow-auto">
-			{#if !editMode && isJsonValue && highlightedHtml}
+			{#if !editMode && fields}
+				<!-- Structured fields view (e.g. stream entries) -->
+				<div class="rounded border border-border bg-muted/50 p-4">
+					<div class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+						{#each Object.entries(fields) as [field, val]}
+							<span class="font-mono text-muted-foreground">{field}</span>
+							<span class="font-mono">
+								{#if fieldHighlightsMap[field]}
+									<div class="[&>pre]:m-0 [&>pre]:bg-transparent [&>pre]:p-0 [&>pre]:text-sm">
+										{@html fieldHighlightsMap[field]}
+									</div>
+								{:else}
+									<span class="break-all whitespace-pre-wrap">{val}</span>
+								{/if}
+							</span>
+						{/each}
+					</div>
+				</div>
+			{:else if !editMode && isJsonValue && highlightedHtml}
 				<!-- View mode: JSON highlighted -->
 				<div
 					class="rounded border border-border bg-muted/50 [&>pre]:m-0 [&>pre]:min-h-full [&>pre]:p-4 [&>pre]:text-sm"

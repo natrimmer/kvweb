@@ -467,10 +467,9 @@
 
 <ExpandedItemDialog
 	bind:open={expandedDialogOpen}
-	title="List Item [{expandedIndex}]: {expandedItem.slice(0, 50)}{expandedItem.length > 50
-		? '...'
-		: ''}"
+	title="List Item"
 	value={expandedItem}
+	metadata={[{ label: 'Index', value: String(expandedIndex) }]}
 	{readOnly}
 	onSave={saveExpandedEdit}
 	onCancel={closeExpandedView}

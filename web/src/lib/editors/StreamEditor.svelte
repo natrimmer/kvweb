@@ -75,7 +75,8 @@
 	// Expanded view state
 	let expandedDialogOpen = $state(false);
 	let expandedValue = $state<string>('');
-	let expandedTitle = $state<string>('');
+	let expandedEntryId = $state<string>('');
+	let expandedFields = $state<Record<string, string> | undefined>(undefined);
 
 	let rawJsonHtml = $derived(rawView ? highlightJson(JSON.stringify(entries, null, 2), true) : '');
 
@@ -207,16 +208,18 @@
 		}
 	}
 
-	function openExpandedView(title: string, value: string) {
-		expandedTitle = title;
-		expandedValue = value;
+	function openExpandedView(entryId: string, entryFields: Record<string, string>) {
+		expandedEntryId = entryId;
+		expandedFields = entryFields;
+		expandedValue = JSON.stringify(entryFields, null, 2);
 		expandedDialogOpen = true;
 	}
 
 	function closeExpandedView() {
 		expandedDialogOpen = false;
 		expandedValue = '';
-		expandedTitle = '';
+		expandedEntryId = '';
+		expandedFields = undefined;
 	}
 </script>
 
@@ -386,8 +389,7 @@
 							<Button
 								size="sm"
 								variant="outline"
-								onclick={() =>
-									openExpandedView(`Entry ${entry.id}`, JSON.stringify(entry.fields, null, 2))}
+								onclick={() => openExpandedView(entry.id, entry.fields)}
 								class="h-6 w-6 shrink-0 cursor-pointer p-0"
 								title="Expand to full view"
 								aria-label="Expand to full view"
@@ -458,8 +460,10 @@
 
 <ExpandedItemDialog
 	bind:open={expandedDialogOpen}
-	title={expandedTitle}
+	title="Stream Entry"
 	value={expandedValue}
+	metadata={[{ label: 'ID', value: expandedEntryId }]}
+	fields={expandedFields}
 	readOnly={true}
 	onCancel={closeExpandedView}
 />
