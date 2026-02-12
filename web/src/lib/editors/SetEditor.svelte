@@ -103,6 +103,8 @@
 		return highlights;
 	});
 
+	let hasAnyJson = $derived(members.some((m) => isJson(m)));
+
 	async function addItem() {
 		if (!addMember.trim()) {
 			toast.error('Member cannot be empty');
@@ -261,30 +263,32 @@
 						Add Member
 					</Button>
 				{/if}
-				<ButtonGroup.Root>
-					<Button
-						size="sm"
-						variant="outline"
-						onclick={() => (prettyPrint = false)}
-						disabled={rawView}
-						class="cursor-pointer {!prettyPrint ? 'bg-accent' : ''}"
-						title="Show compact JSON"
-						aria-label="Show compact JSON"
-					>
-						<RemoveFormatting class="h-4 w-4" />
-					</Button>
-					<Button
-						size="sm"
-						variant="outline"
-						onclick={() => (prettyPrint = true)}
-						disabled={rawView}
-						class="cursor-pointer {prettyPrint ? 'bg-accent' : ''}"
-						title="Show formatted JSON"
-						aria-label="Show formatted JSON"
-					>
-						<Braces class="h-4 w-4" />
-					</Button>
-				</ButtonGroup.Root>
+				{#if hasAnyJson}
+					<ButtonGroup.Root>
+						<Button
+							size="sm"
+							variant="outline"
+							onclick={() => (prettyPrint = false)}
+							disabled={rawView}
+							class="cursor-pointer {!prettyPrint ? 'bg-accent' : ''}"
+							title="Show compact JSON"
+							aria-label="Show compact JSON"
+						>
+							<RemoveFormatting class="h-4 w-4" />
+						</Button>
+						<Button
+							size="sm"
+							variant="outline"
+							onclick={() => (prettyPrint = true)}
+							disabled={rawView}
+							class="cursor-pointer {prettyPrint ? 'bg-accent' : ''}"
+							title="Show formatted JSON"
+							aria-label="Show formatted JSON"
+						>
+							<Braces class="h-4 w-4" />
+						</Button>
+					</ButtonGroup.Root>
+				{/if}
 				<ButtonGroup.Root>
 					<Button
 						size="sm"

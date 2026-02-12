@@ -146,6 +146,8 @@
 		return highlights;
 	});
 
+	let hasAnyJson = $derived(members.some(({ member }) => isJson(member)));
+
 	// Reload geo data when key changes or when members change (if in geo mode)
 	let previousKeyName: string | null = null;
 	let previousMembersLength = 0;
@@ -479,30 +481,32 @@
 				>
 					{viewMode === 'zset' ? 'View as Geo' : 'View as ZSet'}
 				</Button>
-				<ButtonGroup.Root>
-					<Button
-						size="sm"
-						variant="outline"
-						onclick={() => (prettyPrint = false)}
-						disabled={rawView || viewMode === 'geo'}
-						class="cursor-pointer {!prettyPrint ? 'bg-accent' : ''}"
-						title="Compact JSON"
-						aria-label="Compact JSON"
-					>
-						<RemoveFormatting class="h-4 w-4" />
-					</Button>
-					<Button
-						size="sm"
-						variant="outline"
-						onclick={() => (prettyPrint = true)}
-						disabled={rawView || viewMode === 'geo'}
-						class="cursor-pointer {prettyPrint ? 'bg-accent' : ''}"
-						title="Format JSON"
-						aria-label="Format JSON"
-					>
-						<Braces class="h-4 w-4" />
-					</Button>
-				</ButtonGroup.Root>
+				{#if hasAnyJson}
+					<ButtonGroup.Root>
+						<Button
+							size="sm"
+							variant="outline"
+							onclick={() => (prettyPrint = false)}
+							disabled={rawView}
+							class="cursor-pointer {!prettyPrint ? 'bg-accent' : ''}"
+							title="Compact JSON"
+							aria-label="Compact JSON"
+						>
+							<RemoveFormatting class="h-4 w-4" />
+						</Button>
+						<Button
+							size="sm"
+							variant="outline"
+							onclick={() => (prettyPrint = true)}
+							disabled={rawView}
+							class="cursor-pointer {prettyPrint ? 'bg-accent' : ''}"
+							title="Format JSON"
+							aria-label="Format JSON"
+						>
+							<Braces class="h-4 w-4" />
+						</Button>
+					</ButtonGroup.Root>
+				{/if}
 				<ButtonGroup.Root>
 					<Button
 						size="sm"

@@ -70,6 +70,7 @@
 	}
 
 	let isJsonValue = $derived(isJson(editValue));
+	let hasAnyJson = $derived(fields ? Object.values(fields).some((v) => isJson(v)) : isJsonValue);
 
 	let highlightedHtml = $derived.by(() => {
 		if (isJsonValue) {
@@ -167,7 +168,7 @@
 
 		<div class="mb-4 flex items-center justify-between gap-2">
 			<div class="flex-1"></div>
-			{#if isJsonValue}
+			{#if hasAnyJson}
 				<ButtonGroup.Root>
 					<Button
 						size="sm"

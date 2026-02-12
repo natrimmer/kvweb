@@ -111,6 +111,8 @@
 		}
 	}
 
+	let hasAnyJson = $derived(fields.some(({ value }) => isJson(value)));
+
 	function startEditingValue(field: string, value: string) {
 		editMode = 'value';
 		editingField = field;
@@ -281,30 +283,32 @@
 						Add Field
 					</Button>
 				{/if}
-				<ButtonGroup.Root>
-					<Button
-						size="sm"
-						variant="outline"
-						onclick={() => (prettyPrint = false)}
-						disabled={rawView}
-						class="cursor-pointer {!prettyPrint ? 'bg-accent' : ''}"
-						title="Show compact JSON"
-						aria-label="Show compact JSON"
-					>
-						<RemoveFormatting class="h-4 w-4" />
-					</Button>
-					<Button
-						size="sm"
-						variant="outline"
-						onclick={() => (prettyPrint = true)}
-						disabled={rawView}
-						class="cursor-pointer {prettyPrint ? 'bg-accent' : ''}"
-						title="Show formatted JSON"
-						aria-label="Show formatted JSON"
-					>
-						<Braces class="h-4 w-4" />
-					</Button>
-				</ButtonGroup.Root>
+				{#if hasAnyJson}
+					<ButtonGroup.Root>
+						<Button
+							size="sm"
+							variant="outline"
+							onclick={() => (prettyPrint = false)}
+							disabled={rawView}
+							class="cursor-pointer {!prettyPrint ? 'bg-accent' : ''}"
+							title="Show compact JSON"
+							aria-label="Show compact JSON"
+						>
+							<RemoveFormatting class="h-4 w-4" />
+						</Button>
+						<Button
+							size="sm"
+							variant="outline"
+							onclick={() => (prettyPrint = true)}
+							disabled={rawView}
+							class="cursor-pointer {prettyPrint ? 'bg-accent' : ''}"
+							title="Show formatted JSON"
+							aria-label="Show formatted JSON"
+						>
+							<Braces class="h-4 w-4" />
+						</Button>
+					</ButtonGroup.Root>
+				{/if}
 				<ButtonGroup.Root>
 					<Button
 						size="sm"
