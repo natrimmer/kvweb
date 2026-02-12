@@ -34,10 +34,16 @@ func main() {
 	flag.Int64Var(&cfg.MaxKeys, "max-keys", 0, "Limit SCAN count per request (0 = no limit)")
 	flag.BoolVar(&cfg.Notifications, "notifications", false, "Auto-enable Valkey keyspace notifications for live updates")
 	showVersion := flag.Bool("version", false, "Show version")
+	help := flag.Bool("help", false, "Show help")
 	flag.Parse()
 
 	if *showVersion {
 		fmt.Printf("kvweb %s (%s)\n", version, commit)
+		os.Exit(0)
+	}
+
+	if *help {
+		flag.Usage()
 		os.Exit(0)
 	}
 
