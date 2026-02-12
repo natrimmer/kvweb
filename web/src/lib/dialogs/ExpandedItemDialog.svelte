@@ -175,7 +175,7 @@
 						variant="outline"
 						onclick={() => (prettyPrint = false)}
 						disabled={editMode}
-						class="cursor-pointer {!prettyPrint ? 'bg-accent' : ''}"
+						class={!prettyPrint ? 'bg-accent' : ''}
 						title="Show compact JSON"
 						aria-label="Show compact JSON"
 					>
@@ -186,7 +186,7 @@
 						variant="outline"
 						onclick={() => (prettyPrint = true)}
 						disabled={editMode}
-						class="cursor-pointer {prettyPrint ? 'bg-accent' : ''}"
+						class={prettyPrint ? 'bg-accent' : ''}
 						title="Show formatted JSON"
 						aria-label="Show formatted JSON"
 					>
@@ -200,7 +200,7 @@
 						size="sm"
 						variant="outline"
 						onclick={() => (editMode = false)}
-						class="cursor-pointer {!editMode ? 'bg-accent' : ''}"
+						class={!editMode ? 'bg-accent' : ''}
 						title="View mode"
 						aria-label="View mode"
 					>
@@ -210,7 +210,7 @@
 						size="sm"
 						variant="outline"
 						onclick={() => (editMode = true)}
-						class="cursor-pointer {editMode ? 'bg-accent' : ''}"
+						class={editMode ? 'bg-accent' : ''}
 						title="Edit mode"
 						aria-label="Edit mode"
 					>

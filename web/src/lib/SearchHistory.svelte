@@ -80,7 +80,7 @@
 			<span class="text-xs text-muted-foreground">Recent searches</span>
 			<button
 				type="button"
-				class="cursor-pointer text-xs text-muted-foreground hover:text-destructive"
+				class="text-xs text-muted-foreground hover:text-destructive"
 				onmousedown={() => clearHistory()}
 				title="Clear search history"
 				aria-label="Clear search history"
@@ -92,7 +92,7 @@
 			<div class="group flex items-center hover:bg-muted">
 				<button
 					type="button"
-					class="flex flex-1 cursor-pointer items-center gap-2 px-3 py-2 text-left font-mono text-sm"
+					class="flex flex-1 items-center gap-2 px-3 py-2 text-left font-mono text-sm"
 					onmousedown={() => selectHistory(h)}
 					title="Use this search pattern"
 					aria-label="Use this search pattern"
@@ -104,7 +104,7 @@
 				</button>
 				<button
 					type="button"
-					class="cursor-pointer px-2 py-1 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive"
+					class="px-2 py-1 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive"
 					onmousedown={() => removeFromHistory(h)}
 					title="Remove from history"
 					aria-label="Remove from history"

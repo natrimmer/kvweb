@@ -133,7 +133,6 @@
 				size="sm"
 				onclick={loadInfo}
 				disabled={loading}
-				class="cursor-pointer"
 				title="Refresh server info"
 				aria-label="Refresh server info"
 			>
@@ -147,7 +146,6 @@
 								variant="destructive"
 								size="sm"
 								{...props}
-								class="cursor-pointer"
 								title="Delete all keys in database"
 							>
 								Flush Database
@@ -175,7 +173,7 @@
 				size="sm"
 				onclick={toggleNotifications}
 				disabled={enablingNotifications}
-				class="cursor-pointer hover:bg-accent"
+				class="hover:bg-accent"
 				title={notificationsEnabled
 					? 'Disable Valkey keyspace notifications (stops real-time updates)'
 					: 'Enable Valkey keyspace notifications at runtime (enables real-time key change updates)'}

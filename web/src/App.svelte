@@ -136,7 +136,7 @@
 		<button
 			type="button"
 			onclick={resetToHome}
-			class="group flex cursor-pointer items-center gap-2 text-xl font-semibold text-foreground transition-colors hover:text-primary"
+			class="group flex items-center gap-2 text-xl font-semibold text-foreground transition-colors hover:text-primary"
 			title="Return to home"
 		>
 			<Logo size={24} class="text-primary transition-colors group-hover:text-primary" />

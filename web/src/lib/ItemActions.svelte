@@ -39,7 +39,7 @@
 			disabled={saving}
 			title="Save"
 			aria-label="Save"
-			class="h-8 w-8 cursor-pointer p-0"
+			class="h-8 w-8 p-0"
 		>
 			<Check class="h-4 w-4" />
 		</Button>
@@ -49,7 +49,7 @@
 			onclick={onCancel}
 			title="Cancel"
 			aria-label="Cancel"
-			class="h-8 w-8 cursor-pointer p-0"
+			class="h-8 w-8 p-0"
 		>
 			<X class="h-4 w-4" />
 		</Button>
@@ -61,7 +61,7 @@
 				onclick={onEdit}
 				title={editLabel}
 				aria-label={editLabel}
-				class="h-8 w-8 cursor-pointer p-0"
+				class="h-8 w-8 p-0"
 			>
 				<Pencil class="h-4 w-4" />
 			</Button>
@@ -73,7 +73,7 @@
 				onclick={onRename}
 				title={renameLabel}
 				aria-label={renameLabel}
-				class="h-8 w-8 cursor-pointer p-0"
+				class="h-8 w-8 p-0"
 			>
 				<FileEdit class="h-4 w-4" />
 			</Button>
@@ -85,7 +85,7 @@
 				onclick={onDelete}
 				title="Delete"
 				aria-label="Delete"
-				class="h-8 w-8 cursor-pointer p-0 text-destructive hover:text-destructive"
+				class="h-8 w-8 p-0 text-destructive hover:text-destructive"
 			>
 				<Trash2 class="h-4 w-4" />
 			</Button>

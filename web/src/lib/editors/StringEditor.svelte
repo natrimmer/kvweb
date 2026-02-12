@@ -137,7 +137,6 @@
 						variant="outline"
 						onclick={() => increment(-1)}
 						disabled={saving}
-						class="cursor-pointer"
 						title="Decrement by 1"
 						aria-label="Decrement by 1"
 					>
@@ -148,7 +147,6 @@
 						variant="outline"
 						onclick={() => increment(1)}
 						disabled={saving}
-						class="cursor-pointer"
 						title="Increment by 1"
 						aria-label="Increment by 1"
 					>
@@ -161,7 +159,6 @@
 					size="sm"
 					onclick={saveValue}
 					disabled={saving}
-					class="cursor-pointer"
 					title={`Save changes (${formatShortcut('S', true)})`}
 					aria-label="Save changes"
 				>
@@ -175,7 +172,7 @@
 						variant="outline"
 						onclick={() => (prettyPrint = false)}
 						disabled={stringEditMode}
-						class="cursor-pointer {!prettyPrint ? 'bg-accent' : ''}"
+						class={!prettyPrint ? 'bg-accent' : ''}
 						title="Show compact JSON"
 						aria-label="Show compact JSON"
 					>
@@ -186,7 +183,7 @@
 						variant="outline"
 						onclick={() => (prettyPrint = true)}
 						disabled={stringEditMode}
-						class="cursor-pointer {prettyPrint ? 'bg-accent' : ''}"
+						class={prettyPrint ? 'bg-accent' : ''}
 						title="Show formatted JSON"
 						aria-label="Show formatted JSON"
 					>
@@ -200,7 +197,7 @@
 						size="sm"
 						variant="outline"
 						onclick={() => (stringEditMode = false)}
-						class="cursor-pointer {!stringEditMode ? 'bg-accent' : ''}"
+						class={!stringEditMode ? 'bg-accent' : ''}
 						title="View mode"
 						aria-label="View mode"
 					>
@@ -210,7 +207,7 @@
 						size="sm"
 						variant="outline"
 						onclick={() => (stringEditMode = true)}
-						class="cursor-pointer {stringEditMode ? 'bg-accent' : ''}"
+						class={stringEditMode ? 'bg-accent' : ''}
 						title="Edit mode"
 						aria-label="Edit mode"
 					>

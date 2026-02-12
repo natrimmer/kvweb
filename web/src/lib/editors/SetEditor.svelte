@@ -255,7 +255,6 @@
 						size="sm"
 						variant="outline"
 						onclick={() => (showAddForm = true)}
-						class="cursor-pointer"
 						title="Add member to set"
 						aria-label="Add member to set"
 					>
@@ -270,7 +269,7 @@
 							variant="outline"
 							onclick={() => (prettyPrint = false)}
 							disabled={rawView}
-							class="cursor-pointer {!prettyPrint ? 'bg-accent' : ''}"
+							class={!prettyPrint ? 'bg-accent' : ''}
 							title="Show compact JSON"
 							aria-label="Show compact JSON"
 						>
@@ -281,7 +280,7 @@
 							variant="outline"
 							onclick={() => (prettyPrint = true)}
 							disabled={rawView}
-							class="cursor-pointer {prettyPrint ? 'bg-accent' : ''}"
+							class={prettyPrint ? 'bg-accent' : ''}
 							title="Show formatted JSON"
 							aria-label="Show formatted JSON"
 						>
@@ -294,7 +293,7 @@
 						size="sm"
 						variant="outline"
 						onclick={() => (rawView = false)}
-						class="cursor-pointer {!rawView ? 'bg-accent' : ''}"
+						class={!rawView ? 'bg-accent' : ''}
 						title="Show as List"
 						aria-label="Show as List"
 					>
@@ -304,7 +303,7 @@
 						size="sm"
 						variant="outline"
 						onclick={() => (rawView = true)}
-						class="cursor-pointer {rawView ? 'bg-accent' : ''}"
+						class={rawView ? 'bg-accent' : ''}
 						title="Show as Raw JSON"
 						aria-label="Show as Raw JSON"
 					>
@@ -363,7 +362,7 @@
 							size="sm"
 							variant="outline"
 							onclick={() => openExpandedView(member)}
-							class="h-6 w-6 shrink-0 cursor-pointer p-0"
+							class="h-6 w-6 shrink-0 p-0"
 							title="Expand to full view"
 							aria-label="Expand to full view"
 						>

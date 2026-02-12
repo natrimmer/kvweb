@@ -59,7 +59,7 @@
 				disabled={page === 1}
 				title="First page"
 				aria-label="First page"
-				class="size-9 cursor-pointer p-0"
+				class="size-9 p-0"
 			>
 				<ChevronsLeft class="h-4 w-4" />
 			</Button>
@@ -70,7 +70,7 @@
 				disabled={page === 1}
 				title="Previous page"
 				aria-label="Previous page"
-				class="size-9 cursor-pointer p-0"
+				class="size-9 p-0"
 			>
 				<ChevronLeft class="h-4 w-4" />
 			</Button>
@@ -87,7 +87,7 @@
 				disabled={page >= totalPages}
 				title="Next page"
 				aria-label="Next page"
-				class="size-9 cursor-pointer p-0"
+				class="size-9 p-0"
 			>
 				<ChevronRight class="h-4 w-4" />
 			</Button>
@@ -98,7 +98,7 @@
 				disabled={page >= totalPages}
 				title="Last page"
 				aria-label="Last page"
-				class="size-9 cursor-pointer p-0"
+				class="size-9 p-0"
 			>
 				<ChevronsRight class="h-4 w-4" />
 			</Button>

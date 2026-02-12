@@ -16,7 +16,7 @@
 	<Button
 		size="sm"
 		variant="outline"
-		class="cursor-pointer {fullWidth ? 'bg-accent' : ''}"
+		class={fullWidth ? 'bg-accent' : ''}
 		onclick={() => onToggle(true)}
 		title="Full width"
 		aria-label="Full width"
@@ -27,7 +27,7 @@
 	<Button
 		size="sm"
 		variant="outline"
-		class="cursor-pointer {!fullWidth ? 'bg-accent' : ''}"
+		class={!fullWidth ? 'bg-accent' : ''}
 		onclick={() => onToggle(false)}
 		title="Fit content"
 		aria-label="Fit content"

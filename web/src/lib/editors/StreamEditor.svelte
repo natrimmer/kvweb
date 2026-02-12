@@ -241,7 +241,6 @@
 						size="sm"
 						variant="outline"
 						onclick={() => (showAddForm = true)}
-						class="cursor-pointer"
 						title="Add entry to stream"
 						aria-label="Add entry to stream"
 					>
@@ -256,7 +255,7 @@
 							variant="outline"
 							onclick={() => (prettyPrint = false)}
 							disabled={rawView}
-							class="cursor-pointer {!prettyPrint ? 'bg-accent' : ''}"
+							class={!prettyPrint ? 'bg-accent' : ''}
 							title="Show compact JSON"
 							aria-label="Show compact JSON"
 						>
@@ -267,7 +266,7 @@
 							variant="outline"
 							onclick={() => (prettyPrint = true)}
 							disabled={rawView}
-							class="cursor-pointer {prettyPrint ? 'bg-accent' : ''}"
+							class={prettyPrint ? 'bg-accent' : ''}
 							title="Show formatted JSON"
 							aria-label="Show formatted JSON"
 						>
@@ -280,7 +279,7 @@
 						size="sm"
 						variant="outline"
 						onclick={() => (rawView = false)}
-						class="cursor-pointer {!rawView ? 'bg-accent' : ''}"
+						class={!rawView ? 'bg-accent' : ''}
 						title="Show as Cards"
 						aria-label="Show as Cards"
 					>
@@ -290,7 +289,7 @@
 						size="sm"
 						variant="outline"
 						onclick={() => (rawView = true)}
-						class="cursor-pointer {rawView ? 'bg-accent' : ''}"
+						class={rawView ? 'bg-accent' : ''}
 						title="Show as Raw JSON"
 						aria-label="Show as Raw JSON"
 					>
@@ -317,7 +316,7 @@
 								onclick={() => removeField(i)}
 								title="Remove field"
 								aria-label="Remove field"
-								class="h-8 w-8 cursor-pointer p-0"
+								class="h-8 w-8 p-0"
 							>
 								<X class="h-4 w-4" />
 							</Button>
@@ -329,7 +328,6 @@
 						size="sm"
 						variant="outline"
 						onclick={addField}
-						class="cursor-pointer"
 						title="Add another field"
 						aria-label="Add another field"
 					>
@@ -341,7 +339,6 @@
 						size="sm"
 						onclick={addItem}
 						disabled={adding}
-						class="cursor-pointer"
 						title="Add entry"
 						aria-label="Add entry"
 					>
@@ -356,7 +353,6 @@
 						}}
 						title="Cancel"
 						aria-label="Cancel"
-						class="cursor-pointer"
 					>
 						<X class="h-4 w-4" />
 					</Button>
@@ -394,7 +390,7 @@
 								size="sm"
 								variant="outline"
 								onclick={() => openExpandedView(entry.id, entry.fields)}
-								class="h-6 w-6 shrink-0 cursor-pointer p-0"
+								class="h-6 w-6 shrink-0 p-0"
 								title="Expand to full view"
 								aria-label="Expand to full view"
 							>
@@ -411,7 +407,7 @@
 										onclick={() => openDeleteDialog(entry.id)}
 										title="Delete entry"
 										aria-label="Delete entry"
-										class="h-6 w-6 cursor-pointer p-0 text-destructive hover:text-destructive"
+										class="h-6 w-6 p-0 text-destructive hover:text-destructive"
 									>
 										<Trash2 class="h-4 w-4" />
 									</Button>

@@ -80,7 +80,6 @@
 						size="sm"
 						variant="outline"
 						onclick={() => (showAddForm = true)}
-						class="cursor-pointer"
 						title="Add element to HyperLogLog"
 						aria-label="Add element to HyperLogLog"
 					>

@@ -138,7 +138,7 @@
 						disabled={renamingKey}
 						title="Save key name"
 						aria-label="Save key name"
-						class="h-8 cursor-pointer"
+						class="h-8"
 					>
 						{#if renamingKey}
 							...
@@ -153,7 +153,7 @@
 						disabled={renamingKey}
 						title="Cancel rename"
 						aria-label="Cancel rename"
-						class="h-8 cursor-pointer"
+						class="h-8"
 					>
 						<X class="size-4" />
 					</Button>
@@ -173,7 +173,7 @@
 							onclick={startEditingTtl}
 							title="Edit TTL"
 							aria-label="Edit TTL"
-							class="ml-1 cursor-pointer text-muted-foreground hover:text-foreground"
+							class="ml-1 text-muted-foreground hover:text-foreground"
 						>
 							<Pencil class="inline h-3 w-3" />
 						</button>
@@ -201,7 +201,7 @@
 						disabled={updatingTtl}
 						title="Save TTL"
 						aria-label="Save TTL"
-						class="h-8 cursor-pointer"
+						class="h-8"
 					>
 						{#if updatingTtl}
 							...
@@ -215,7 +215,7 @@
 						onclick={cancelEditingTtl}
 						title="Cancel TTL edit"
 						aria-label="Cancel TTL edit"
-						class="h-8 cursor-pointer"
+						class="h-8"
 					>
 						<X class="size-4" />
 					</Button>
@@ -229,7 +229,6 @@
 			disabled={loading}
 			title="Refresh key data"
 			aria-label="Refresh key data"
-			class="cursor-pointer"
 		>
 			<RefreshCw class={loading ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} />
 		</Button>
@@ -240,7 +239,6 @@
 				onclick={copyKeyName}
 				title="Copy key name to clipboard"
 				aria-label="Copy key name to clipboard"
-				class="cursor-pointer"
 			>
 				{#if copiedKey}
 					<Check class="h-4 w-4 text-primary" />
@@ -255,7 +253,6 @@
 				onclick={handleCopyValue}
 				title="Copy value to clipboard"
 				aria-label="Copy value to clipboard"
-				class="cursor-pointer"
 			>
 				{#if copiedValue}
 					<Check class="h-4 w-4 text-primary" />
@@ -273,7 +270,7 @@
 					onclick={handleRenameClick}
 					title="Rename this key"
 					aria-label="Rename this key"
-					class="shrink-0 cursor-pointer"
+					class="shrink-0"
 				>
 					Rename
 				</Button>
@@ -281,7 +278,7 @@
 					variant="destructive"
 					size="sm"
 					onclick={onDelete}
-					class="shrink-0 cursor-pointer"
+					class="shrink-0"
 					title={`Delete this key (${formatShortcut('Delete')})`}
 					aria-label="Delete this key"
 				>
@@ -295,7 +292,7 @@
 			onclick={onToggleTypeHeader}
 			aria-label={typeHeaderExpanded ? 'Collapse type controls' : 'Expand type controls'}
 			title={typeHeaderExpanded ? 'Collapse type controls' : 'Expand type controls'}
-			class="shrink-0 cursor-pointer text-muted-foreground hover:text-foreground"
+			class="shrink-0 text-muted-foreground hover:text-foreground"
 		>
 			{#if typeHeaderExpanded}
 				<ChevronUp class="h-5 w-5" />

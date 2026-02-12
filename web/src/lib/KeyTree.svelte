@@ -75,7 +75,7 @@
 				variant="ghost"
 				size="sm"
 				onclick={navigateBack}
-				class="cursor-pointer px-2"
+				class="px-2"
 				title="Go back"
 				aria-label="Go back"
 			>
@@ -85,7 +85,7 @@
 				variant="ghost"
 				size="sm"
 				onclick={navigateToRoot}
-				class="cursor-pointer px-2"
+				class="px-2"
 				title="Go to root"
 				aria-label="Go to root"
 			>
@@ -98,7 +98,6 @@
 		<Button
 			size="sm"
 			onclick={onclose}
-			class="cursor-pointer"
 			title="Switch to list view"
 			aria-label="Switch to list view"
 		>
@@ -116,7 +115,7 @@
 				<li>
 					<Button
 						variant="ghost"
-						class="w-full cursor-pointer justify-start rounded p-2 font-mono text-sm text-foreground hover:bg-primary/10 {entry.isLeaf &&
+						class="w-full justify-start rounded p-2 font-mono text-sm text-foreground hover:bg-primary/10 {entry.isLeaf &&
 						entry.fullKey === selected
 							? 'bg-primary/20 hover:bg-primary/20'
 							: ''}"

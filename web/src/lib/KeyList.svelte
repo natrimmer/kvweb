@@ -254,7 +254,7 @@
 				<Button
 					variant="outline"
 					onclick={() => (useRegex = !useRegex)}
-					class="cursor-pointer {useRegex ? 'bg-accent' : ''}"
+					class={useRegex ? 'bg-accent' : ''}
 					title={useRegex ? 'Regex mode (click for glob)' : 'Glob mode (click for regex)'}
 					aria-label={useRegex ? 'Regex mode (click for glob)' : 'Glob mode (click for regex)'}
 				>
@@ -263,7 +263,6 @@
 				<Button
 					variant="outline"
 					onclick={() => (viewMode = 'tree')}
-					class="cursor-pointer"
 					title="Switch to tree view"
 					aria-label="Switch to tree view"
 				>
@@ -272,7 +271,7 @@
 				<Button
 					variant="outline"
 					onclick={() => (showFilters = !showFilters)}
-					class="cursor-pointer {showFilters ? 'bg-accent' : ''}"
+					class={showFilters ? 'bg-accent' : ''}
 					title="Toggle filters"
 					aria-label="Toggle filters"
 				>
@@ -306,7 +305,6 @@
 				<Button
 					variant="outline"
 					onclick={() => (sortAsc = !sortAsc)}
-					class="cursor-pointer"
 					title={sortAsc
 						? 'Sorting ascending (click for descending)'
 						: 'Sorting descending (click for ascending)'}
@@ -336,7 +334,7 @@
 					<Button
 						variant="outline"
 						size="sm"
-						class="cursor-pointer hover:bg-accent"
+						class="hover:bg-accent"
 						onclick={() => (showAddDialog = true)}
 					>
 						<CirclePlus /> New Key
@@ -373,7 +371,7 @@
 						<li class={hasTtlBoundary ? 'mb-1 border-b border-border pb-1' : ''}>
 							<Button
 								variant="ghost"
-								class="w-full cursor-pointer justify-start overflow-hidden rounded p-2 font-mono text-sm text-ellipsis whitespace-nowrap text-foreground hover:bg-primary/10 {item.key ===
+								class="w-full justify-start overflow-hidden rounded p-2 font-mono text-sm text-ellipsis whitespace-nowrap text-foreground hover:bg-primary/10 {item.key ===
 								selected
 									? 'bg-primary/20 hover:bg-primary/20'
 									: ''}"
@@ -468,7 +466,7 @@
 			<Button
 				variant="ghost"
 				size="sm"
-				class="h-7 cursor-pointer text-muted-foreground hover:text-foreground"
+				class="h-7 text-muted-foreground hover:text-foreground"
 				onclick={() => (showSettings = true)}
 				title="Settings and server info"
 				aria-label="Settings and server info"

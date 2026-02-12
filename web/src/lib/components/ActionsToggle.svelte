@@ -17,7 +17,7 @@
 	<Button
 		size="sm"
 		variant="outline"
-		class="cursor-pointer {showActions ? 'bg-accent' : ''}"
+		class={showActions ? 'bg-accent' : ''}
 		onclick={() => onToggle(true)}
 		title="Show actions"
 		aria-label="Show actions"
@@ -28,7 +28,7 @@
 	<Button
 		size="sm"
 		variant="outline"
-		class="cursor-pointer {!showActions ? 'bg-accent' : ''}"
+		class={!showActions ? 'bg-accent' : ''}
 		onclick={() => onToggle(false)}
 		title="Hide actions"
 		aria-label="Hide actions"

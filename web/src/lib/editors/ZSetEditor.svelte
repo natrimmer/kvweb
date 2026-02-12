@@ -461,7 +461,6 @@
 						size="sm"
 						variant="outline"
 						onclick={() => (showAddForm = true)}
-						class="cursor-pointer"
 						title={viewMode === 'geo' ? 'Add location to geo index' : 'Add member to sorted set'}
 						aria-label={viewMode === 'geo'
 							? 'Add location to geo index'
@@ -475,7 +474,6 @@
 					size="sm"
 					variant="outline"
 					onclick={toggleGeoView}
-					class="cursor-pointer"
 					title={viewMode === 'zset' ? 'View as geo coordinates' : 'View as sorted set scores'}
 					aria-label={viewMode === 'zset' ? 'View as geo coordinates' : 'View as sorted set scores'}
 				>
@@ -488,7 +486,7 @@
 							variant="outline"
 							onclick={() => (prettyPrint = false)}
 							disabled={rawView}
-							class="cursor-pointer {!prettyPrint ? 'bg-accent' : ''}"
+							class={!prettyPrint ? 'bg-accent' : ''}
 							title="Compact JSON"
 							aria-label="Compact JSON"
 						>
@@ -499,7 +497,7 @@
 							variant="outline"
 							onclick={() => (prettyPrint = true)}
 							disabled={rawView}
-							class="cursor-pointer {prettyPrint ? 'bg-accent' : ''}"
+							class={prettyPrint ? 'bg-accent' : ''}
 							title="Format JSON"
 							aria-label="Format JSON"
 						>
@@ -517,9 +515,7 @@
 							}
 						}}
 						disabled={viewMode === 'zset'}
-						class="cursor-pointer {viewMode === 'geo' && geoDisplayMode === 'map'
-							? 'bg-accent'
-							: ''}"
+						class={viewMode === 'geo' && geoDisplayMode === 'map' ? 'bg-accent' : ''}
 						title="Show on Map"
 						aria-label="Show on Map"
 					>
@@ -535,10 +531,10 @@
 								rawView = false;
 							}
 						}}
-						class="cursor-pointer {(viewMode === 'zset' && !rawView) ||
+						class={(viewMode === 'zset' && !rawView) ||
 						(viewMode === 'geo' && geoDisplayMode === 'table')
 							? 'bg-accent'
-							: ''}"
+							: ''}
 						title="Show as Table"
 						aria-label="Show as Table"
 					>
@@ -554,10 +550,10 @@
 								geoDisplayMode = 'json';
 							}
 						}}
-						class="cursor-pointer {(viewMode === 'zset' && rawView) ||
+						class={(viewMode === 'zset' && rawView) ||
 						(viewMode === 'geo' && geoDisplayMode === 'json')
 							? 'bg-accent'
-							: ''}"
+							: ''}
 						title="Show as Raw JSON"
 						aria-label="Show as Raw JSON"
 					>
@@ -683,7 +679,7 @@
 											size="sm"
 											variant="outline"
 											onclick={() => openExpandedView(member, 0, longitude, latitude)}
-											class="h-6 w-6 shrink-0 cursor-pointer p-0"
+											class="h-6 w-6 shrink-0 p-0"
 											title="Expand to full view"
 											aria-label="Expand to full view"
 										>
@@ -786,7 +782,7 @@
 										size="sm"
 										variant="outline"
 										onclick={() => openExpandedView(member, score)}
-										class="size-6 cursor-pointer"
+										class="size-6"
 										title="Expand to full view"
 										aria-label="Expand to full view"
 									>
@@ -837,7 +833,7 @@
 													variant="ghost"
 													onclick={() => incrementScore(member, -1)}
 													disabled={saving}
-													class="h-6 w-6 cursor-pointer p-0"
+													class="h-6 w-6 p-0"
 													title="Decrement score by 1"
 													aria-label="Decrement score by 1"
 												>
@@ -853,7 +849,7 @@
 													variant="ghost"
 													onclick={() => incrementScore(member, 1)}
 													disabled={saving}
-													class="h-6 w-6 cursor-pointer p-0"
+													class="h-6 w-6 p-0"
 													title="Increment score by 1"
 													aria-label="Increment score by 1"
 												>
