@@ -37,6 +37,8 @@ Thumbs.db
 .devenv.flake.nix
 .direnv/
 logs/
+local/
 
 # AI
 .claude/
+CLAUDE.md
