@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"os/signal"
+	"runtime"
 	"syscall"
 
 	"github.com/gnat/kvweb/internal/config"
@@ -57,6 +59,16 @@ func main() {
 	// Create and start server
 	srv := server.New(cfg, client)
 
+	// Open browser if requested
+	if cfg.OpenBrowser {
+		url := fmt.Sprintf("http://%s:%d", cfg.Host, cfg.Port)
+		go func() {
+			if err := openBrowser(url); err != nil {
+				log.Printf("Failed to open browser: %v", err)
+			}
+		}()
+	}
+
 	// Graceful shutdown
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
@@ -74,4 +86,23 @@ func main() {
 	if err := srv.Start(); err != nil {
 		log.Fatalf("Server error: %v", err)
 	}
+}
+
+func openBrowser(url string) error {
+	var cmd string
+	var args []string
+
+	switch os := runtime.GOOS; os {
+	case "darwin":
+		cmd = "open"
+		args = []string{url}
+	case "windows":
+		cmd = "rundll32"
+		args = []string{"url.dll,FileProtocolHandler", url}
+	default: // Linux and others
+		cmd = "xdg-open"
+		args = []string{url}
+	}
+
+	return exec.Command(cmd, args...).Start()
 }
