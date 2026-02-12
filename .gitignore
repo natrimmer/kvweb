@@ -17,8 +17,6 @@ web/dist/
 
 # Built frontend (keep placeholder)
 static/dist/*
-!static/dist/index.html
-!static/dist/favicon.svg
 
 # IDE
 .zed/
