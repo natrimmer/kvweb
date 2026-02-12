@@ -1,7 +1,6 @@
 <script lang="ts">
 	import AddItemForm from '$lib/AddItemForm.svelte';
 	import { api, type HashPair, type PaginationInfo } from '$lib/api';
-	import CollapsibleValue from '$lib/CollapsibleValue.svelte';
 	import ActionsToggle from '$lib/components/ActionsToggle.svelte';
 	import TableWidthToggle from '$lib/components/TableWidthToggle.svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -9,13 +8,20 @@
 	import { Input } from '$lib/components/ui/input';
 	import * as Table from '$lib/components/ui/table';
 	import DeleteItemDialog from '$lib/dialogs/DeleteItemDialog.svelte';
+	import ExpandedItemDialog from '$lib/dialogs/ExpandedItemDialog.svelte';
 	import LargeValueWarningDialog from '$lib/dialogs/LargeValueWarningDialog.svelte';
 	import InlineEditor from '$lib/InlineEditor.svelte';
 	import ItemActions from '$lib/ItemActions.svelte';
 	import PaginationControls from '$lib/PaginationControls.svelte';
 	import TypeHeader from '$lib/TypeHeader.svelte';
 	import { highlightJson, isLargeValue, showPaginationControls, toastError } from '$lib/utils';
-	import { Braces, Plus, RemoveFormatting, TableIcon } from '@lucide/svelte/icons';
+	import {
+		Braces,
+		ChevronsLeftRight,
+		Plus,
+		RemoveFormatting,
+		TableIcon
+	} from '@lucide/svelte/icons';
 	import { toast } from 'svelte-sonner';
 
 	interface Props {
@@ -71,6 +77,11 @@
 	let largeValueSize = $state(0);
 	let pendingAddField: { field: string; value: string } | null = null;
 	let pendingEditField: { field: string; value: string } | null = null;
+
+	// Expanded view state
+	let expandedDialogOpen = $state(false);
+	let expandedValue = $state<string>('');
+	let expandedField = $state<string>('');
 
 	let rawJsonHtml = $derived.by(() => {
 		if (!rawView) return '';
@@ -226,6 +237,24 @@
 			deleteTarget = null;
 		}
 	}
+
+	function openExpandedView(field: string, value: string) {
+		expandedField = field;
+		expandedValue = value;
+		expandedDialogOpen = true;
+	}
+
+	async function saveExpandedEdit(newValue: string) {
+		if (!expandedField) return;
+		await api.hashSet(keyName, expandedField, newValue);
+		onDataChange();
+	}
+
+	function closeExpandedView() {
+		expandedDialogOpen = false;
+		expandedValue = '';
+		expandedField = '';
+	}
 </script>
 
 <div class="flex min-h-0 flex-1 flex-col">
@@ -354,6 +383,7 @@
 				<Table.Root class="table-auto">
 					<Table.Header>
 						<Table.Row>
+							<Table.Head class="w-8"></Table.Head>
 							<Table.Head class="w-auto">Field</Table.Head>
 							<Table.Head class="w-auto">Value</Table.Head>
 							{#if !readOnly && showActions}
@@ -364,6 +394,18 @@
 					<Table.Body>
 						{#each fields as { field, value }}
 							<Table.Row>
+								<Table.Cell class="align-top">
+									<Button
+										size="sm"
+										variant="outline"
+										onclick={() => openExpandedView(field, value)}
+										class="h-6 w-6 shrink-0 cursor-pointer p-0"
+										title="Expand to full view"
+										aria-label="Expand to full view"
+									>
+										<ChevronsLeftRight class="h-3 w-3" />
+									</Button>
+								</Table.Cell>
 								<Table.Cell class="align-top font-mono text-muted-foreground">
 									{#if editMode === 'field' && editingField === field}
 										<InlineEditor
@@ -385,10 +427,21 @@
 											onCancel={cancelEditing}
 										/>
 									{:else}
-										<CollapsibleValue
-											{value}
-											highlight={isJson(value) ? highlightJson(value, prettyPrint) : undefined}
-										/>
+										<div class="flex items-center gap-1">
+											{#if isJson(value)}
+												<!-- JSON value with highlighting -->
+												<div
+													class="[&>pre]:m-0 [&>pre]:overflow-hidden [&>pre]:bg-transparent [&>pre]:p-0 [&>pre]:text-sm [&>pre]:text-ellipsis [&>pre]:whitespace-nowrap"
+												>
+													{@html highlightJson(value, prettyPrint)}
+												</div>
+											{:else}
+												<!-- Plain text value -->
+												<span class="break-all">
+													{value.length > 100 ? value.slice(0, 100) + '…' : value}
+												</span>
+											{/if}
+										</div>
 									{/if}
 								</Table.Cell>
 								{#if !readOnly && showActions}
@@ -429,4 +482,15 @@
 	valueSize={largeValueSize}
 	onConfirm={confirmLargeValue}
 	onCancel={cancelLargeValue}
+/>
+
+<ExpandedItemDialog
+	bind:open={expandedDialogOpen}
+	title="Hash Field '{expandedField}': {expandedValue.slice(0, 50)}{expandedValue.length > 50
+		? '...'
+		: ''}"
+	value={expandedValue}
+	{readOnly}
+	onSave={saveExpandedEdit}
+	onCancel={closeExpandedView}
 />

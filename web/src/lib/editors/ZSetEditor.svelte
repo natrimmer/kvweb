@@ -1,7 +1,6 @@
 <script lang="ts">
 	import AddItemForm from '$lib/AddItemForm.svelte';
 	import { api, type GeoMember, type PaginationInfo, type ZSetMember } from '$lib/api';
-	import CollapsibleValue from '$lib/CollapsibleValue.svelte';
 	import ActionsToggle from '$lib/components/ActionsToggle.svelte';
 	import TableWidthToggle from '$lib/components/TableWidthToggle.svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -9,6 +8,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import * as Table from '$lib/components/ui/table';
 	import DeleteItemDialog from '$lib/dialogs/DeleteItemDialog.svelte';
+	import ExpandedItemDialog from '$lib/dialogs/ExpandedItemDialog.svelte';
 	import LargeValueWarningDialog from '$lib/dialogs/LargeValueWarningDialog.svelte';
 	import InlineEditor from '$lib/InlineEditor.svelte';
 	import ItemActions from '$lib/ItemActions.svelte';
@@ -25,7 +25,15 @@
 		showPaginationControls,
 		toastError
 	} from '$lib/utils';
-	import { Braces, Map, Minus, Plus, RemoveFormatting, TableIcon } from '@lucide/svelte/icons';
+	import {
+		Braces,
+		ChevronsLeftRight,
+		Map,
+		Minus,
+		Plus,
+		RemoveFormatting,
+		TableIcon
+	} from '@lucide/svelte/icons';
 	import { toast } from 'svelte-sonner';
 	import GeoMapView from './GeoMapView.svelte';
 
@@ -95,6 +103,10 @@
 	let largeValueSize = $state(0);
 	let pendingAddMember: string | null = null;
 	let pendingEditMember: { old: string; new: string } | null = null;
+
+	// Expanded view state
+	let expandedDialogOpen = $state(false);
+	let expandedMember = $state<string>('');
 
 	let rawJsonHtml = $derived(rawView ? highlightJson(JSON.stringify(members, null, 2), true) : '');
 	let geoJsonHtml = $derived(
@@ -398,6 +410,28 @@
 			saving = false;
 		}
 	}
+
+	function openExpandedView(member: string) {
+		expandedMember = member;
+		expandedDialogOpen = true;
+	}
+
+	async function saveExpandedEdit(newValue: string) {
+		if (!expandedMember) return;
+		if (!newValue.trim()) {
+			throw new Error('Member cannot be empty');
+		}
+		if (newValue === expandedMember) {
+			return;
+		}
+		await api.zsetRename(keyName, expandedMember, newValue.trim());
+		onDataChange();
+	}
+
+	function closeExpandedView() {
+		expandedDialogOpen = false;
+		expandedMember = '';
+	}
 </script>
 
 <div class="flex min-h-0 flex-1 flex-col">
@@ -619,6 +653,7 @@
 					<Table.Root class="table-auto">
 						<Table.Header>
 							<Table.Row>
+								<Table.Head class="w-8"></Table.Head>
 								<Table.Head class="w-auto">Member</Table.Head>
 								<Table.Head class="w-36">Longitude</Table.Head>
 								<Table.Head class="w-36">Latitude</Table.Head>
@@ -630,6 +665,18 @@
 						<Table.Body>
 							{#each geoMembers as { member, longitude, latitude }}
 								<Table.Row>
+									<Table.Cell class="align-top">
+										<Button
+											size="sm"
+											variant="outline"
+											onclick={() => openExpandedView(member)}
+											class="h-6 w-6 shrink-0 cursor-pointer p-0"
+											title="Expand to full view"
+											aria-label="Expand to full view"
+										>
+											<ChevronsLeftRight class="h-3 w-3" />
+										</Button>
+									</Table.Cell>
 									<Table.Cell class="font-mono">
 										{#if editMode === 'member' && editingMember === member}
 											<InlineEditor
@@ -640,7 +687,21 @@
 												onCancel={cancelEditing}
 											/>
 										{:else}
-											<CollapsibleValue value={member} highlight={memberHighlights[member]} />
+											<div class="flex items-center gap-1">
+												{#if memberHighlights[member]}
+													<!-- JSON value with highlighting -->
+													<div
+														class="[&>pre]:m-0 [&>pre]:overflow-hidden [&>pre]:bg-transparent [&>pre]:p-0 [&>pre]:text-sm [&>pre]:text-ellipsis [&>pre]:whitespace-nowrap"
+													>
+														{@html memberHighlights[member]}
+													</div>
+												{:else}
+													<!-- Plain text value -->
+													<span class="break-all">
+														{member.length > 100 ? member.slice(0, 100) + '…' : member}
+													</span>
+												{/if}
+											</div>
 										{/if}
 									</Table.Cell>
 									<Table.Cell class="font-mono text-muted-foreground">
@@ -696,6 +757,7 @@
 				<Table.Root class="table-auto">
 					<Table.Header>
 						<Table.Row>
+							<Table.Head class="w-8"></Table.Head>
 							<Table.Head class="w-auto">Member</Table.Head>
 							<Table.Head class="w-32">Score</Table.Head>
 							{#if !readOnly && showActions}
@@ -706,6 +768,18 @@
 					<Table.Body>
 						{#each members as { member, score }}
 							<Table.Row>
+								<Table.Cell>
+									<Button
+										size="sm"
+										variant="outline"
+										onclick={() => openExpandedView(member)}
+										class="size-6 cursor-pointer"
+										title="Expand to full view"
+										aria-label="Expand to full view"
+									>
+										<ChevronsLeftRight class="h-3 w-3" />
+									</Button>
+								</Table.Cell>
 								<Table.Cell class="font-mono">
 									{#if editMode === 'member' && editingMember === member}
 										<InlineEditor
@@ -716,7 +790,21 @@
 											onCancel={cancelEditing}
 										/>
 									{:else}
-										<CollapsibleValue value={member} highlight={memberHighlights[member]} />
+										<div class="flex items-center gap-1">
+											{#if memberHighlights[member]}
+												<!-- JSON value with highlighting -->
+												<div
+													class="[&>pre]:m-0 [&>pre]:overflow-hidden [&>pre]:bg-transparent [&>pre]:p-0 [&>pre]:text-sm [&>pre]:text-ellipsis [&>pre]:whitespace-nowrap"
+												>
+													{@html memberHighlights[member]}
+												</div>
+											{:else}
+												<!-- Plain text value -->
+												<span class="break-all">
+													{member.length > 100 ? member.slice(0, 100) + '…' : member}
+												</span>
+											{/if}
+										</div>
 									{/if}
 								</Table.Cell>
 								<Table.Cell class="font-mono text-muted-foreground">
@@ -802,4 +890,13 @@
 	valueSize={largeValueSize}
 	onConfirm={confirmLargeValue}
 	onCancel={cancelLargeValue}
+/>
+
+<ExpandedItemDialog
+	bind:open={expandedDialogOpen}
+	title="ZSet Member: {expandedMember.slice(0, 50)}{expandedMember.length > 50 ? '...' : ''}"
+	value={expandedMember}
+	{readOnly}
+	onSave={saveExpandedEdit}
+	onCancel={closeExpandedView}
 />

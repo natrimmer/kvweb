@@ -1,19 +1,19 @@
 <script lang="ts">
 	import AddItemForm from '$lib/AddItemForm.svelte';
 	import { api, type PaginationInfo } from '$lib/api';
-	import CollapsibleValue from '$lib/CollapsibleValue.svelte';
 	import ActionsToggle from '$lib/components/ActionsToggle.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as ButtonGroup from '$lib/components/ui/button-group';
 	import { Input } from '$lib/components/ui/input';
 	import DeleteItemDialog from '$lib/dialogs/DeleteItemDialog.svelte';
+	import ExpandedItemDialog from '$lib/dialogs/ExpandedItemDialog.svelte';
 	import LargeValueWarningDialog from '$lib/dialogs/LargeValueWarningDialog.svelte';
 	import InlineEditor from '$lib/InlineEditor.svelte';
 	import ItemActions from '$lib/ItemActions.svelte';
 	import PaginationControls from '$lib/PaginationControls.svelte';
 	import TypeHeader from '$lib/TypeHeader.svelte';
 	import { highlightJson, isLargeValue, showPaginationControls, toastError } from '$lib/utils';
-	import { Braces, List, Plus, RemoveFormatting } from '@lucide/svelte/icons';
+	import { Braces, ChevronsLeftRight, List, Plus, RemoveFormatting } from '@lucide/svelte/icons';
 	import { toast } from 'svelte-sonner';
 
 	interface Props {
@@ -66,6 +66,10 @@
 	let largeValueSize = $state(0);
 	let pendingAddMember: string | null = null;
 	let pendingEditMember: { old: string; new: string } | null = null;
+
+	// Expanded view state
+	let expandedDialogOpen = $state(false);
+	let expandedMember = $state<string>('');
 
 	let rawJsonHtml = $derived(rawView ? highlightJson(JSON.stringify(members, null, 2), true) : '');
 
@@ -209,6 +213,28 @@
 			deleteTarget = null;
 		}
 	}
+
+	function openExpandedView(member: string) {
+		expandedMember = member;
+		expandedDialogOpen = true;
+	}
+
+	async function saveExpandedEdit(newValue: string) {
+		if (!expandedMember) return;
+		if (!newValue.trim()) {
+			throw new Error('Member cannot be empty');
+		}
+		if (newValue === expandedMember) {
+			return;
+		}
+		await api.setRename(keyName, expandedMember, newValue.trim());
+		onDataChange();
+	}
+
+	function closeExpandedView() {
+		expandedDialogOpen = false;
+		expandedMember = '';
+	}
 </script>
 
 <div class="flex min-h-0 flex-1 flex-col">
@@ -329,6 +355,16 @@
 					<div
 						class="flex items-center justify-between gap-2 rounded bg-muted px-2 py-1 font-mono text-sm"
 					>
+						<Button
+							size="sm"
+							variant="outline"
+							onclick={() => openExpandedView(member)}
+							class="h-6 w-6 shrink-0 cursor-pointer p-0"
+							title="Expand to full view"
+							aria-label="Expand to full view"
+						>
+							<ChevronsLeftRight class="h-3 w-3" />
+						</Button>
 						{#if editingMember === member}
 							<div class="flex-1">
 								<InlineEditor
@@ -338,11 +374,21 @@
 								/>
 							</div>
 						{:else}
-							<CollapsibleValue
-								value={member}
-								maxLength={100}
-								highlight={memberHighlights[member]}
-							/>
+							<div class="flex flex-1 items-center gap-1">
+								{#if memberHighlights[member]}
+									<!-- JSON value with highlighting -->
+									<div
+										class="[&>pre]:m-0 [&>pre]:overflow-hidden [&>pre]:bg-transparent [&>pre]:p-0 [&>pre]:text-sm [&>pre]:text-ellipsis [&>pre]:whitespace-nowrap"
+									>
+										{@html memberHighlights[member]}
+									</div>
+								{:else}
+									<!-- Plain text value -->
+									<span class="font-mono text-sm break-all">
+										{member.length > 100 ? member.slice(0, 100) + '…' : member}
+									</span>
+								{/if}
+							</div>
 						{/if}
 						{#if !readOnly && showActions}
 							<ItemActions
@@ -375,4 +421,13 @@
 	valueSize={largeValueSize}
 	onConfirm={confirmLargeValue}
 	onCancel={cancelLargeValue}
+/>
+
+<ExpandedItemDialog
+	bind:open={expandedDialogOpen}
+	title="Set Member: {expandedMember.slice(0, 50)}{expandedMember.length > 50 ? '...' : ''}"
+	value={expandedMember}
+	{readOnly}
+	onSave={saveExpandedEdit}
+	onCancel={closeExpandedView}
 />

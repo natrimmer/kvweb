@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { api, type PaginationInfo, type StreamEntry } from '$lib/api';
-	import CollapsibleValue from '$lib/CollapsibleValue.svelte';
 	import ActionsToggle from '$lib/components/ActionsToggle.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as ButtonGroup from '$lib/components/ui/button-group';
 	import { Input } from '$lib/components/ui/input';
 	import DeleteItemDialog from '$lib/dialogs/DeleteItemDialog.svelte';
+	import ExpandedItemDialog from '$lib/dialogs/ExpandedItemDialog.svelte';
 	import LargeValueWarningDialog from '$lib/dialogs/LargeValueWarningDialog.svelte';
 	import PaginationControls from '$lib/PaginationControls.svelte';
 	import TypeHeader from '$lib/TypeHeader.svelte';
@@ -16,7 +16,15 @@
 		showPaginationControls,
 		toastError
 	} from '$lib/utils';
-	import { Braces, LayoutList, Plus, RemoveFormatting, Trash2, X } from '@lucide/svelte/icons';
+	import {
+		Braces,
+		ChevronsLeftRight,
+		LayoutList,
+		Plus,
+		RemoveFormatting,
+		Trash2,
+		X
+	} from '@lucide/svelte/icons';
 	import { toast } from 'svelte-sonner';
 
 	interface Props {
@@ -63,6 +71,11 @@
 	let largeValueWarningOpen = $state(false);
 	let largeValueSize = $state(0);
 	let pendingAddFields: Record<string, string> | null = null;
+
+	// Expanded view state
+	let expandedDialogOpen = $state(false);
+	let expandedValue = $state<string>('');
+	let expandedTitle = $state<string>('');
 
 	let rawJsonHtml = $derived(rawView ? highlightJson(JSON.stringify(entries, null, 2), true) : '');
 
@@ -192,6 +205,18 @@
 			deleteDialogOpen = false;
 			deleteTarget = null;
 		}
+	}
+
+	function openExpandedView(title: string, value: string) {
+		expandedTitle = title;
+		expandedValue = value;
+		expandedDialogOpen = true;
+	}
+
+	function closeExpandedView() {
+		expandedDialogOpen = false;
+		expandedValue = '';
+		expandedTitle = '';
 	}
 </script>
 
@@ -356,33 +381,58 @@
 		{:else}
 			<div class="flex flex-col gap-2">
 				{#each entries as entry}
-					<div class="rounded border border-border p-3">
-						<div class="mb-2 flex items-center justify-between gap-2">
-							<div class="font-mono text-xs text-muted-foreground">{entry.id}</div>
-							{#if !readOnly && showActions}
-								<Button
-									size="sm"
-									variant="ghost"
-									onclick={() => openDeleteDialog(entry.id)}
-									title="Delete entry"
-									aria-label="Delete entry"
-									class="h-6 w-6 cursor-pointer p-0 text-destructive hover:text-destructive"
-								>
-									<Trash2 class="h-4 w-4" />
-								</Button>
-							{/if}
+					<div class="flex gap-2 rounded border border-border p-3">
+						<div class="flex items-start pt-0.5">
+							<Button
+								size="sm"
+								variant="outline"
+								onclick={() =>
+									openExpandedView(`Entry ${entry.id}`, JSON.stringify(entry.fields, null, 2))}
+								class="h-6 w-6 shrink-0 cursor-pointer p-0"
+								title="Expand to full view"
+								aria-label="Expand to full view"
+							>
+								<ChevronsLeftRight class="h-3 w-3" />
+							</Button>
 						</div>
-						<div class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-							{#each Object.entries(entry.fields) as [field, val]}
-								<span class="font-mono text-muted-foreground">{field}</span>
-								<span class="font-mono">
-									<CollapsibleValue
-										value={val}
-										maxLength={150}
-										highlight={fieldHighlights[entry.id]?.[field]}
-									/>
-								</span>
-							{/each}
+						<div class="flex-1">
+							<div class="mb-2 flex items-center justify-between gap-2">
+								<div class="font-mono text-xs text-muted-foreground">{entry.id}</div>
+								{#if !readOnly && showActions}
+									<Button
+										size="sm"
+										variant="ghost"
+										onclick={() => openDeleteDialog(entry.id)}
+										title="Delete entry"
+										aria-label="Delete entry"
+										class="h-6 w-6 cursor-pointer p-0 text-destructive hover:text-destructive"
+									>
+										<Trash2 class="h-4 w-4" />
+									</Button>
+								{/if}
+							</div>
+							<div class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+								{#each Object.entries(entry.fields) as [field, val]}
+									<span class="font-mono text-muted-foreground">{field}</span>
+									<span class="font-mono">
+										<div class="flex items-center gap-1">
+											{#if fieldHighlights[entry.id]?.[field]}
+												<!-- JSON value with highlighting -->
+												<div
+													class="[&>pre]:m-0 [&>pre]:overflow-hidden [&>pre]:bg-transparent [&>pre]:p-0 [&>pre]:text-sm [&>pre]:text-ellipsis [&>pre]:whitespace-nowrap"
+												>
+													{@html fieldHighlights[entry.id][field]}
+												</div>
+											{:else}
+												<!-- Plain text value -->
+												<span class="break-all">
+													{val.length > 100 ? val.slice(0, 100) + '…' : val}
+												</span>
+											{/if}
+										</div>
+									</span>
+								{/each}
+							</div>
 						</div>
 					</div>
 				{/each}
@@ -404,4 +454,12 @@
 	valueSize={largeValueSize}
 	onConfirm={confirmLargeValue}
 	onCancel={cancelLargeValue}
+/>
+
+<ExpandedItemDialog
+	bind:open={expandedDialogOpen}
+	title={expandedTitle}
+	value={expandedValue}
+	readOnly={true}
+	onCancel={closeExpandedView}
 />

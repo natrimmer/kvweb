@@ -126,6 +126,11 @@ if [[ "$TYPE" == "all" || "$TYPE" == "set" ]]; then
         '{"id":"a","name":"first"}' \
         '{"id":"b","name":"second"}' \
         '{"id":"c","name":"third"}'
+
+    # Large value for testing expanded view
+    $CLI SADD "set:large" \
+        "short value" \
+        '{"id":"large","description":"This is a large JSON object with lots of nested data for testing the expanded item view dialog","user":{"id":12345,"username":"testuser","profile":{"firstName":"Test","lastName":"User","email":"test@example.com","preferences":{"theme":"dark","notifications":{"email":true,"push":false,"sms":true},"privacy":{"showProfile":true,"showActivity":false}},"bio":"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."},"activity":{"lastLogin":"2024-01-15T10:30:00Z","loginCount":1523,"posts":[{"id":1,"title":"First post","content":"This is my first post with a long description","tags":["intro","test"]},{"id":2,"title":"Second post","content":"Another post with more content","tags":["update","news"]}]}},"metadata":{"created":"2023-01-01T00:00:00Z","updated":"2024-01-15T10:30:00Z","version":3,"flags":{"premium":true,"verified":true,"beta":false}}}'
 fi
 
 # ===================

@@ -1,7 +1,6 @@
 <script lang="ts">
 	import AddItemForm from '$lib/AddItemForm.svelte';
 	import { api, type PaginationInfo } from '$lib/api';
-	import CollapsibleValue from '$lib/CollapsibleValue.svelte';
 	import ActionsToggle from '$lib/components/ActionsToggle.svelte';
 	import TableWidthToggle from '$lib/components/TableWidthToggle.svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -10,13 +9,20 @@
 	import * as Select from '$lib/components/ui/select';
 	import * as Table from '$lib/components/ui/table';
 	import DeleteItemDialog from '$lib/dialogs/DeleteItemDialog.svelte';
+	import ExpandedItemDialog from '$lib/dialogs/ExpandedItemDialog.svelte';
 	import LargeValueWarningDialog from '$lib/dialogs/LargeValueWarningDialog.svelte';
 	import InlineEditor from '$lib/InlineEditor.svelte';
 	import ItemActions from '$lib/ItemActions.svelte';
 	import PaginationControls from '$lib/PaginationControls.svelte';
 	import TypeHeader from '$lib/TypeHeader.svelte';
 	import { highlightJson, isLargeValue, showPaginationControls, toastError } from '$lib/utils';
-	import { Braces, Plus, RemoveFormatting, TableIcon } from '@lucide/svelte/icons';
+	import {
+		Braces,
+		ChevronsLeftRight,
+		Plus,
+		RemoveFormatting,
+		TableIcon
+	} from '@lucide/svelte/icons';
 	import { toast } from 'svelte-sonner';
 
 	interface Props {
@@ -71,6 +77,11 @@
 	let largeValueSize = $state(0);
 	let pendingAddValue: string | null = null;
 	let pendingEditValue: { index: number; value: string } | null = null;
+
+	// Expanded view state
+	let expandedDialogOpen = $state(false);
+	let expandedItem = $state<string>('');
+	let expandedIndex = $state<number>(-1);
 
 	const positionOptions = [
 		{ value: 'tail', label: 'Append (tail)' },
@@ -218,6 +229,24 @@
 			deleteTarget = null;
 		}
 	}
+
+	function openExpandedView(index: number, item: string) {
+		expandedIndex = index;
+		expandedItem = item;
+		expandedDialogOpen = true;
+	}
+
+	async function saveExpandedEdit(newValue: string) {
+		if (expandedIndex === -1) return;
+		await api.listSet(keyName, expandedIndex, newValue);
+		onDataChange();
+	}
+
+	function closeExpandedView() {
+		expandedDialogOpen = false;
+		expandedItem = '';
+		expandedIndex = -1;
+	}
 </script>
 
 <div class="flex min-h-0 flex-1 flex-col">
@@ -348,6 +377,7 @@
 				<Table.Root class="table-auto">
 					<Table.Header>
 						<Table.Row>
+							<Table.Head class="w-8"></Table.Head>
 							<Table.Head class="w-16">Index</Table.Head>
 							<Table.Head class="w-auto">Value</Table.Head>
 							{#if !readOnly && showActions}
@@ -359,6 +389,18 @@
 						{#each items as item, i}
 							{@const realIndex = (currentPage - 1) * pageSize + i}
 							<Table.Row>
+								<Table.Cell class="align-top">
+									<Button
+										size="sm"
+										variant="outline"
+										onclick={() => openExpandedView(realIndex, item)}
+										class="h-6 w-6 shrink-0 cursor-pointer p-0"
+										title="Expand to full view"
+										aria-label="Expand to full view"
+									>
+										<ChevronsLeftRight class="h-3 w-3" />
+									</Button>
+								</Table.Cell>
 								<Table.Cell class="align-top font-mono text-muted-foreground"
 									>{realIndex}</Table.Cell
 								>
@@ -370,7 +412,21 @@
 											onCancel={cancelEditing}
 										/>
 									{:else}
-										<CollapsibleValue value={item} highlight={listHighlights[i]} />
+										<div class="flex items-center gap-1">
+											{#if listHighlights[i]}
+												<!-- JSON value with highlighting -->
+												<div
+													class="[&>pre]:m-0 [&>pre]:overflow-hidden [&>pre]:bg-transparent [&>pre]:p-0 [&>pre]:text-sm [&>pre]:text-ellipsis [&>pre]:whitespace-nowrap"
+												>
+													{@html listHighlights[i]}
+												</div>
+											{:else}
+												<!-- Plain text value -->
+												<span class="break-all">
+													{item.length > 100 ? item.slice(0, 100) + '…' : item}
+												</span>
+											{/if}
+										</div>
 									{/if}
 								</Table.Cell>
 								{#if !readOnly && showActions}
@@ -407,4 +463,15 @@
 	valueSize={largeValueSize}
 	onConfirm={confirmLargeValue}
 	onCancel={cancelLargeValue}
+/>
+
+<ExpandedItemDialog
+	bind:open={expandedDialogOpen}
+	title="List Item [{expandedIndex}]: {expandedItem.slice(0, 50)}{expandedItem.length > 50
+		? '...'
+		: ''}"
+	value={expandedItem}
+	{readOnly}
+	onSave={saveExpandedEdit}
+	onCancel={closeExpandedView}
 />
