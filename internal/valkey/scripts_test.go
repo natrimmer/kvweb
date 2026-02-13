@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gnat/kvweb/internal/config"
+	"github.com/natrimmer/kvweb/internal/config"
 )
 
 // TestLuaScripts tests all Lua script operations

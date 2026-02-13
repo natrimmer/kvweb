@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gnat/kvweb/internal/config"
+	"github.com/natrimmer/kvweb/internal/config"
 	"github.com/valkey-io/valkey-go"
 )
 

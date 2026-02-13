@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
-	"github.com/gnat/kvweb/internal/api"
-	"github.com/gnat/kvweb/internal/config"
-	"github.com/gnat/kvweb/internal/valkey"
-	"github.com/gnat/kvweb/internal/ws"
-	"github.com/gnat/kvweb/static"
+	"github.com/natrimmer/kvweb/internal/api"
+	"github.com/natrimmer/kvweb/internal/config"
+	"github.com/natrimmer/kvweb/internal/valkey"
+	"github.com/natrimmer/kvweb/internal/ws"
+	"github.com/natrimmer/kvweb/static"
 )
 
 // Server represents the HTTP server

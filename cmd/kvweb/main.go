@@ -10,9 +10,9 @@ import (
 	"runtime"
 	"syscall"
 
-	"github.com/gnat/kvweb/internal/config"
-	"github.com/gnat/kvweb/internal/server"
-	"github.com/gnat/kvweb/internal/valkey"
+	"github.com/natrimmer/kvweb/internal/config"
+	"github.com/natrimmer/kvweb/internal/server"
+	"github.com/natrimmer/kvweb/internal/valkey"
 )
 
 var (

@@ -1,4 +1,4 @@
-module github.com/gnat/kvweb
+module github.com/natrimmer/kvweb
 
 go 1.23
 
