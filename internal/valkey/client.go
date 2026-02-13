@@ -458,16 +458,6 @@ func (c *Client) ZRem(ctx context.Context, key string, members ...string) error 
 
 // Stream write operations
 
-// XAdd appends an entry to a stream and returns the entry ID
-func (c *Client) XAdd(ctx context.Context, key string, fields map[string]string) (string, error) {
-	// Convert map to flat field-value pairs
-	pairs := make([]string, 0, len(fields)*2)
-	for k, v := range fields {
-		pairs = append(pairs, k, v)
-	}
-	return c.client.Do(ctx, c.client.B().Xadd().Key(key).Id("*").FieldValue().FieldValue(pairs[0], pairs[1]).Build()).ToString()
-}
-
 // XAddMulti appends an entry with multiple fields to a stream
 func (c *Client) XAddMulti(ctx context.Context, key string, fields map[string]string) (string, error) {
 	if len(fields) == 0 {
