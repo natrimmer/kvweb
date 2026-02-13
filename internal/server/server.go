@@ -210,12 +210,21 @@ func (s *Server) runStatsBroadcaster(ctx context.Context) {
 		select {
 		case <-ticker.C:
 			dbSize, _ := s.client.DBSize(ctx)
+			memStats, _ := s.client.GetMemoryStats(ctx)
+
+			statsData := ws.StatsData{
+				DBSize:          dbSize,
+				NotificationsOn: s.liveUpdates,
+			}
+
+			if memStats != nil {
+				statsData.UsedMemory = memStats.UsedMemory
+				statsData.UsedMemoryHuman = memStats.UsedMemoryHuman
+			}
+
 			s.wsHub.Broadcast(ws.Message{
 				Type: "stats",
-				Data: ws.StatsData{
-					DBSize:          dbSize,
-					NotificationsOn: s.liveUpdates,
-				},
+				Data: statsData,
 			})
 		case <-ctx.Done():
 			return
@@ -246,12 +255,21 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	// Send initial stats
 	dbSize, _ := s.client.DBSize(r.Context())
+	memStats, _ := s.client.GetMemoryStats(r.Context())
+
+	statsData := ws.StatsData{
+		DBSize:          dbSize,
+		NotificationsOn: s.liveUpdates,
+	}
+
+	if memStats != nil {
+		statsData.UsedMemory = memStats.UsedMemory
+		statsData.UsedMemoryHuman = memStats.UsedMemoryHuman
+	}
+
 	stats := ws.Message{
 		Type: "stats",
-		Data: ws.StatsData{
-			DBSize:          dbSize,
-			NotificationsOn: s.liveUpdates,
-		},
+		Data: statsData,
 	}
 	if data, err := json.Marshal(stats); err == nil {
 		client.Send(data)

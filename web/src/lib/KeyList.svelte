@@ -36,6 +36,7 @@
 		readOnly: boolean;
 		prefix: string;
 		dbSize: number;
+		usedMemoryHuman: string;
 		disableFlush?: boolean;
 	}
 
@@ -46,6 +47,7 @@
 		readOnly,
 		prefix,
 		dbSize,
+		usedMemoryHuman,
 		disableFlush = false
 	}: Props = $props();
 
@@ -322,13 +324,18 @@
 		{/if}
 
 		<div class="mb-3 flex items-center justify-between">
-			<span class="text-sm text-muted-foreground">
-				{#if pattern !== '*' || typeFilter}
-					{sortedKeys.length} of {dbSize} key{dbSize === 1 ? '' : 's'}
-				{:else}
-					{dbSize} total key{dbSize === 1 ? '' : 's'}
+			<div class="flex flex-col text-sm text-muted-foreground">
+				<span>
+					{#if pattern !== '*' || typeFilter}
+						{sortedKeys.length} of {dbSize} key{dbSize === 1 ? '' : 's'}
+					{:else}
+						{dbSize} total key{dbSize === 1 ? '' : 's'}
+					{/if}
+				</span>
+				{#if usedMemoryHuman}
+					<span>{usedMemoryHuman} memory usage</span>
 				{/if}
-			</span>
+			</div>
 			<span>
 				{#if !readOnly}
 					<Button

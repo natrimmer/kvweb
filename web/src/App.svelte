@@ -14,6 +14,7 @@
 
 	let selectedKey = $state<string | null>(null);
 	let dbSize = $state(0);
+	let usedMemoryHuman = $state('');
 	let apiConnected = $state<boolean | null>(null); // null = not checked yet
 	let dbConnected = $state<boolean | null>(null); // null = not checked yet
 	let wsConnected = $state(false);
@@ -69,6 +70,7 @@
 
 		ws.onStats((stats) => {
 			dbSize = stats.dbSize;
+			usedMemoryHuman = stats.usedMemoryHuman || '';
 			liveUpdates = stats.notificationsOn;
 			wsConnected = ws.isConnected();
 		});
@@ -136,7 +138,7 @@
 		<button
 			type="button"
 			onclick={resetToHome}
-			class="group flex items-center gap-2 text-xl font-semibold text-foreground transition-colors hover:text-primary"
+			class="group flex cursor-pointer items-center gap-2 text-xl font-semibold text-foreground transition-colors hover:text-primary"
 			title="Return to home"
 		>
 			<Logo size={24} class="text-primary transition-colors group-hover:text-primary" />
@@ -182,6 +184,7 @@
 						{readOnly}
 						{prefix}
 						{dbSize}
+						{usedMemoryHuman}
 						{disableFlush}
 					/>
 				</div>

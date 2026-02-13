@@ -8,14 +8,16 @@ type Message struct {
 
 // KeyEventData represents a key operation event
 type KeyEventData struct {
-	Op  string `json:"op"`  // "set", "del", "expire", "expired", "rename_from", "rename_to"
+	Op  string `json:"op"` // "set", "del", "expire", "expired", "rename_from", "rename_to"
 	Key string `json:"key"`
 }
 
 // StatsData represents periodic stats updates
 type StatsData struct {
-	DBSize          int64 `json:"dbSize"`
-	NotificationsOn bool  `json:"notificationsOn"`
+	DBSize          int64  `json:"dbSize"`
+	UsedMemory      int64  `json:"usedMemory"`      // bytes
+	UsedMemoryHuman string `json:"usedMemoryHuman"` // formatted (e.g., "1.18M")
+	NotificationsOn bool   `json:"notificationsOn"`
 }
 
 // StatusData represents connection status information

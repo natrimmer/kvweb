@@ -7,6 +7,8 @@ export type KeyEvent = {
 
 export type Stats = {
 	dbSize: number;
+	usedMemory: number;
+	usedMemoryHuman: string;
 	notificationsOn: boolean;
 };
 

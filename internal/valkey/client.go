@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gnat/kvweb/internal/config"
@@ -498,6 +499,43 @@ func (c *Client) PFCount(ctx context.Context, key string) (int64, error) {
 // PFAdd adds elements to a HyperLogLog
 func (c *Client) PFAdd(ctx context.Context, key string, elements ...string) error {
 	return c.client.Do(ctx, c.client.B().Pfadd().Key(key).Element(elements...).Build()).Error()
+}
+
+// MemoryStats represents memory usage statistics
+type MemoryStats struct {
+	UsedMemory      int64
+	UsedMemoryHuman string
+}
+
+// GetMemoryStats returns memory usage statistics from INFO memory
+func (c *Client) GetMemoryStats(ctx context.Context) (*MemoryStats, error) {
+	info, err := c.Info(ctx, "memory")
+	if err != nil {
+		return nil, err
+	}
+
+	stats := &MemoryStats{}
+
+	// Parse the INFO response (format: "key:value\r\n")
+	lines := strings.Split(info, "\r\n")
+	for _, line := range lines {
+		parts := strings.SplitN(line, ":", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		key, value := parts[0], parts[1]
+
+		switch key {
+		case "used_memory":
+			if parsed, err := strconv.ParseInt(value, 10, 64); err == nil {
+				stats.UsedMemory = parsed
+			}
+		case "used_memory_human":
+			stats.UsedMemoryHuman = value
+		}
+	}
+
+	return stats, nil
 }
 
 // Config operations
