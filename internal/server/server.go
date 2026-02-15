@@ -209,8 +209,14 @@ func (s *Server) runStatsBroadcaster(ctx context.Context) {
 	for {
 		select {
 		case <-ticker.C:
-			dbSize, _ := s.client.DBSize(ctx)
-			memStats, _ := s.client.GetMemoryStats(ctx)
+			dbSize, err := s.client.DBSize(ctx)
+			if err != nil {
+				log.Printf("Stats broadcast: DBSize error: %v", err)
+			}
+			memStats, err := s.client.GetMemoryStats(ctx)
+			if err != nil {
+				log.Printf("Stats broadcast: GetMemoryStats error: %v", err)
+			}
 
 			statsData := ws.StatsData{
 				DBSize:          dbSize,
@@ -240,6 +246,7 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 	conn, err := websocket.Accept(w, r, opts)
 	if err != nil {
+		log.Printf("WebSocket accept error: %v", err)
 		return
 	}
 

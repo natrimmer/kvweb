@@ -2,6 +2,8 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
+	"log"
 	"net/http"
 	"regexp"
 	"sort"
@@ -196,7 +198,10 @@ func (h *Handler) handleInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dbSize, _ := h.client.DBSize(r.Context())
+	dbSize, err := h.client.DBSize(r.Context())
+	if err != nil {
+		log.Printf("DBSize error: %v", err)
+	}
 
 	jsonResponse(w, map[string]any{
 		"info":   info,
@@ -236,13 +241,23 @@ func (h *Handler) handleKeys(w http.ResponseWriter, r *http.Request) {
 	cursorStr := r.URL.Query().Get("cursor")
 	cursor := uint64(0)
 	if cursorStr != "" {
-		cursor, _ = strconv.ParseUint(cursorStr, 10, 64)
+		var err error
+		cursor, err = strconv.ParseUint(cursorStr, 10, 64)
+		if err != nil {
+			jsonError(w, fmt.Sprintf("invalid cursor: %v", err), http.StatusBadRequest)
+			return
+		}
 	}
 
 	countStr := r.URL.Query().Get("count")
 	count := int64(100)
 	if countStr != "" {
-		count, _ = strconv.ParseInt(countStr, 10, 64)
+		var err error
+		count, err = strconv.ParseInt(countStr, 10, 64)
+		if err != nil {
+			jsonError(w, fmt.Sprintf("invalid count: %v", err), http.StatusBadRequest)
+			return
+		}
 	}
 
 	// Apply max-keys limit if configured
