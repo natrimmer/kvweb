@@ -38,6 +38,15 @@ kvweb [flags]
 | `-notifications` | `false` | Auto-enable keyspace notifications for live updates |
 | `-open` | `false` | Open browser on start |
 
+## Versioning
+
+kvweb uses [SemVer](https://semver.org/) with git tags as the source of truth. The version and commit hash are embedded at build time via `git describe`.
+
+```
+kvweb --version
+kvweb v0.1.0 (a1b2c3d)
+```
+
 ## Supported Types
 
 string, hash, list, set, sorted set, stream, HyperLogLog, geo

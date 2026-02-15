@@ -9,7 +9,6 @@ let
 in
 {
   env = {
-    KVWEB_VERSION = "dev";
     PORT_VALKEY = toString ports.valkey;
     PORT_BACKEND = toString ports.backend;
     PORT_FRONTEND = toString ports.frontend;
@@ -119,7 +118,9 @@ in
     build.exec = ''
       build-web
       echo "Building kvweb binary..."
-      go build -ldflags "-X main.version=$KVWEB_VERSION" -o kvweb ./cmd/kvweb
+      VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "dev")
+      COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "none")
+      go build -ldflags "-X main.version=$VERSION -X main.commit=$COMMIT" -o kvweb ./cmd/kvweb
       echo "Build complete! Run ./kvweb to start"
     '';
 
