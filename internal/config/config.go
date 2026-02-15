@@ -21,6 +21,7 @@ type Config struct {
 	Prefix       string // Only show/allow keys matching this prefix
 	DisableFlush bool   // Block FLUSHDB even in write mode
 	MaxKeys      int64  // Limit SCAN count to prevent UI overload (0 = no limit)
+	CORSOrigin   string // Allowed CORS origin (default: same-origin only)
 
 	// WebSocket settings
 	Notifications bool // Auto-enable Valkey keyspace notifications for live updates

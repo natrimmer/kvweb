@@ -234,9 +234,11 @@ func (s *Server) runStatsBroadcaster(ctx context.Context) {
 
 // handleWebSocket handles WebSocket connections for real-time updates
 func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
-	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
-		OriginPatterns: []string{"*"}, // Allow all origins for dev
-	})
+	opts := &websocket.AcceptOptions{}
+	if s.cfg.CORSOrigin != "" {
+		opts.OriginPatterns = []string{s.cfg.CORSOrigin}
+	}
+	conn, err := websocket.Accept(w, r, opts)
 	if err != nil {
 		return
 	}
