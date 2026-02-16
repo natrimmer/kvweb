@@ -64,7 +64,7 @@ class WebSocketManager {
 		};
 
 		this.ws.onerror = () => {
-			// Will trigger onclose
+			this.ws?.close();
 		};
 
 		this.ws.onopen = () => {
