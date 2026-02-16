@@ -5,6 +5,7 @@
 	import * as Resizable from '$lib/components/ui/resizable';
 	import { Toaster } from '$lib/components/ui/sonner';
 	import { CloudOff, Database, Radio } from '@lucide/svelte/icons';
+	import { ModeWatcher } from 'mode-watcher';
 	import { onMount } from 'svelte';
 	import { api } from './lib/api';
 	import { matchesShortcut } from './lib/keyboard';
@@ -23,6 +24,7 @@
 	let disableFlush = $state(false);
 	let liveUpdates = $state(false);
 	let healthCheckInterval: ReturnType<typeof setInterval> | null = null;
+	let darkModeEnabled = $state(false);
 
 	function resetToHome() {
 		selectedKey = null;
@@ -41,6 +43,8 @@
 	}
 
 	onMount(() => {
+		darkModeEnabled = localStorage.getItem('kvweb:darkmode') === '1';
+
 		// Load initial data
 		Promise.all([api.getInfo(), api.getConfig()])
 			.then(([info, config]) => {
@@ -222,6 +226,9 @@
 </div>
 
 <Toaster />
+{#if darkModeEnabled}
+	<ModeWatcher />
+{/if}
 
 <style>
 	@keyframes marquee {

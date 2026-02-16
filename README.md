@@ -47,6 +47,16 @@ kvweb --version
 kvweb v0.1.0 (a1b2c3d)
 ```
 
+## Dark Mode
+
+Dark mode is available but still a work in progress. Enable it via the browser console:
+
+```js
+localStorage.setItem('kvweb:darkmode', '1')
+```
+
+Refresh the page. A theme toggle will appear in Server Settings.
+
 ## Supported Types
 
 string, hash, list, set, sorted set, stream, HyperLogLog, geo

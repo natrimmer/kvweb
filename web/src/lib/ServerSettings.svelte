@@ -2,7 +2,8 @@
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import { Button } from '$lib/components/ui/button';
 	import * as Select from '$lib/components/ui/select';
-	import { Radio, RotateCcw } from '@lucide/svelte';
+	import { Moon, Radio, RotateCcw, Sun } from '@lucide/svelte';
+	import { toggleMode } from 'mode-watcher';
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { api } from './api';
@@ -22,6 +23,7 @@
 	let notificationsEnabled = $state(false);
 	let enablingNotifications = $state(false);
 	let flushDialogOpen = $state(false);
+	let darkModeEnabled = $state(false);
 
 	const sections = [
 		{ value: '', label: 'All Sections' },
@@ -51,6 +53,7 @@
 	}
 
 	onMount(() => {
+		darkModeEnabled = localStorage.getItem('kvweb:darkmode') === '1';
 		loadInfo();
 
 		// Load initial notifications status
@@ -167,28 +170,41 @@
 				</AlertDialog.Root>
 			{/if}
 		</div>
-		{#if !readOnly}
-			<Button
-				variant="outline"
-				size="sm"
-				onclick={toggleNotifications}
-				disabled={enablingNotifications}
-				class="hover:bg-accent"
-				title={notificationsEnabled
-					? 'Disable Valkey keyspace notifications (stops real-time updates)'
-					: 'Enable Valkey keyspace notifications at runtime (enables real-time key change updates)'}
-				aria-label={notificationsEnabled ? 'Disable live updates' : 'Enable live updates'}
-			>
-				<Radio />
-				{enablingNotifications
-					? notificationsEnabled
-						? 'Disabling...'
-						: 'Enabling...'
-					: notificationsEnabled
-						? 'Disable Live Updates'
-						: 'Enable Live Updates'}
-			</Button>
-		{/if}
+		<div class="flex items-center gap-2">
+			{#if darkModeEnabled}
+				<Button variant="outline" size="sm" onclick={toggleMode} class="size-9 p-0">
+					<Sun
+						class="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all! dark:scale-0 dark:-rotate-90"
+					/>
+					<Moon
+						class="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all! dark:scale-100 dark:rotate-0"
+					/>
+					<span class="sr-only">Toggle theme</span>
+				</Button>
+			{/if}
+			{#if !readOnly}
+				<Button
+					variant="outline"
+					size="sm"
+					onclick={toggleNotifications}
+					disabled={enablingNotifications}
+					class="hover:bg-accent"
+					title={notificationsEnabled
+						? 'Disable Valkey keyspace notifications (stops real-time updates)'
+						: 'Enable Valkey keyspace notifications at runtime (enables real-time key change updates)'}
+					aria-label={notificationsEnabled ? 'Disable live updates' : 'Enable live updates'}
+				>
+					<Radio />
+					{enablingNotifications
+						? notificationsEnabled
+							? 'Disabling...'
+							: 'Enabling...'
+						: notificationsEnabled
+							? 'Disable Live Updates'
+							: 'Enable Live Updates'}
+				</Button>
+			{/if}
+		</div>
 	</div>
 
 	<div class="h-96 overflow-auto rounded bg-muted p-4 font-mono text-sm whitespace-pre-wrap">
