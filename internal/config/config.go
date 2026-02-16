@@ -25,6 +25,9 @@ type Config struct {
 
 	// WebSocket settings
 	Notifications bool // Auto-enable Valkey keyspace notifications for live updates
+
+	// Development
+	Dev bool // Skip serving embedded frontend
 }
 
 // New creates a new Config with default values

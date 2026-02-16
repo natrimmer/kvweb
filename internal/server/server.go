@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -48,8 +49,16 @@ func New(cfg *config.Config, client *valkey.Client) *Server {
 	// WebSocket for real-time updates
 	mux.HandleFunc("/ws", s.handleWebSocket)
 
-	// Static files (embedded Svelte app)
-	mux.Handle("/", static.Handler())
+	// Static files (embedded Svelte app) — skip in dev mode
+	if cfg.Dev {
+		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "text/plain")
+			w.WriteHeader(http.StatusOK)
+			_, _ = fmt.Fprintf(w, "kvweb backend (dev mode)\n\nFrontend is at http://localhost:5173\nThis port only serves /api and /ws")
+		})
+	} else {
+		mux.Handle("/", static.Handler())
+	}
 
 	s.http = &http.Server{
 		Addr:         cfg.Addr(),

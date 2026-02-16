@@ -53,7 +53,7 @@ in
     };
 
     backend = {
-      exec = "go run ./cmd/kvweb --port ${toString ports.backend} --url localhost:${toString ports.valkey}";
+      exec = "go run ./cmd/kvweb --port ${toString ports.backend} --url localhost:${toString ports.valkey} --dev";
       process-compose = {
         log_location = "./logs/backend.log";
         availability = {

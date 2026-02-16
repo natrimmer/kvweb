@@ -37,6 +37,7 @@ kvweb [flags]
 | `-max-keys` | `0` | Limit SCAN count per request (0 = no limit) |
 | `-notifications` | `false` | Auto-enable keyspace notifications for live updates |
 | `-open` | `false` | Open browser on start |
+| `-dev` | `false` | Skip serving embedded frontend (API + WebSocket only) |
 
 ## Versioning
 
