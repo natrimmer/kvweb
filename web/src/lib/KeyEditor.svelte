@@ -471,12 +471,12 @@
 		word-break: break-all;
 	}
 	:global(.json-string) {
-		color: #0550ae;
+		color: var(--json-string);
 	}
 	:global(.json-number) {
-		color: #116329;
+		color: var(--json-number);
 	}
 	:global(.json-keyword) {
-		color: #cf222e;
+		color: var(--json-keyword);
 	}
 </style>

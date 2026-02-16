@@ -38,6 +38,9 @@
 	--sidebar-accent-foreground: #1b181b; /* black-900 */
 	--sidebar-border: #caceca; /* alabaster-grey-200 */
 	--sidebar-ring: #003dcc; /* crayola-blue-600 */
+	--json-string: #0550ae;
+	--json-number: #116329;
+	--json-keyword: #cf222e;
 }
 
 .dark {
@@ -73,6 +76,9 @@
 	--sidebar-accent-foreground: #f3f1f3; /* black-50 */
 	--sidebar-border: #372f37; /* black-800 */
 	--sidebar-ring: #3370ff; /* crayola-blue-400 */
+	--json-string: #79c0ff;
+	--json-number: #7ee787;
+	--json-keyword: #ff7b72;
 }
 
 @theme inline {
