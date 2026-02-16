@@ -22,10 +22,11 @@ export interface HashPair {
 }
 
 export interface PaginationInfo {
-	page: number;
+	page?: number;
 	pageSize: number;
 	total: number;
 	hasMore: boolean;
+	nextCursor?: number;
 }
 
 export type KeyType = 'string' | 'list' | 'set' | 'hash' | 'zset' | 'stream' | 'hyperloglog';
@@ -144,11 +145,12 @@ export const api = {
 		);
 	},
 
-	getKey(key: string, page?: number, pageSize?: number): Promise<KeyInfo> {
+	getKey(key: string, page?: number, pageSize?: number, cursor?: number): Promise<KeyInfo> {
 		let url = `/key/${encodeURIComponent(key)}`;
 		const params = new URLSearchParams();
 		if (page !== undefined) params.set('page', page.toString());
 		if (pageSize !== undefined) params.set('pageSize', pageSize.toString());
+		if (cursor !== undefined) params.set('cursor', cursor.toString());
 		if (params.toString()) url += `?${params.toString()}`;
 		return request(url);
 	},

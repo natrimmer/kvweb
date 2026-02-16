@@ -460,6 +460,15 @@ func (h *Handler) handleGetKey(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Cursor for set/hash cursor-based pagination
+	cursorStr := r.URL.Query().Get("cursor")
+	scanCursor := uint64(0)
+	if cursorStr != "" {
+		if c, err := strconv.ParseUint(cursorStr, 10, 64); err == nil {
+			scanCursor = c
+		}
+	}
+
 	keyType, err := h.client.Type(r.Context(), key)
 	if err != nil {
 		jsonError(w, err.Error(), http.StatusInternalServerError)
@@ -506,99 +515,44 @@ func (h *Handler) handleGetKey(w http.ResponseWriter, r *http.Request) {
 		}
 	case "set":
 		length, _ = h.client.SCard(ctx, key)
-		// For sets, we use cursor-based pagination
-		// We need to scan through pages to get to the requested page
-		cursor := uint64(0)
-		var allMembers []string
-		membersNeeded := page * pageSize
-
-		for {
-			members, nextCursor, scanErr := h.client.SScan(ctx, key, cursor, pageSize)
-			if scanErr != nil {
-				err = scanErr
-				break
-			}
-			allMembers = append(allMembers, members...)
-			cursor = nextCursor
-
-			// Stop if we have enough members or reached the end
-			if int64(len(allMembers)) >= membersNeeded || cursor == 0 {
-				break
-			}
-		}
-
-		if err == nil {
-			start := (page - 1) * pageSize
-			end := start + pageSize
-			if start < int64(len(allMembers)) {
-				if end > int64(len(allMembers)) {
-					end = int64(len(allMembers))
-				}
-				value = allMembers[start:end]
-			} else {
-				value = []string{}
-			}
+		// Single SSCAN call per request — no accumulation
+		members, nextCursor, scanErr := h.client.SScan(ctx, key, scanCursor, pageSize)
+		if scanErr != nil {
+			err = scanErr
+		} else {
+			value = members
 			pagination = map[string]any{
-				"page":     page,
-				"pageSize": pageSize,
-				"total":    length,
-				"hasMore":  cursor != 0 || end < int64(len(allMembers)),
+				"pageSize":   pageSize,
+				"total":      length,
+				"hasMore":    nextCursor != 0,
+				"nextCursor": nextCursor,
 			}
 		}
 	case "hash":
 		length, _ = h.client.HLen(ctx, key)
-		// For hashes, we use cursor-based pagination similar to sets
-		cursor := uint64(0)
-		allFields := make(map[string]string)
-		fieldsNeeded := page * pageSize
-
-		for {
-			fields, nextCursor, scanErr := h.client.HScan(ctx, key, cursor, pageSize)
-			if scanErr != nil {
-				err = scanErr
-				break
-			}
-			for k, v := range fields {
-				allFields[k] = v
-			}
-			cursor = nextCursor
-
-			// Stop if we have enough fields or reached the end
-			if int64(len(allFields)) >= fieldsNeeded || cursor == 0 {
-				break
-			}
-		}
-
-		if err == nil {
-			// Convert to slice of key-value pairs for pagination
+		// Single HSCAN call per request — no accumulation
+		fields, nextCursor, scanErr := h.client.HScan(ctx, key, scanCursor, pageSize)
+		if scanErr != nil {
+			err = scanErr
+		} else {
+			// Convert to sorted slice of key-value pairs
 			type hashPair struct {
 				Field string `json:"field"`
 				Value string `json:"value"`
 			}
-			var allPairs []hashPair
-			for field, val := range allFields {
-				allPairs = append(allPairs, hashPair{Field: field, Value: val})
+			pairs := make([]hashPair, 0, len(fields))
+			for field, val := range fields {
+				pairs = append(pairs, hashPair{Field: field, Value: val})
 			}
-			// Sort by field name for consistent ordering
-			sort.Slice(allPairs, func(i, j int) bool {
-				return allPairs[i].Field < allPairs[j].Field
+			sort.Slice(pairs, func(i, j int) bool {
+				return pairs[i].Field < pairs[j].Field
 			})
-
-			start := (page - 1) * pageSize
-			end := start + pageSize
-			if start < int64(len(allPairs)) {
-				if end > int64(len(allPairs)) {
-					end = int64(len(allPairs))
-				}
-				value = allPairs[start:end]
-			} else {
-				value = []hashPair{}
-			}
+			value = pairs
 			pagination = map[string]any{
-				"page":     page,
-				"pageSize": pageSize,
-				"total":    length,
-				"hasMore":  cursor != 0 || end < int64(len(allPairs)),
+				"pageSize":   pageSize,
+				"total":      length,
+				"hasMore":    nextCursor != 0,
+				"nextCursor": nextCursor,
 			}
 		}
 	case "zset":

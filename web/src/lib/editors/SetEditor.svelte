@@ -24,6 +24,8 @@
 		pageSize: number;
 		readOnly: boolean;
 		typeHeaderExpanded: boolean;
+		cursorBased?: boolean;
+		hasMore?: boolean;
 		onPageChange: (page: number) => void;
 		onPageSizeChange: (size: number) => void;
 		onDataChange: () => void;
@@ -37,6 +39,8 @@
 		pageSize,
 		readOnly,
 		typeHeaderExpanded,
+		cursorBased = false,
+		hasMore = false,
 		onPageChange,
 		onPageSizeChange,
 		onDataChange
@@ -338,6 +342,8 @@
 					{pageSize}
 					total={pagination.total}
 					itemLabel="members"
+					{cursorBased}
+					{hasMore}
 					{onPageChange}
 					{onPageSizeChange}
 				/>

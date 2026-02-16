@@ -44,6 +44,15 @@
 	let currentPage = $state(1);
 	let pageSize = $state(100);
 
+	// Cursor-based pagination for sets and hashes
+	let cursorStack = $state<number[]>([0]); // history of cursors visited
+	let cursorIndex = $state(0); // current position in stack
+	let nextCursor = $state<number | undefined>(undefined);
+
+	function isCursorBased(type?: string): boolean {
+		return type === 'set' || type === 'hash';
+	}
+
 	// Delete confirmation dialog
 	let deleteDialogOpen = $state(false);
 
@@ -127,6 +136,10 @@
 		if (previousKey !== key) {
 			currentPage = 1;
 			previousKey = key;
+			// Reset cursor state
+			cursorStack = [0];
+			cursorIndex = 0;
+			nextCursor = undefined;
 			// Reset editor-specific state
 			zsetGetCopyValue = undefined;
 			zsetGeoViewActive = false;
@@ -182,8 +195,16 @@
 			if (loading) showLoading = true;
 		}, 300);
 		try {
-			keyInfo = await api.getKey(k, currentPage, pageSize);
+			// Pass cursor for set/hash cursor-based pagination (harmless no-op for other types)
+			const cursor = cursorStack[cursorIndex] || undefined;
+			keyInfo = await api.getKey(k, currentPage, pageSize, cursor);
 			startTtlCountdown(keyInfo.ttl);
+			// Store nextCursor from response
+			if (keyInfo.pagination?.nextCursor !== undefined) {
+				nextCursor = keyInfo.pagination.nextCursor;
+			} else {
+				nextCursor = undefined;
+			}
 		} catch (e) {
 			error = getErrorMessage(e, 'Failed to load key');
 			keyInfo = null;
@@ -202,9 +223,48 @@
 		loadKey(key);
 	}
 
+	// Cursor-based navigation for sets and hashes
+	function cursorNext() {
+		if (nextCursor === undefined || nextCursor === 0) return;
+		// Push nextCursor onto stack and advance index
+		cursorStack = [...cursorStack.slice(0, cursorIndex + 1), nextCursor];
+		cursorIndex = cursorStack.length - 1;
+		currentPage = cursorIndex + 1;
+		loadKey(key);
+	}
+
+	function cursorPrev() {
+		if (cursorIndex <= 0) return;
+		cursorIndex--;
+		currentPage = cursorIndex + 1;
+		loadKey(key);
+	}
+
+	function cursorFirst() {
+		cursorStack = [0];
+		cursorIndex = 0;
+		currentPage = 1;
+		nextCursor = undefined;
+		loadKey(key);
+	}
+
+	function handleCursorPageChange(page: number) {
+		if (page > currentPage) {
+			cursorNext();
+		} else if (page < currentPage && page === 1) {
+			cursorFirst();
+		} else if (page < currentPage) {
+			cursorPrev();
+		}
+	}
+
 	function changePageSize(newSize: number) {
 		pageSize = newSize;
 		currentPage = 1;
+		// Reset cursor state on page size change
+		cursorStack = [0];
+		cursorIndex = 0;
+		nextCursor = undefined;
 		loadKey(key);
 	}
 
@@ -312,7 +372,9 @@
 				{pageSize}
 				{readOnly}
 				{typeHeaderExpanded}
-				onPageChange={goToPage}
+				cursorBased={true}
+				hasMore={nextCursor !== undefined && nextCursor !== 0}
+				onPageChange={handleCursorPageChange}
 				onPageSizeChange={changePageSize}
 				onDataChange={handleDataChange}
 			/>
@@ -325,7 +387,9 @@
 				{pageSize}
 				{readOnly}
 				{typeHeaderExpanded}
-				onPageChange={goToPage}
+				cursorBased={true}
+				hasMore={nextCursor !== undefined && nextCursor !== 0}
+				onPageChange={handleCursorPageChange}
 				onPageSizeChange={changePageSize}
 				onDataChange={handleDataChange}
 			/>

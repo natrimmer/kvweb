@@ -10,6 +10,8 @@
 		pageSize: number;
 		total: number;
 		itemLabel?: string;
+		cursorBased?: boolean;
+		hasMore?: boolean;
 		onPageChange: (page: number) => void;
 		onPageSizeChange: (size: number) => void;
 	}
@@ -19,6 +21,8 @@
 		pageSize,
 		total,
 		itemLabel = 'items',
+		cursorBased = false,
+		hasMore = false,
 		onPageChange,
 		onPageSizeChange
 	}: Props = $props();
@@ -84,7 +88,7 @@
 				size="sm"
 				variant="outline"
 				onclick={() => onPageChange(page + 1)}
-				disabled={page >= totalPages}
+				disabled={cursorBased ? !hasMore : page >= totalPages}
 				title="Next page"
 				aria-label="Next page"
 				class="size-9 p-0"
@@ -94,11 +98,13 @@
 			<Button
 				size="sm"
 				variant="outline"
-				onclick={() => onPageChange(totalPages)}
-				disabled={page >= totalPages}
-				title="Last page"
+				onclick={cursorBased ? undefined : () => onPageChange(totalPages)}
+				disabled={!cursorBased && page >= totalPages}
+				title={cursorBased
+					? 'Jump to last page is not available for this type — sets and hashes use cursor-based scanning'
+					: 'Last page'}
 				aria-label="Last page"
-				class="size-9 p-0"
+				class="size-9 p-0{cursorBased ? ' cursor-default opacity-50' : ''}"
 			>
 				<ChevronsRight class="h-4 w-4" />
 			</Button>
