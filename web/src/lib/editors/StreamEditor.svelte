@@ -7,8 +7,8 @@
 	import DeleteItemDialog from '$lib/dialogs/DeleteItemDialog.svelte';
 	import ExpandedItemDialog from '$lib/dialogs/ExpandedItemDialog.svelte';
 	import LargeValueWarningDialog from '$lib/dialogs/LargeValueWarningDialog.svelte';
-	import PaginationControls from '$lib/PaginationControls.svelte';
-	import TypeHeader from '$lib/TypeHeader.svelte';
+	import PaginationControls from '$lib/editors/PaginationControls.svelte';
+	import TypeHeader from '$lib/editors/TypeHeader.svelte';
 	import {
 		highlightJson,
 		isLargeValue,

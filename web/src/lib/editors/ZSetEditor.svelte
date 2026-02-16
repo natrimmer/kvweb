@@ -1,5 +1,5 @@
 <script lang="ts">
-	import AddItemForm from '$lib/AddItemForm.svelte';
+	import AddItemForm from '$lib/editors/AddItemForm.svelte';
 	import { api, type GeoMember, type PaginationInfo, type ZSetMember } from '$lib/api';
 	import ActionsToggle from '$lib/components/ActionsToggle.svelte';
 	import TableWidthToggle from '$lib/components/TableWidthToggle.svelte';
@@ -10,10 +10,10 @@
 	import DeleteItemDialog from '$lib/dialogs/DeleteItemDialog.svelte';
 	import ExpandedItemDialog from '$lib/dialogs/ExpandedItemDialog.svelte';
 	import LargeValueWarningDialog from '$lib/dialogs/LargeValueWarningDialog.svelte';
-	import InlineEditor from '$lib/InlineEditor.svelte';
-	import ItemActions from '$lib/ItemActions.svelte';
-	import PaginationControls from '$lib/PaginationControls.svelte';
-	import TypeHeader from '$lib/TypeHeader.svelte';
+	import InlineEditor from '$lib/editors/InlineEditor.svelte';
+	import ItemActions from '$lib/editors/ItemActions.svelte';
+	import PaginationControls from '$lib/editors/PaginationControls.svelte';
+	import TypeHeader from '$lib/editors/TypeHeader.svelte';
 	import {
 		formatCoordinate,
 		highlightJson,

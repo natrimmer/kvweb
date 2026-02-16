@@ -5,7 +5,7 @@
 	import { Textarea } from '$lib/components/ui/textarea';
 	import LargeValueWarningDialog from '$lib/dialogs/LargeValueWarningDialog.svelte';
 	import { formatShortcut } from '$lib/keyboard';
-	import TypeHeader from '$lib/TypeHeader.svelte';
+	import TypeHeader from '$lib/editors/TypeHeader.svelte';
 	import { highlightJson, isLargeValue, toastError } from '$lib/utils';
 	import { Braces, Minus, Pencil, Plus, RemoveFormatting, View } from '@lucide/svelte/icons';
 	import { toast } from 'svelte-sonner';

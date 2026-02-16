@@ -1,10 +1,10 @@
 <script lang="ts">
-	import AddItemForm from '$lib/AddItemForm.svelte';
+	import AddItemForm from '$lib/editors/AddItemForm.svelte';
 	import { api, type HLLData } from '$lib/api';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import LargeValueWarningDialog from '$lib/dialogs/LargeValueWarningDialog.svelte';
-	import TypeHeader from '$lib/TypeHeader.svelte';
+	import TypeHeader from '$lib/editors/TypeHeader.svelte';
 	import { isLargeValue, toastError } from '$lib/utils';
 	import { Plus } from '@lucide/svelte/icons';
 	import { toast } from 'svelte-sonner';
