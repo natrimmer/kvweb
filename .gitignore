@@ -35,9 +35,7 @@ Thumbs.db
 .devenv.flake.nix
 .direnv/
 logs/
-local/
 .pre-commit-config.yaml
 
 # AI
-.claude/
 CLAUDE.md
