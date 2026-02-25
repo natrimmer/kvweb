@@ -136,6 +136,12 @@ func jsonError(w http.ResponseWriter, message string, code int) {
 	}
 }
 
+// internalError logs the real error server-side and returns a generic message to the client
+func internalError(w http.ResponseWriter, err error) {
+	log.Printf("Error: %v", err)
+	jsonError(w, "Internal server error", http.StatusInternalServerError)
+}
+
 // checkReadOnly returns true and sends an error response if in readonly mode
 func (h *Handler) checkReadOnly(w http.ResponseWriter) bool {
 	if h.cfg.ReadOnly {
@@ -202,7 +208,7 @@ func (h *Handler) handleInfo(w http.ResponseWriter, r *http.Request) {
 
 	info, err := h.client.Info(r.Context(), section)
 	if err != nil {
-		jsonError(w, err.Error(), http.StatusInternalServerError)
+		internalError(w, err)
 		return
 	}
 
@@ -278,7 +284,7 @@ func (h *Handler) handleKeys(w http.ResponseWriter, r *http.Request) {
 
 	keys, nextCursor, err := h.client.Keys(r.Context(), pattern, cursor, count)
 	if err != nil {
-		jsonError(w, err.Error(), http.StatusInternalServerError)
+		internalError(w, err)
 		return
 	}
 
@@ -375,7 +381,7 @@ func (h *Handler) handlePrefixes(w http.ResponseWriter, r *http.Request) {
 	for {
 		keys, nextCursor, err := h.client.Keys(r.Context(), pattern, cursor, 1000)
 		if err != nil {
-			jsonError(w, err.Error(), http.StatusInternalServerError)
+			internalError(w, err)
 			return
 		}
 		allKeys = append(allKeys, keys...)
@@ -479,7 +485,7 @@ func (h *Handler) handleGetKey(w http.ResponseWriter, r *http.Request) {
 
 	keyType, err := h.client.Type(r.Context(), key)
 	if err != nil {
-		jsonError(w, err.Error(), http.StatusInternalServerError)
+		internalError(w, err)
 		return
 	}
 
@@ -591,7 +597,7 @@ func (h *Handler) handleGetKey(w http.ResponseWriter, r *http.Request) {
 				// Fetch entries up to but not including the target page to get the cursor
 				skipEntries, err := h.client.XRange(ctx, key, "-", "+", skipCount)
 				if err != nil {
-					jsonError(w, err.Error(), http.StatusInternalServerError)
+					internalError(w, err)
 					return
 				}
 				if len(skipEntries) > 0 {
@@ -617,7 +623,7 @@ func (h *Handler) handleGetKey(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		jsonError(w, err.Error(), http.StatusInternalServerError)
+		internalError(w, err)
 		return
 	}
 
@@ -665,7 +671,7 @@ func (h *Handler) handleSetKey(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.client.Set(r.Context(), key, body.Value, ttl); err != nil {
-		jsonError(w, err.Error(), http.StatusInternalServerError)
+		internalError(w, err)
 		return
 	}
 
@@ -684,7 +690,7 @@ func (h *Handler) handleDeleteKey(w http.ResponseWriter, r *http.Request) {
 
 	deleted, err := h.client.Del(r.Context(), key)
 	if err != nil {
-		jsonError(w, err.Error(), http.StatusInternalServerError)
+		internalError(w, err)
 		return
 	}
 
@@ -714,7 +720,7 @@ func (h *Handler) handleIncrKey(w http.ResponseWriter, r *http.Request) {
 
 	newValue, err := h.client.IncrByFloat(r.Context(), key, body.Amount)
 	if err != nil {
-		jsonError(w, err.Error(), http.StatusInternalServerError)
+		internalError(w, err)
 		return
 	}
 
@@ -752,7 +758,7 @@ func (h *Handler) handleExpire(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		jsonError(w, err.Error(), http.StatusInternalServerError)
+		internalError(w, err)
 		return
 	}
 
@@ -790,7 +796,7 @@ func (h *Handler) handleRename(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.client.Rename(r.Context(), key, body.NewKey); err != nil {
-		jsonError(w, err.Error(), http.StatusInternalServerError)
+		internalError(w, err)
 		return
 	}
 
@@ -808,7 +814,7 @@ func (h *Handler) handleFlush(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.client.FlushDB(r.Context()); err != nil {
-		jsonError(w, err.Error(), http.StatusInternalServerError)
+		internalError(w, err)
 		return
 	}
 
@@ -818,7 +824,7 @@ func (h *Handler) handleFlush(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleGetNotifications(w http.ResponseWriter, r *http.Request) {
 	val, err := h.client.GetNotifyKeyspaceEvents(r.Context())
 	if err != nil {
-		jsonError(w, err.Error(), http.StatusInternalServerError)
+		internalError(w, err)
 		return
 	}
 	jsonResponse(w, map[string]any{
@@ -850,7 +856,7 @@ func (h *Handler) handleSetNotifications(w http.ResponseWriter, r *http.Request)
 	}
 
 	if err := h.client.SetNotifyKeyspaceEvents(r.Context(), val); err != nil {
-		jsonError(w, err.Error(), http.StatusInternalServerError)
+		internalError(w, err)
 		return
 	}
 
@@ -897,7 +903,7 @@ func (h *Handler) handleListAdd(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		jsonError(w, err.Error(), http.StatusInternalServerError)
+		internalError(w, err)
 		return
 	}
 
@@ -931,7 +937,7 @@ func (h *Handler) handleListSet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.client.LSet(r.Context(), key, index, body.Value); err != nil {
-		jsonError(w, err.Error(), http.StatusInternalServerError)
+		internalError(w, err)
 		return
 	}
 
@@ -956,7 +962,7 @@ func (h *Handler) handleListRemove(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.client.LRemByIndex(r.Context(), key, index); err != nil {
-		jsonError(w, err.Error(), http.StatusInternalServerError)
+		internalError(w, err)
 		return
 	}
 
@@ -992,7 +998,7 @@ func (h *Handler) handleSetAdd(w http.ResponseWriter, r *http.Request) {
 	// Check for duplicate
 	exists, err := h.client.SIsMember(r.Context(), key, body.Member)
 	if err != nil {
-		jsonError(w, err.Error(), http.StatusInternalServerError)
+		internalError(w, err)
 		return
 	}
 	if exists {
@@ -1001,7 +1007,7 @@ func (h *Handler) handleSetAdd(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.client.SAdd(r.Context(), key, body.Member); err != nil {
-		jsonError(w, err.Error(), http.StatusInternalServerError)
+		internalError(w, err)
 		return
 	}
 
@@ -1025,7 +1031,7 @@ func (h *Handler) handleSetRemove(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.client.SRem(r.Context(), key, member); err != nil {
-		jsonError(w, err.Error(), http.StatusInternalServerError)
+		internalError(w, err)
 		return
 	}
 
@@ -1070,7 +1076,7 @@ func (h *Handler) handleSetRename(w http.ResponseWriter, r *http.Request) {
 		case "New member already exists":
 			jsonError(w, "New member already exists", http.StatusConflict)
 		default:
-			jsonError(w, err.Error(), http.StatusInternalServerError)
+			internalError(w, err)
 		}
 		return
 	}
@@ -1106,7 +1112,7 @@ func (h *Handler) handleHashSet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.client.HSet(r.Context(), key, body.Field, body.Value); err != nil {
-		jsonError(w, err.Error(), http.StatusInternalServerError)
+		internalError(w, err)
 		return
 	}
 
@@ -1130,7 +1136,7 @@ func (h *Handler) handleHashRemove(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.client.HDel(r.Context(), key, field); err != nil {
-		jsonError(w, err.Error(), http.StatusInternalServerError)
+		internalError(w, err)
 		return
 	}
 
@@ -1176,7 +1182,7 @@ func (h *Handler) handleHashRename(w http.ResponseWriter, r *http.Request) {
 		case "New field already exists":
 			jsonError(w, "New field already exists", http.StatusConflict)
 		default:
-			jsonError(w, err.Error(), http.StatusInternalServerError)
+			internalError(w, err)
 		}
 		return
 	}
@@ -1215,7 +1221,7 @@ func (h *Handler) handleZSetAdd(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.client.ZAdd(r.Context(), key, body.Member, body.Score); err != nil {
-		jsonError(w, err.Error(), http.StatusInternalServerError)
+		internalError(w, err)
 		return
 	}
 
@@ -1239,7 +1245,7 @@ func (h *Handler) handleZSetRemove(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.client.ZRem(r.Context(), key, member); err != nil {
-		jsonError(w, err.Error(), http.StatusInternalServerError)
+		internalError(w, err)
 		return
 	}
 
@@ -1285,7 +1291,7 @@ func (h *Handler) handleZSetRename(w http.ResponseWriter, r *http.Request) {
 		case "New member already exists":
 			jsonError(w, "New member already exists", http.StatusConflict)
 		default:
-			jsonError(w, err.Error(), http.StatusInternalServerError)
+			internalError(w, err)
 		}
 		return
 	}
@@ -1323,7 +1329,7 @@ func (h *Handler) handleZSetIncrScore(w http.ResponseWriter, r *http.Request) {
 
 	newScore, err := h.client.ZIncrBy(r.Context(), key, member, body.Amount)
 	if err != nil {
-		jsonError(w, err.Error(), http.StatusInternalServerError)
+		internalError(w, err)
 		return
 	}
 
@@ -1368,7 +1374,7 @@ func (h *Handler) handleGeoGet(w http.ResponseWriter, r *http.Request) {
 
 	zMembers, err := h.client.ZRangeWithScores(ctx, key, start, stop)
 	if err != nil {
-		jsonError(w, err.Error(), http.StatusInternalServerError)
+		internalError(w, err)
 		return
 	}
 
@@ -1381,7 +1387,7 @@ func (h *Handler) handleGeoGet(w http.ResponseWriter, r *http.Request) {
 	// Get coordinates
 	positions, err := h.client.GeoPos(ctx, key, memberNames...)
 	if err != nil {
-		jsonError(w, err.Error(), http.StatusInternalServerError)
+		internalError(w, err)
 		return
 	}
 
@@ -1451,7 +1457,7 @@ func (h *Handler) handleGeoAdd(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.client.GeoAdd(r.Context(), key, body.Longitude, body.Latitude, body.Member); err != nil {
-		jsonError(w, err.Error(), http.StatusInternalServerError)
+		internalError(w, err)
 		return
 	}
 
@@ -1498,7 +1504,7 @@ func (h *Handler) handleStreamAdd(w http.ResponseWriter, r *http.Request) {
 
 	id, err := h.client.XAddMulti(r.Context(), key, body.Fields)
 	if err != nil {
-		jsonError(w, err.Error(), http.StatusInternalServerError)
+		internalError(w, err)
 		return
 	}
 
@@ -1523,7 +1529,7 @@ func (h *Handler) handleStreamRemove(w http.ResponseWriter, r *http.Request) {
 
 	deleted, err := h.client.XDel(r.Context(), key, id)
 	if err != nil {
-		jsonError(w, err.Error(), http.StatusInternalServerError)
+		internalError(w, err)
 		return
 	}
 
@@ -1562,7 +1568,7 @@ func (h *Handler) handleHLLAdd(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.client.PFAdd(r.Context(), key, body.Element); err != nil {
-		jsonError(w, err.Error(), http.StatusInternalServerError)
+		internalError(w, err)
 		return
 	}
 
