@@ -27,12 +27,23 @@
 				return;
 			}
 			const parsed = JSON.parse(stored);
+			if (!Array.isArray(parsed)) {
+				history = [];
+				return;
+			}
 			// Migrate old string[] format to HistoryEntry[]
-			if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'string') {
+			if (parsed.length > 0 && typeof parsed[0] === 'string') {
 				history = parsed.map((p: string) => ({ pattern: p, regex: false }));
 				saveHistory();
 			} else {
-				history = parsed;
+				// Validate each entry has the expected shape
+				history = parsed.filter(
+					(e: unknown): e is HistoryEntry =>
+						typeof e === 'object' &&
+						e !== null &&
+						typeof (e as HistoryEntry).pattern === 'string' &&
+						typeof (e as HistoryEntry).regex === 'boolean'
+				);
 			}
 		} catch {
 			history = [];
