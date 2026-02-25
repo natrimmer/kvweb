@@ -40,5 +40,8 @@ logs/
 # GoReleaser
 dist/
 
+# Nix flake
+result
+
 # AI
 CLAUDE.md

@@ -8,6 +8,12 @@ Single binary. Go backend with embedded Svelte frontend.
 
 Download the latest binary from [GitHub Releases](https://github.com/natrimmer/kvweb/releases/latest), extract it, and add it to your PATH.
 
+With Nix:
+
+```
+nix run github:natrimmer/kvweb
+```
+
 Or build from source (requires Go, Node.js, pnpm):
 
 ```
