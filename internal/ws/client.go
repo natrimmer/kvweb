@@ -59,6 +59,7 @@ func (c *Client) WritePump(ctx context.Context) {
 // ReadPump reads messages from the WebSocket connection (mainly to detect disconnects)
 func (c *Client) ReadPump(ctx context.Context) {
 	defer c.hub.Unregister(c)
+	c.conn.SetReadLimit(4096) // We don't process incoming messages; cap to prevent abuse
 
 	for {
 		_, _, err := c.conn.Read(ctx)
