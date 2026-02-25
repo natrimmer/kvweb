@@ -20,6 +20,13 @@ func Handler() http.Handler {
 	fileServer := http.FileServer(http.FS(dist))
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Security-Policy",
+			"default-src 'self'; "+
+				"style-src 'self' 'unsafe-inline'; "+
+				"img-src 'self' https://*.tile.openstreetmap.org data:; "+
+				"connect-src 'self'; "+
+				"script-src 'self'")
+
 		// Try to serve the file
 		// If it doesn't exist, serve index.html for SPA routing
 		path := r.URL.Path
