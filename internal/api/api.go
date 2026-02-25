@@ -15,6 +15,9 @@ import (
 	"github.com/natrimmer/kvweb/internal/valkey"
 )
 
+// maxBodySize is the maximum allowed request body size (1MB)
+const maxBodySize = 1 << 20
+
 // Handler handles API requests
 type Handler struct {
 	cfg                     *config.Config
@@ -106,6 +109,11 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
+	}
+
+	// Limit request body size to prevent memory exhaustion
+	if r.Body != nil {
+		r.Body = http.MaxBytesReader(w, r.Body, maxBodySize)
 	}
 
 	h.mux.ServeHTTP(w, r)
