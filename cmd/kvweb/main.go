@@ -89,6 +89,9 @@ func main() {
 	}()
 
 	log.Printf("Connected to Valkey at %s", cfg.ValkeyURL)
+	if cfg.Host == "0.0.0.0" || cfg.Host == "" {
+		log.Printf("WARNING: Binding to all interfaces — server will be accessible on your network")
+	}
 	log.Printf("kvweb running at http://%s:%d", cfg.Host, cfg.Port)
 	if err := srv.Start(); err != nil {
 		log.Fatalf("Server error: %v", err)
