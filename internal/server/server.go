@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/coder/websocket"
@@ -25,7 +26,7 @@ type Server struct {
 	wsHub       *ws.Hub
 	apiHandler  *api.Handler
 	keyEvents   <-chan valkey.KeyEvent
-	liveUpdates bool
+	liveUpdates atomic.Bool
 	cancelFunc  context.CancelFunc
 	ctx         context.Context
 }
@@ -101,7 +102,7 @@ func (s *Server) initNotifications(ctx context.Context) {
 			return
 		}
 		s.keyEvents = events
-		s.liveUpdates = true
+		s.liveUpdates.Store(true)
 		log.Println("Subscribed to Valkey keyspace notifications")
 	}
 }
@@ -119,7 +120,7 @@ func (s *Server) Start() error {
 	go s.wsHub.Run()
 
 	// Start event broadcaster if live updates enabled
-	if s.liveUpdates {
+	if s.liveUpdates.Load() {
 		go s.runEventBroadcaster(ctx)
 	}
 
@@ -131,7 +132,7 @@ func (s *Server) Start() error {
 
 // enableLiveUpdates starts the keyspace subscription at runtime
 func (s *Server) enableLiveUpdates() {
-	if s.liveUpdates {
+	if s.liveUpdates.Load() {
 		return // Already enabled
 	}
 
@@ -146,7 +147,7 @@ func (s *Server) enableLiveUpdates() {
 	}
 
 	s.keyEvents = events
-	s.liveUpdates = true
+	s.liveUpdates.Store(true)
 	log.Println("Live updates enabled at runtime")
 
 	// Start the event broadcaster
@@ -161,11 +162,11 @@ func (s *Server) enableLiveUpdates() {
 
 // disableLiveUpdates stops the keyspace subscription at runtime
 func (s *Server) disableLiveUpdates() {
-	if !s.liveUpdates {
+	if !s.liveUpdates.Load() {
 		return // Already disabled
 	}
 
-	s.liveUpdates = false
+	s.liveUpdates.Store(false)
 	log.Println("Live updates disabled at runtime")
 
 	// Broadcast updated status to all connected clients
@@ -229,7 +230,7 @@ func (s *Server) runStatsBroadcaster(ctx context.Context) {
 
 			statsData := ws.StatsData{
 				DBSize:          dbSize,
-				NotificationsOn: s.liveUpdates,
+				NotificationsOn: s.liveUpdates.Load(),
 			}
 
 			if memStats != nil {
@@ -265,7 +266,7 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	// Send initial status
 	status := ws.Message{
 		Type: "status",
-		Data: ws.StatusData{Live: s.liveUpdates},
+		Data: ws.StatusData{Live: s.liveUpdates.Load()},
 	}
 	if data, err := json.Marshal(status); err == nil {
 		client.Send(data)
@@ -277,7 +278,7 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	statsData := ws.StatsData{
 		DBSize:          dbSize,
-		NotificationsOn: s.liveUpdates,
+		NotificationsOn: s.liveUpdates.Load(),
 	}
 
 	if memStats != nil {
