@@ -46,9 +46,15 @@
 
 		for (const member of members) {
 			const marker = L.marker([member.latitude, member.longitude]);
-			marker.bindPopup(
-				`<strong>${member.member}</strong><br>${member.longitude.toFixed(6)}, ${member.latitude.toFixed(6)}`
+			const container = document.createElement('div');
+			const strong = document.createElement('strong');
+			strong.textContent = member.member;
+			container.appendChild(strong);
+			container.appendChild(document.createElement('br'));
+			container.appendChild(
+				document.createTextNode(`${member.longitude.toFixed(6)}, ${member.latitude.toFixed(6)}`)
 			);
+			marker.bindPopup(container);
 			markersLayer.addLayer(marker);
 		}
 
