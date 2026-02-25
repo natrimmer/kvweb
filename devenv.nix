@@ -124,7 +124,7 @@ in
       echo "Build complete! Run ./kvweb to start"
     '';
 
-    test.exec = ''
+    tests.exec = ''
       echo "Running Go tests..."
       go test ./...
       echo ""
@@ -171,7 +171,7 @@ in
       echo "  dev        - Start dev environment (valkey + backend + frontend)"
       echo "  build      - Build production binary with embedded frontend"
       echo "  build-web  - Build frontend only"
-      echo "  test       - Run all tests"
+      echo "  tests      - Run all tests"
       echo "  lint       - Run linters"
       echo "  deps       - Update dependencies"
       echo "  seed [TYPE]- Populate valkey with sample data"
