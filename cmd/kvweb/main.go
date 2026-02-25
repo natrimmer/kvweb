@@ -27,7 +27,7 @@ func main() {
 	flag.StringVar(&cfg.Host, "host", "localhost", "HTTP server host")
 	flag.IntVar(&cfg.Port, "port", 8080, "HTTP server port")
 	flag.StringVar(&cfg.ValkeyURL, "url", "localhost:6379", "Valkey/Redis server URL")
-	flag.StringVar(&cfg.ValkeyPassword, "password", "", "Valkey/Redis password")
+	flag.StringVar(&cfg.ValkeyPassword, "password", "", "Valkey/Redis password (prefer VALKEY_PASSWORD env var)")
 	flag.IntVar(&cfg.ValkeyDB, "db", 0, "Valkey/Redis database number")
 	flag.BoolVar(&cfg.OpenBrowser, "open", false, "Open browser on start")
 	flag.BoolVar(&cfg.ReadOnly, "readonly", false, "Disable write operations (set, delete, flush)")
@@ -40,6 +40,11 @@ func main() {
 	showVersion := flag.Bool("version", false, "Show version")
 	help := flag.Bool("help", false, "Show help")
 	flag.Parse()
+
+	// Prefer env var for password to avoid process list exposure
+	if cfg.ValkeyPassword == "" {
+		cfg.ValkeyPassword = os.Getenv("VALKEY_PASSWORD")
+	}
 
 	if *showVersion {
 		fmt.Printf("kvweb %s (%s)\n", version, commit)
