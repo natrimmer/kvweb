@@ -18,6 +18,7 @@ in
     pkgs.git
     pkgs.gopls
     pkgs.golangci-lint
+    pkgs.goreleaser
     pkgs.nodejs
     pkgs.pnpm
     pkgs.nixd

@@ -37,5 +37,8 @@ Thumbs.db
 logs/
 .pre-commit-config.yaml
 
+# GoReleaser
+dist/
+
 # AI
 CLAUDE.md
