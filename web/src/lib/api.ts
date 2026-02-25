@@ -120,7 +120,7 @@ export const api = {
 	},
 
 	getInfo(section?: string): Promise<ServerInfo> {
-		const params = section ? `?section=${section}` : '';
+		const params = section ? `?section=${encodeURIComponent(section)}` : '';
 		return request(`/info${params}`);
 	},
 
