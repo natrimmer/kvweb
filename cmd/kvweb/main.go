@@ -32,7 +32,7 @@ func main() {
 	flag.BoolVar(&cfg.OpenBrowser, "open", false, "Open browser on start")
 	flag.BoolVar(&cfg.ReadOnly, "readonly", false, "Disable write operations (set, delete, flush)")
 	flag.StringVar(&cfg.Prefix, "prefix", "", "Only show/allow keys matching this prefix")
-	flag.BoolVar(&cfg.DisableFlush, "disable-flush", false, "Block FLUSHDB even in write mode")
+	flag.BoolVar(&cfg.DisableFlush, "disable-flush", true, "Block FLUSHDB even in write mode (use --disable-flush=false to allow)")
 	flag.Int64Var(&cfg.MaxKeys, "max-keys", 0, "Limit SCAN count per request (0 = no limit)")
 	flag.BoolVar(&cfg.Notifications, "notifications", false, "Auto-enable Valkey keyspace notifications for live updates")
 	flag.StringVar(&cfg.CORSOrigin, "cors-origin", "", "Allowed CORS origin (e.g. http://localhost:5173). Omit to disallow cross-origin requests")
