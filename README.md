@@ -11,7 +11,7 @@ Download the latest binary from [GitHub Releases](https://github.com/natrimmer/k
 With Nix:
 
 ```
-nix run github:natrimmer/kvweb
+nix profile install github:natrimmer/kvweb
 ```
 
 Or build from source (requires Go, Node.js, pnpm):
