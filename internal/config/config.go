@@ -28,6 +28,11 @@ type Config struct {
 
 	// Development
 	Dev bool // Skip serving embedded frontend
+
+	// Build info (set at build time via main.go)
+	Version string
+	Commit  string
+	Dirty   bool
 }
 
 // New creates a new Config with default values

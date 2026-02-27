@@ -72,6 +72,9 @@ export interface AppConfig {
 	readOnly: boolean;
 	prefix: string;
 	disableFlush: boolean;
+	version: string;
+	commit: string;
+	dirty: boolean;
 }
 
 export interface PrefixEntry {

@@ -22,6 +22,9 @@
 	let readOnly = $state(false);
 	let prefix = $state('');
 	let disableFlush = $state(false);
+	let version = $state('');
+	let commit = $state('');
+	let dirty = $state(false);
 	let liveUpdates = $state(false);
 	let healthCheckInterval: ReturnType<typeof setInterval> | null = null;
 	let darkModeEnabled = $state(false);
@@ -52,6 +55,9 @@
 				readOnly = config.readOnly;
 				prefix = config.prefix;
 				disableFlush = config.disableFlush;
+				version = config.version;
+				commit = config.commit;
+				dirty = config.dirty;
 				apiConnected = true;
 			})
 			.catch(() => {
@@ -179,7 +185,7 @@
 
 	<main class="flex-1 overflow-hidden">
 		<Resizable.PaneGroup direction="horizontal" class="h-full">
-			<Resizable.Pane defaultSize={25} minSize={15} maxSize={50} collapsible={true}>
+			<Resizable.Pane defaultSize={20} minSize={15} maxSize={50} collapsible={true}>
 				<div class="flex h-full flex-col overflow-hidden border-r border-border">
 					<KeyList
 						onselect={handleKeySelect}
@@ -190,6 +196,9 @@
 						{dbSize}
 						{usedMemoryHuman}
 						{disableFlush}
+						{version}
+						{commit}
+						{dirty}
 					/>
 				</div>
 			</Resizable.Pane>

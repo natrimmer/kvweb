@@ -200,6 +200,9 @@ func (h *Handler) handleConfig(w http.ResponseWriter, r *http.Request) {
 		"readOnly":     h.cfg.ReadOnly,
 		"prefix":       h.cfg.Prefix,
 		"disableFlush": h.cfg.DisableFlush,
+		"version":      h.cfg.Version,
+		"commit":       h.cfg.Commit,
+		"dirty":        h.cfg.Dirty,
 	})
 }
 

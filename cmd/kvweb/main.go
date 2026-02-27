@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"runtime"
+	"strings"
 	"syscall"
 
 	"github.com/natrimmer/kvweb/internal/config"
@@ -22,6 +23,7 @@ var (
 
 func main() {
 	cfg := config.New()
+	parseBuildInfo(cfg)
 
 	// CLI flags
 	flag.StringVar(&cfg.Host, "host", "localhost", "HTTP server host")
@@ -95,6 +97,44 @@ func main() {
 	log.Printf("kvweb running at http://%s:%d", cfg.Host, cfg.Port)
 	if err := srv.Start(); err != nil {
 		log.Fatalf("Server error: %v", err)
+	}
+}
+
+// parseBuildInfo extracts version, commit, and dirty state from the build-time
+// variables. version may be a plain semver ("0.1.2" from goreleaser) or a full
+// git describe output ("v0.1.2-2-g914ab42-dirty" from local builds).
+// When no ldflags are set (dev mode), version stays "dev" with no commit/dirty.
+func parseBuildInfo(cfg *config.Config) {
+	if version == "dev" {
+		cfg.Version = "dev"
+		return
+	}
+
+	v := strings.TrimPrefix(version, "v")
+
+	// Strip "-dirty" suffix
+	if strings.HasSuffix(v, "-dirty") {
+		cfg.Dirty = true
+		v = strings.TrimSuffix(v, "-dirty")
+	}
+
+	// git describe format: "0.1.2-2-g914ab42" → version "0.1.2", commit "914ab42"
+	// If commit was set separately (goreleaser), v is already clean like "0.1.2"
+	if parts := strings.SplitN(v, "-", 2); len(parts) == 2 && strings.Contains(parts[1], "g") {
+		cfg.Version = parts[0]
+		hashParts := strings.Split(parts[1], "-")
+		for _, p := range hashParts {
+			if strings.HasPrefix(p, "g") {
+				cfg.Commit = p[1:]
+			}
+		}
+	} else {
+		cfg.Version = v
+	}
+
+	// Use separately-set commit if version didn't embed one (goreleaser sets it)
+	if cfg.Commit == "" && commit != "none" {
+		cfg.Commit = commit
 	}
 }
 

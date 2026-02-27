@@ -7,6 +7,7 @@
 	import * as Empty from '$lib/components/ui/empty';
 	import { Input } from '$lib/components/ui/input';
 	import * as Select from '$lib/components/ui/select';
+	import AboutDialog from '$lib/dialogs/AboutDialog.svelte';
 	import AddKeyDialog from '$lib/dialogs/AddKeyDialog.svelte';
 	import {
 		ArrowUpFromDot,
@@ -38,6 +39,9 @@
 		dbSize: number;
 		usedMemoryHuman: string;
 		disableFlush?: boolean;
+		version: string;
+		commit: string;
+		dirty: boolean;
 	}
 
 	let {
@@ -48,7 +52,10 @@
 		prefix,
 		dbSize,
 		usedMemoryHuman,
-		disableFlush = false
+		disableFlush = false,
+		version,
+		commit,
+		dirty
 	}: Props = $props();
 
 	let viewMode = $state<'list' | 'tree'>('list');
@@ -62,6 +69,7 @@
 	let loading = $state(false);
 	let cursor = $state(0);
 	let hasMore = $state(false);
+	let showAbout = $state(false);
 	let showAddDialog = $state(false);
 	let showSettings = $state(false);
 	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -461,15 +469,16 @@
 
 		<!-- Footer with about and settings -->
 		<div class="mt-0 flex items-center justify-between border-t border-border pt-3 text-xs">
-			<a
-				href="/kvweb"
-				class="flex items-center gap-1.5 text-muted-foreground hover:text-foreground hover:underline"
-				title="Learn more about kvweb"
-				aria-label="Learn more about kvweb"
+			<button
+				type="button"
+				onclick={() => (showAbout = true)}
+				class="flex cursor-pointer items-center gap-1.5 text-muted-foreground hover:text-foreground hover:underline"
+				title="About kvweb"
+				aria-label="About kvweb"
 			>
 				<Info size={14} />
 				<span>About kvweb</span>
-			</a>
+			</button>
 			<Button
 				variant="ghost"
 				size="sm"
@@ -495,6 +504,8 @@
 		</div>
 	</Dialog.Content>
 </Dialog.Root>
+
+<AboutDialog bind:open={showAbout} {version} {commit} {dirty} />
 
 <AddKeyDialog
 	bind:open={showAddDialog}
