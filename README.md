@@ -30,7 +30,7 @@ kvweb [flags]
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `-url` | `localhost:6379` | Valkey/Redis server address |
+| `-url` | `localhost:6379` | Server address or URL (see below) |
 | `-password` | | Server password (prefer `VALKEY_PASSWORD` env var) |
 | `-db` | `0` | Database number |
 | `-host` | `localhost` | HTTP listen address |
@@ -42,6 +42,22 @@ kvweb [flags]
 | `-notifications` | `false` | Auto-enable keyspace notifications for live updates |
 | `-open` | `false` | Open browser on start |
 | `-dev` | `false` | Skip serving embedded frontend (API + WebSocket only) |
+
+### Connection URLs
+
+The `-url` flag accepts a plain `host:port` or a full URL with scheme:
+
+```
+kvweb -url localhost:6379
+kvweb -url redis://:password@localhost:6379/2
+kvweb -url rediss://host:6380
+```
+
+Supported schemes: `redis://`, `rediss://` (TLS), `valkey://`, `valkeys://` (TLS), `unix://`.
+
+The URL can include username, password, and database number. The `-password` and `-db` flags override values from the URL when set.
+
+The `rediss://` and `valkeys://` schemes enable TLS with system CA certificates. Custom CA certs, client certificates, and other advanced TLS settings are not supported through the URL.
 
 ## Versioning
 

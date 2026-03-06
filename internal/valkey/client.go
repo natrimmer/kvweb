@@ -19,10 +19,21 @@ type Client struct {
 
 // New creates a new Valkey client
 func New(cfg *config.Config) (*Client, error) {
-	opts := valkey.ClientOption{
-		InitAddress: []string{cfg.ValkeyURL},
+	var opts valkey.ClientOption
+
+	if strings.Contains(cfg.ValkeyURL, "://") {
+		var err error
+		opts, err = valkey.ParseURL(cfg.ValkeyURL)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse URL: %w", err)
+		}
+	} else {
+		opts = valkey.ClientOption{
+			InitAddress: []string{cfg.ValkeyURL},
+		}
 	}
 
+	// CLI flags override URL-provided values
 	if cfg.ValkeyPassword != "" {
 		opts.Password = cfg.ValkeyPassword
 	}

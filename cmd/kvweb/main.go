@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -28,7 +29,7 @@ func main() {
 	// CLI flags
 	flag.StringVar(&cfg.Host, "host", "localhost", "HTTP server host")
 	flag.IntVar(&cfg.Port, "port", 8080, "HTTP server port")
-	flag.StringVar(&cfg.ValkeyURL, "url", "localhost:6379", "Valkey/Redis server URL")
+	flag.StringVar(&cfg.ValkeyURL, "url", "localhost:6379", "Valkey/Redis server address or URL (e.g. localhost:6379, redis://user:pass@host:6379/0, rediss://host:6380)")
 	flag.StringVar(&cfg.ValkeyPassword, "password", "", "Valkey/Redis password (prefer VALKEY_PASSWORD env var)")
 	flag.IntVar(&cfg.ValkeyDB, "db", 0, "Valkey/Redis database number")
 	flag.BoolVar(&cfg.OpenBrowser, "open", false, "Open browser on start")
@@ -90,7 +91,7 @@ func main() {
 		}
 	}()
 
-	log.Printf("Connected to Valkey at %s", cfg.ValkeyURL)
+	log.Printf("Connected to Valkey at %s", redactURL(cfg.ValkeyURL))
 	if cfg.Host == "0.0.0.0" || cfg.Host == "" {
 		log.Printf("WARNING: Binding to all interfaces — server will be accessible on your network")
 	}
@@ -155,4 +156,22 @@ func openBrowser(url string) error {
 	}
 
 	return exec.Command(cmd, args...).Start()
+}
+
+// redactURL strips the password from a URL for safe logging.
+// Plain host:port strings are returned as-is.
+func redactURL(raw string) string {
+	if !strings.Contains(raw, "://") {
+		return raw
+	}
+	u, err := url.Parse(raw)
+	if err != nil {
+		return raw
+	}
+	if u.User != nil {
+		if _, hasPass := u.User.Password(); hasPass {
+			u.User = url.UserPassword(u.User.Username(), "xxxxx")
+		}
+	}
+	return u.String()
 }
