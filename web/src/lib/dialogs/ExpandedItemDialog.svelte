@@ -147,16 +147,16 @@
 </script>
 
 <Dialog.Root bind:open>
-	<Dialog.Content class="flex max-h-[85vh] max-w-4xl flex-col">
+	<Dialog.Content class="flex h-[85vh] flex-col">
 		<Dialog.Header>
 			<Dialog.Title>{title}</Dialog.Title>
 			<Dialog.Description>
-				{valueStats.chars} characters · {formatBytes(valueStats.bytes)} · {valueStats.lines} lines
+				{valueStats.chars} characters · {formatBytes(valueStats.bytes)} · {valueStats.lines} line(s)
 			</Dialog.Description>
 		</Dialog.Header>
 
 		{#if metadata && metadata.length > 0}
-			<div class="mb-4 flex flex-wrap gap-3">
+			<div class="mb-2 flex flex-wrap gap-2">
 				{#each metadata as item}
 					<div class="flex items-baseline gap-1.5 text-sm">
 						<span class="text-muted-foreground">{item.label}:</span>
@@ -166,7 +166,7 @@
 			</div>
 		{/if}
 
-		<div class="mb-4 flex items-center justify-between gap-2">
+		<div class="mb-2 flex items-center justify-between gap-2">
 			<div class="flex-1"></div>
 			{#if hasAnyJson}
 				<ButtonGroup.Root>
@@ -260,17 +260,27 @@
 					readonly={readOnly}
 					title="Edit value"
 					aria-label="Edit value"
-					class="min-h-100 resize-none font-mono text-sm"
+					class="h-full resize-none p-4 font-mono text-sm"
 				/>
 			{/if}
 		</div>
 
 		<Dialog.Footer>
-			<Button variant="outline" onclick={handleCancel}>
+			<Button
+				variant="outline"
+				onclick={handleCancel}
+				title={readOnly || !hasChanges ? 'Close' : 'Cancel'}
+				aria-label={readOnly || !hasChanges ? 'Close' : 'Cancel'}
+			>
 				{readOnly || !hasChanges ? 'Close' : 'Cancel'}
 			</Button>
 			{#if !readOnly && onSave}
-				<Button onclick={handleSave} disabled={saving || !hasChanges}>
+				<Button
+					onclick={handleSave}
+					disabled={saving || !hasChanges}
+					title={saving ? 'Saving...' : 'Save'}
+					aria-label={saving ? 'Saving...' : 'Save'}
+				>
 					{saving ? 'Saving...' : 'Save'}
 				</Button>
 			{/if}
