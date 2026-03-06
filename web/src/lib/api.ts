@@ -113,6 +113,11 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 	return res.json();
 }
 
+export interface ExecResult {
+	type: 'string' | 'integer' | 'array' | 'nil' | 'error';
+	value: string | number | ExecResult[] | null;
+}
+
 export const api = {
 	getHealth(): Promise<HealthResponse> {
 		return request('/health');
@@ -341,6 +346,14 @@ export const api = {
 		return request(`/key/${encodeURIComponent(key)}/hll`, {
 			method: 'POST',
 			body: JSON.stringify({ element })
+		});
+	},
+
+	// Console
+	exec(command: string): Promise<ExecResult> {
+		return request('/exec', {
+			method: 'POST',
+			body: JSON.stringify({ command })
 		});
 	}
 };

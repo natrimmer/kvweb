@@ -539,6 +539,11 @@ func (c *Client) GetMemoryStats(ctx context.Context) (*MemoryStats, error) {
 	return stats, nil
 }
 
+// Exec executes an arbitrary command and returns the result as a generic value.
+func (c *Client) Exec(ctx context.Context, args []string) (any, error) {
+	return c.client.Do(ctx, c.client.B().Arbitrary(args...).Build()).ToAny()
+}
+
 // Config operations
 
 // GetNotifyKeyspaceEvents returns the current notify-keyspace-events setting

@@ -29,6 +29,7 @@
 		Regex,
 		Search,
 		Settings,
+		SquareTerminal,
 		Trash2
 	} from '@lucide/svelte';
 	import { onMount } from 'svelte';
@@ -50,6 +51,8 @@
 		version: string;
 		commit: string;
 		dirty: boolean;
+		consoleVisible?: boolean;
+		onToggleConsole?: () => void;
 	}
 
 	let {
@@ -63,7 +66,9 @@
 		disableFlush = false,
 		version,
 		commit,
-		dirty
+		dirty,
+		consoleVisible = false,
+		onToggleConsole
 	}: Props = $props();
 
 	let viewMode = $state<'list' | 'tree'>('list');
@@ -834,6 +839,20 @@
 			>
 				<Settings size={14} />
 			</Button>
+			{#if onToggleConsole}
+				<Button
+					variant="ghost"
+					size="sm"
+					class="h-7 {consoleVisible
+						? 'text-primary'
+						: 'text-muted-foreground'} hover:text-foreground"
+					onclick={onToggleConsole}
+					title="Toggle console"
+					aria-label="Toggle console"
+				>
+					<SquareTerminal size={14} />
+				</Button>
+			{/if}
 		</div>
 	</div>
 </div>

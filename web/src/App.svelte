@@ -8,6 +8,7 @@
 	import { ModeWatcher } from 'mode-watcher';
 	import { onMount } from 'svelte';
 	import { api } from './lib/api';
+	import Console, { type OutputLine } from './lib/Console.svelte';
 	import { matchesShortcut } from './lib/keyboard';
 	import KeyEditor from './lib/KeyEditor.svelte';
 	import KeyList from './lib/KeyList.svelte';
@@ -26,7 +27,20 @@
 	let commit = $state('');
 	let dirty = $state(false);
 	let liveUpdates = $state(false);
+	let consoleVisible = $state(false);
+	let consoleRef: Console | undefined = $state();
+	let consoleOutputHistory = $state<OutputLine[]>([]);
+	let consoleCommandHistory = $state<string[]>([]);
 	let healthCheckInterval: ReturnType<typeof setInterval> | null = null;
+
+	function toggleConsole() {
+		consoleVisible = !consoleVisible;
+		if (consoleVisible) {
+			// Focus the console input after it renders
+			requestAnimationFrame(() => consoleRef?.focus());
+		}
+	}
+
 	function resetToHome() {
 		selectedKey = null;
 	}
@@ -180,52 +194,72 @@
 	</header>
 
 	<main class="flex-1 overflow-hidden">
-		<Resizable.PaneGroup direction="horizontal" class="h-full">
-			<Resizable.Pane defaultSize={25} minSize={20} maxSize={50} collapsible={true}>
-				<div class="flex h-full flex-col overflow-hidden border-r border-border">
-					<KeyList
-						onselect={handleKeySelect}
-						selected={selectedKey}
-						oncreated={handleKeyCreated}
-						{readOnly}
-						{prefix}
-						{dbSize}
-						{usedMemoryHuman}
-						{disableFlush}
-						{version}
-						{commit}
-						{dirty}
-					/>
-				</div>
+		<Resizable.PaneGroup direction="vertical" class="h-full">
+			<Resizable.Pane defaultSize={consoleVisible ? 70 : 100} minSize={30}>
+				<Resizable.PaneGroup direction="horizontal" class="h-full">
+					<Resizable.Pane defaultSize={25} minSize={20} maxSize={50} collapsible={true}>
+						<div class="flex h-full flex-col overflow-hidden border-r border-border">
+							<KeyList
+								onselect={handleKeySelect}
+								selected={selectedKey}
+								oncreated={handleKeyCreated}
+								{readOnly}
+								{prefix}
+								{dbSize}
+								{usedMemoryHuman}
+								{disableFlush}
+								{version}
+								{commit}
+								{dirty}
+								{consoleVisible}
+								onToggleConsole={toggleConsole}
+							/>
+						</div>
+					</Resizable.Pane>
+					<Resizable.Handle withHandle />
+					<Resizable.Pane defaultSize={75}>
+						<div class="h-full overflow-auto">
+							{#if selectedKey}
+								<KeyEditor key={selectedKey} ondeleted={handleKeyDeleted} {readOnly} />
+							{:else if dbSize === 0}
+								<Empty.Root class="h-full">
+									<Empty.Header>
+										<Empty.Media variant="default">
+											<Logo size={240} class="text-secondary" />
+										</Empty.Media>
+									</Empty.Header>
+								</Empty.Root>
+							{:else}
+								<Empty.Root class="h-full">
+									<Empty.Header>
+										<Empty.Media variant="icon">
+											<Database />
+										</Empty.Media>
+										<Empty.Title>No Key Selected</Empty.Title>
+										<Empty.Description>
+											Select a key from the list to view or edit its value.
+										</Empty.Description>
+									</Empty.Header>
+								</Empty.Root>
+							{/if}
+						</div>
+					</Resizable.Pane>
+				</Resizable.PaneGroup>
 			</Resizable.Pane>
-			<Resizable.Handle withHandle />
-			<Resizable.Pane defaultSize={75}>
-				<div class="h-full overflow-auto">
-					{#if selectedKey}
-						<KeyEditor key={selectedKey} ondeleted={handleKeyDeleted} {readOnly} />
-					{:else if dbSize === 0}
-						<Empty.Root class="h-full">
-							<Empty.Header>
-								<Empty.Media variant="default">
-									<Logo size={240} class="text-secondary" />
-								</Empty.Media>
-							</Empty.Header>
-						</Empty.Root>
-					{:else}
-						<Empty.Root class="h-full">
-							<Empty.Header>
-								<Empty.Media variant="icon">
-									<Database />
-								</Empty.Media>
-								<Empty.Title>No Key Selected</Empty.Title>
-								<Empty.Description>
-									Select a key from the list to view or edit its value.
-								</Empty.Description>
-							</Empty.Header>
-						</Empty.Root>
-					{/if}
-				</div>
-			</Resizable.Pane>
+			{#if consoleVisible}
+				<Resizable.Handle withHandle />
+				<Resizable.Pane defaultSize={30} minSize={15} maxSize={60}>
+					<div class="h-full border-t border-border">
+						<Console
+							bind:this={consoleRef}
+							bind:outputHistory={consoleOutputHistory}
+							bind:commandHistory={consoleCommandHistory}
+							{readOnly}
+							{prefix}
+						/>
+					</div>
+				</Resizable.Pane>
+			{/if}
 		</Resizable.PaneGroup>
 	</main>
 </div>

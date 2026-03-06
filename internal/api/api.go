@@ -86,6 +86,9 @@ func New(cfg *config.Config, client *valkey.Client) *Handler {
 	// HyperLogLog operations
 	h.mux.HandleFunc("POST /api/key/{key}/hll", h.handleHLLAdd)
 
+	// Console
+	h.mux.HandleFunc("POST /api/exec", h.handleExec)
+
 	return h
 }
 

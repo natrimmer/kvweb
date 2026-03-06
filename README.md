@@ -68,6 +68,12 @@ kvweb --version
 kvweb v0.1.0 (a1b2c3d)
 ```
 
+## Console
+
+A built-in command console for running ad-hoc Valkey commands directly from the UI. Toggle it with the terminal icon in the header or `Ctrl+``/`Cmd+``.
+
+Respects `--readonly` (only read commands allowed) and `--prefix` (key arguments must match). Blocking commands (SUBSCRIBE, MONITOR), scripting (EVAL), and transactions (MULTI) are always disabled.
+
 ## Supported Types
 
 string, hash, list, set, sorted set, stream, HyperLogLog, geo
