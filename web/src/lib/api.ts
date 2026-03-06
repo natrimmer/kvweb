@@ -178,6 +178,13 @@ export const api = {
 		});
 	},
 
+	deleteKeys(keys: string[]): Promise<{ deleted: number }> {
+		return request('/keys/delete', {
+			method: 'POST',
+			body: JSON.stringify({ keys })
+		});
+	},
+
 	expireKey(key: string, ttl: number): Promise<{ ok: boolean }> {
 		return request(`/key/${encodeURIComponent(key)}/expire`, {
 			method: 'POST',

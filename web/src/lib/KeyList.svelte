@@ -7,8 +7,10 @@
 	import * as Empty from '$lib/components/ui/empty';
 	import { Input } from '$lib/components/ui/input';
 	import * as Select from '$lib/components/ui/select';
+	import * as Kbd from '$lib/components/ui/kbd';
 	import AboutDialog from '$lib/dialogs/AboutDialog.svelte';
 	import AddKeyDialog from '$lib/dialogs/AddKeyDialog.svelte';
+	import BulkDeleteDialog from '$lib/dialogs/BulkDeleteDialog.svelte';
 	import PaletteDialog from '$lib/dialogs/PaletteDialog.svelte';
 	import {
 		ArrowUpFromDot,
@@ -22,7 +24,8 @@
 		Palette,
 		Regex,
 		Search,
-		Settings
+		Settings,
+		Trash2
 	} from '@lucide/svelte';
 	import { onMount } from 'svelte';
 	import { api, type KeyMeta } from './api';
@@ -80,6 +83,14 @@
 	let searchHistoryRef: SearchHistory | undefined = $state();
 	let showFilters = $state(false);
 	let inputRef: HTMLInputElement | null = $state(null);
+	let selectedKeys = $state<Set<string>>(new Set());
+	let lastClickedKey = $state<string | null>(null);
+	let showBulkDelete = $state(false);
+
+	const isMac = /mac/i.test(
+		(navigator as Navigator & { userAgentData?: { platform: string } }).userAgentData?.platform ??
+			navigator.userAgent
+	);
 
 	const keyTypes = [
 		{ value: 'all', label: 'All types' },
@@ -182,6 +193,7 @@
 		useRegex; // track dependency
 		if (debounceTimer) clearTimeout(debounceTimer);
 		debounceTimer = setTimeout(() => {
+			selectedKeys = new Set();
 			loadKeys(true);
 			searchHistoryRef?.addToHistory(pattern, useRegex);
 		}, 300);
@@ -224,12 +236,62 @@
 		onselect(keyName);
 		oncreated();
 	}
+
+	function handleKeyClick(event: MouseEvent, key: string) {
+		if (event.metaKey || event.ctrlKey) {
+			// Toggle individual key
+			const next = new Set(selectedKeys);
+			if (next.has(key)) {
+				next.delete(key);
+			} else {
+				next.add(key);
+			}
+			selectedKeys = next;
+			lastClickedKey = key;
+		} else if (event.shiftKey && lastClickedKey) {
+			// Range select
+			const keyNames = sortedKeys.map((k) => k.key);
+			const fromIdx = keyNames.indexOf(lastClickedKey);
+			const toIdx = keyNames.indexOf(key);
+			if (fromIdx !== -1 && toIdx !== -1) {
+				const start = Math.min(fromIdx, toIdx);
+				const end = Math.max(fromIdx, toIdx);
+				const next = new Set(selectedKeys);
+				for (let i = start; i <= end; i++) {
+					next.add(keyNames[i]);
+				}
+				selectedKeys = next;
+			}
+		} else {
+			// Normal click — clear multi-select, open editor
+			selectedKeys = new Set();
+			lastClickedKey = key;
+			onselect(key);
+		}
+	}
+
+	function handleKeydown(event: KeyboardEvent) {
+		if (event.key === 'Escape' && selectedKeys.size > 0) {
+			selectedKeys = new Set();
+			event.preventDefault();
+		}
+		if ((event.metaKey || event.ctrlKey) && event.key === 'a' && sortedKeys.length > 0) {
+			event.preventDefault();
+			selectedKeys = new Set(sortedKeys.map((k) => k.key));
+		}
+	}
+
+	function handleBulkDeleted(count: number) {
+		selectedKeys = new Set();
+		loadKeys(true);
+	}
 </script>
 
 {#if viewMode === 'tree'}
 	<KeyTree {selected} {onselect} onclose={() => (viewMode = 'list')} />
 {:else}
-	<div class="flex h-full flex-col p-4">
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div class="flex h-full flex-col p-4" onkeydown={handleKeydown}>
 		<div class="mb-3 flex gap-2">
 			<div class="relative flex-1">
 				<Input
@@ -329,30 +391,66 @@
 		{/if}
 
 		<div class="mb-3 flex items-center justify-between">
-			<div class="flex flex-col text-sm text-muted-foreground">
+			{#if selectedKeys.size > 0}
+				<div class="flex items-center gap-1.5">
+					<Button
+						variant="ghost"
+						size="icon"
+						class="h-6 w-6 text-muted-foreground"
+						onclick={() => (selectedKeys = new Set())}
+						title="Clear selection"
+						aria-label="Clear selection"
+					>
+						<CircleX size={14} />
+					</Button>
+					<span class="text-sm font-medium">{selectedKeys.size} selected</span>
+				</div>
+				<div class="flex items-center gap-1.5">
+					<Button
+						variant="ghost"
+						size="sm"
+						onclick={() => {
+							if (selectedKeys.size === sortedKeys.length) {
+								selectedKeys = new Set();
+							} else {
+								selectedKeys = new Set(sortedKeys.map((k) => k.key));
+							}
+						}}
+					>
+						{selectedKeys.size === sortedKeys.length ? 'Deselect All' : 'Select All'}
+					</Button>
+					{#if !readOnly}
+						<Button variant="destructive" size="sm" onclick={() => (showBulkDelete = true)}>
+							<Trash2 size={14} />
+						</Button>
+					{/if}
+				</div>
+			{:else}
+				<div class="flex items-center gap-2 text-sm text-muted-foreground">
+					<span>
+						{#if pattern !== '*' || typeFilter !== 'all'}
+							{sortedKeys.length} of {dbSize} key{dbSize === 1 ? '' : 's'}
+						{:else}
+							{dbSize} total key{dbSize === 1 ? '' : 's'}
+						{/if}
+					</span>
+					<span class="text-xs opacity-40">
+						<Kbd.Root>{isMac ? '⌘' : 'Ctrl'}</Kbd.Root> Click to select
+					</span>
+				</div>
 				<span>
-					{#if pattern !== '*' || typeFilter !== 'all'}
-						{sortedKeys.length} of {dbSize} key{dbSize === 1 ? '' : 's'}
-					{:else}
-						{dbSize} total key{dbSize === 1 ? '' : 's'}
+					{#if !readOnly}
+						<Button
+							variant="outline"
+							size="sm"
+							class="hover:bg-accent"
+							onclick={() => (showAddDialog = true)}
+						>
+							<CirclePlus /> New Key
+						</Button>
 					{/if}
 				</span>
-				{#if usedMemoryHuman}
-					<span>{usedMemoryHuman} memory usage</span>
-				{/if}
-			</div>
-			<span>
-				{#if !readOnly}
-					<Button
-						variant="outline"
-						size="sm"
-						class="hover:bg-accent"
-						onclick={() => (showAddDialog = true)}
-					>
-						<CirclePlus /> New Key
-					</Button>
-				{/if}
-			</span>
+			{/if}
 		</div>
 
 		{#if typeFilter === 'geo'}
@@ -380,14 +478,27 @@
 							sortBy === 'ttl' &&
 							i < sortedKeys.length - 1 &&
 							item.ttl >= 0 !== sortedKeys[i + 1].ttl >= 0}
+						{@const isSelected = selectedKeys.has(item.key)}
+						{@const prevSelected = isSelected && i > 0 && selectedKeys.has(sortedKeys[i - 1].key)}
+						{@const nextSelected =
+							isSelected && i < sortedKeys.length - 1 && selectedKeys.has(sortedKeys[i + 1].key)}
 						<li class={hasTtlBoundary ? 'mb-1 border-b border-border pb-1' : ''}>
 							<Button
 								variant="ghost"
-								class="w-full justify-start overflow-hidden rounded p-2 font-mono text-sm text-ellipsis whitespace-nowrap text-foreground hover:bg-primary/10 {item.key ===
-								selected
+								class="w-full justify-start overflow-hidden p-2 font-mono text-sm text-ellipsis whitespace-nowrap text-foreground hover:bg-primary/10 {isSelected
 									? 'bg-primary/20 hover:bg-primary/20'
-									: ''}"
-								onclick={() => onselect(item.key)}
+									: item.key === selected && selectedKeys.size === 0
+										? 'bg-primary/20 hover:bg-primary/20'
+										: ''} {isSelected
+									? prevSelected && nextSelected
+										? 'rounded-none'
+										: prevSelected
+											? 'rounded-t-none rounded-b'
+											: nextSelected
+												? 'rounded-t rounded-b-none'
+												: 'rounded'
+									: 'rounded'}"
+								onclick={(e: MouseEvent) => handleKeyClick(e, item.key)}
 								title={`View key: ${item.key}`}
 								aria-label={`View key: ${item.key}`}
 							>
@@ -523,4 +634,11 @@
 	{prefix}
 	onCreated={handleKeyCreated}
 	onCancel={() => (showAddDialog = false)}
+/>
+
+<BulkDeleteDialog
+	bind:open={showBulkDelete}
+	keys={selectedKeys}
+	onDeleted={handleBulkDeleted}
+	onCancel={() => (showBulkDelete = false)}
 />
