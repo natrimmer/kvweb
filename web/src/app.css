@@ -8,12 +8,12 @@
 	--radius: 0.5rem;
 	--background: #f2f3f2; /* alabaster-grey-50 */
 	--foreground: #1b181b; /* black-900 */
-	--card: #ffffff;
+	--card: #e7e4e7;
 	--card-foreground: #1b181b; /* black-900 */
-	--popover: #ffffff;
+	--popover: #e7e4e7;
 	--popover-foreground: #1b181b; /* black-900 */
 	--primary: #003dcc; /* crayola-blue-600 */
-	--primary-foreground: #ffffff;
+	--primary-foreground: #f3f1f3;
 	--secondary: #caceca; /* alabaster-grey-200 */
 	--secondary-foreground: #1b181b; /* black-900 */
 	--muted: #e4e7e4; /* alabaster-grey-100 */
@@ -21,7 +21,7 @@
 	--accent: #fdc835; /* golden-pollen-400 */
 	--accent-foreground: #1b181b; /* black-900 */
 	--destructive: #b11b25; /* scarlet-rush-600 */
-	--destructive-foreground: #ffffff;
+	--destructive-foreground: #f3f1f3;
 	--border: #caceca; /* alabaster-grey-200 */
 	--input: #caceca; /* alabaster-grey-200 */
 	--ring: #003dcc; /* crayola-blue-600 */
@@ -30,10 +30,10 @@
 	--chart-3: #e44e58; /* scarlet-rush-400 */
 	--chart-4: #7a857a; /* alabaster-grey-500 */
 	--chart-5: #6d5f6d; /* black-600 */
-	--sidebar: #ffffff;
+	--sidebar: #e7e4e7;
 	--sidebar-foreground: #1b181b; /* black-900 */
 	--sidebar-primary: #003dcc; /* crayola-blue-600 */
-	--sidebar-primary-foreground: #ffffff;
+	--sidebar-primary-foreground: #f3f1f3;
 	--sidebar-accent: #e4e7e4; /* alabaster-grey-100 */
 	--sidebar-accent-foreground: #1b181b; /* black-900 */
 	--sidebar-border: #caceca; /* alabaster-grey-200 */
@@ -41,27 +41,84 @@
 	--json-string: #0550ae;
 	--json-number: #116329;
 	--json-keyword: #cf222e;
+
+	/* Palette scales — in :root for runtime access (PaletteDialog), registered in @theme inline for Tailwind */
+	--color-black-50: #f3f1f3;
+	--color-black-100: #e7e4e7;
+	--color-black-200: #d0c8d0;
+	--color-black-300: #b8adb8;
+	--color-black-400: #a092a0;
+	--color-black-500: #887788;
+	--color-black-600: #6d5f6d;
+	--color-black-700: #524752;
+	--color-black-800: #372f37;
+	--color-black-900: #1b181b;
+	--color-black-950: #131113;
+	--color-crayola-blue-50: #e5edff;
+	--color-crayola-blue-100: #ccdbff;
+	--color-crayola-blue-200: #99b8ff;
+	--color-crayola-blue-300: #6694ff;
+	--color-crayola-blue-400: #3370ff;
+	--color-crayola-blue-500: #004cff;
+	--color-crayola-blue-600: #003dcc;
+	--color-crayola-blue-700: #002e99;
+	--color-crayola-blue-800: #001f66;
+	--color-crayola-blue-900: #000f33;
+	--color-crayola-blue-950: #000b24;
+	--color-scarlet-rush-50: #fce9ea;
+	--color-scarlet-rush-100: #f8d3d5;
+	--color-scarlet-rush-200: #f2a6ab;
+	--color-scarlet-rush-300: #eb7a81;
+	--color-scarlet-rush-400: #e44e58;
+	--color-scarlet-rush-500: #de212e;
+	--color-scarlet-rush-600: #b11b25;
+	--color-scarlet-rush-700: #85141b;
+	--color-scarlet-rush-800: #590d12;
+	--color-scarlet-rush-900: #2c0709;
+	--color-scarlet-rush-950: #1f0506;
+	--color-golden-pollen-50: #fff8e6;
+	--color-golden-pollen-100: #fef1cd;
+	--color-golden-pollen-200: #fee39a;
+	--color-golden-pollen-300: #fdd568;
+	--color-golden-pollen-400: #fdc835;
+	--color-golden-pollen-500: #fcba03;
+	--color-golden-pollen-600: #ca9502;
+	--color-golden-pollen-700: #976f02;
+	--color-golden-pollen-800: #654a01;
+	--color-golden-pollen-900: #322501;
+	--color-golden-pollen-950: #231a00;
+	--color-alabaster-grey-50: #f2f3f2;
+	--color-alabaster-grey-100: #e4e7e4;
+	--color-alabaster-grey-200: #caceca;
+	--color-alabaster-grey-300: #afb6af;
+	--color-alabaster-grey-400: #959d95;
+	--color-alabaster-grey-500: #7a857a;
+	--color-alabaster-grey-600: #626a62;
+	--color-alabaster-grey-700: #495049;
+	--color-alabaster-grey-800: #313531;
+	--color-alabaster-grey-900: #181b18;
+	--color-alabaster-grey-950: #111311;
 }
 
 .dark {
-	--background: #131113; /* black-950 */
-	--foreground: #f3f1f3; /* black-50 */
+	--background: #111311; /* alabaster-grey-950 */
+	--foreground: #e7e4e7; /* black-100 */
 	--card: #1b181b; /* black-900 */
-	--card-foreground: #f3f1f3; /* black-50 */
+	--card-foreground: #e7e4e7; /* black-100 */
 	--popover: #1b181b; /* black-900 */
-	--popover-foreground: #f3f1f3; /* black-50 */
+	--popover-foreground: #e7e4e7; /* black-100 */
 	--primary: #3370ff; /* crayola-blue-400 */
 	--primary-foreground: #131113; /* black-950 */
-	--secondary: #372f37; /* black-800 */
-	--secondary-foreground: #f3f1f3; /* black-50 */
-	--muted: #372f37; /* black-800 */
-	--muted-foreground: #b8adb8; /* black-300 */
-	--accent: #fcba03; /* golden-pollen-500 */
-	--accent-foreground: #131113; /* black-950 */
-	--destructive: #e44e58; /* scarlet-rush-400 */
+	--secondary: #313531; /* alabaster-grey-800 */
+	--secondary-foreground: #e7e4e7; /* black-100 */
+	--muted: #181b18; /* alabaster-grey-900 */
+	--muted-foreground: #a092a0; /* black-400 */
+	--accent: #ca9502; /* golden-pollen-600 */
+	--accent-foreground: #e7e4e7; /* black-100 */
+	--destructive: #b11b25; /* scarlet-rush-600 */
 	--destructive-foreground: #131113; /* black-950 */
-	--border: #372f37; /* black-800 */
-	--input: #372f37; /* black-800 */
+	--border: #313531; /* alabaster-grey-800 */
+	--input: #313531; /* alabaster-grey-800 */
 	--ring: #3370ff; /* crayola-blue-400 */
 	--chart-1: #3370ff; /* crayola-blue-400 */
 	--chart-2: #fdc835; /* golden-pollen-400 */
@@ -69,12 +126,12 @@
 	--chart-4: #959d95; /* alabaster-grey-400 */
 	--chart-5: #b8adb8; /* black-300 */
 	--sidebar: #1b181b; /* black-900 */
-	--sidebar-foreground: #f3f1f3; /* black-50 */
+	--sidebar-foreground: #e7e4e7; /* black-100 */
 	--sidebar-primary: #3370ff; /* crayola-blue-400 */
 	--sidebar-primary-foreground: #131113; /* black-950 */
-	--sidebar-accent: #372f37; /* black-800 */
-	--sidebar-accent-foreground: #f3f1f3; /* black-50 */
-	--sidebar-border: #372f37; /* black-800 */
+	--sidebar-accent: #181b18; /* alabaster-grey-900 */
+	--sidebar-accent-foreground: #e7e4e7; /* black-100 */
+	--sidebar-border: #313531; /* alabaster-grey-800 */
 	--sidebar-ring: #3370ff; /* crayola-blue-400 */
 	--json-string: #79c0ff;
 	--json-number: #7ee787;
@@ -117,67 +174,62 @@
 	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
 	--color-sidebar-border: var(--sidebar-border);
 	--color-sidebar-ring: var(--sidebar-ring);
-
-	--color-black-50: #f3f1f3;
-	--color-black-100: #e7e4e7;
-	--color-black-200: #d0c8d0;
-	--color-black-300: #b8adb8;
-	--color-black-400: #a092a0;
-	--color-black-500: #887788;
-	--color-black-600: #6d5f6d;
-	--color-black-700: #524752;
-	--color-black-800: #372f37;
-	--color-black-900: #1b181b;
-	--color-black-950: #131113;
-
-	--color-crayola-blue-50: #e5edff;
-	--color-crayola-blue-100: #ccdbff;
-	--color-crayola-blue-200: #99b8ff;
-	--color-crayola-blue-300: #6694ff;
-	--color-crayola-blue-400: #3370ff;
-	--color-crayola-blue-500: #004cff;
-	--color-crayola-blue-600: #003dcc;
-	--color-crayola-blue-700: #002e99;
-	--color-crayola-blue-800: #001f66;
-	--color-crayola-blue-900: #000f33;
-	--color-crayola-blue-950: #000b24;
-
-	--color-scarlet-rush-50: #fce9ea;
-	--color-scarlet-rush-100: #f8d3d5;
-	--color-scarlet-rush-200: #f2a6ab;
-	--color-scarlet-rush-300: #eb7a81;
-	--color-scarlet-rush-400: #e44e58;
-	--color-scarlet-rush-500: #de212e;
-	--color-scarlet-rush-600: #b11b25;
-	--color-scarlet-rush-700: #85141b;
-	--color-scarlet-rush-800: #590d12;
-	--color-scarlet-rush-900: #2c0709;
-	--color-scarlet-rush-950: #1f0506;
-
-	--color-golden-pollen-50: #fff8e6;
-	--color-golden-pollen-100: #fef1cd;
-	--color-golden-pollen-200: #fee39a;
-	--color-golden-pollen-300: #fdd568;
-	--color-golden-pollen-400: #fdc835;
-	--color-golden-pollen-500: #fcba03;
-	--color-golden-pollen-600: #ca9502;
-	--color-golden-pollen-700: #976f02;
-	--color-golden-pollen-800: #654a01;
-	--color-golden-pollen-900: #322501;
-	--color-golden-pollen-950: #231a00;
-
-	--color-alabaster-grey-50: #f2f3f2;
-	--color-alabaster-grey-100: #e4e7e4;
-	--color-alabaster-grey-200: #caceca;
-	--color-alabaster-grey-300: #afb6af;
-	--color-alabaster-grey-400: #959d95;
-	--color-alabaster-grey-500: #7a857a;
-	--color-alabaster-grey-600: #626a62;
-	--color-alabaster-grey-700: #495049;
-	--color-alabaster-grey-800: #313531;
-	--color-alabaster-grey-900: #181b18;
-	--color-alabaster-grey-950: #111311;
-
+	/* Palette scales — references to :root vars, registers with Tailwind for utility classes */
+	--color-black-50: var(--color-black-50);
+	--color-black-100: var(--color-black-100);
+	--color-black-200: var(--color-black-200);
+	--color-black-300: var(--color-black-300);
+	--color-black-400: var(--color-black-400);
+	--color-black-500: var(--color-black-500);
+	--color-black-600: var(--color-black-600);
+	--color-black-700: var(--color-black-700);
+	--color-black-800: var(--color-black-800);
+	--color-black-900: var(--color-black-900);
+	--color-black-950: var(--color-black-950);
+	--color-crayola-blue-50: var(--color-crayola-blue-50);
+	--color-crayola-blue-100: var(--color-crayola-blue-100);
+	--color-crayola-blue-200: var(--color-crayola-blue-200);
+	--color-crayola-blue-300: var(--color-crayola-blue-300);
+	--color-crayola-blue-400: var(--color-crayola-blue-400);
+	--color-crayola-blue-500: var(--color-crayola-blue-500);
+	--color-crayola-blue-600: var(--color-crayola-blue-600);
+	--color-crayola-blue-700: var(--color-crayola-blue-700);
+	--color-crayola-blue-800: var(--color-crayola-blue-800);
+	--color-crayola-blue-900: var(--color-crayola-blue-900);
+	--color-crayola-blue-950: var(--color-crayola-blue-950);
+	--color-scarlet-rush-50: var(--color-scarlet-rush-50);
+	--color-scarlet-rush-100: var(--color-scarlet-rush-100);
+	--color-scarlet-rush-200: var(--color-scarlet-rush-200);
+	--color-scarlet-rush-300: var(--color-scarlet-rush-300);
+	--color-scarlet-rush-400: var(--color-scarlet-rush-400);
+	--color-scarlet-rush-500: var(--color-scarlet-rush-500);
+	--color-scarlet-rush-600: var(--color-scarlet-rush-600);
+	--color-scarlet-rush-700: var(--color-scarlet-rush-700);
+	--color-scarlet-rush-800: var(--color-scarlet-rush-800);
+	--color-scarlet-rush-900: var(--color-scarlet-rush-900);
+	--color-scarlet-rush-950: var(--color-scarlet-rush-950);
+	--color-golden-pollen-50: var(--color-golden-pollen-50);
+	--color-golden-pollen-100: var(--color-golden-pollen-100);
+	--color-golden-pollen-200: var(--color-golden-pollen-200);
+	--color-golden-pollen-300: var(--color-golden-pollen-300);
+	--color-golden-pollen-400: var(--color-golden-pollen-400);
+	--color-golden-pollen-500: var(--color-golden-pollen-500);
+	--color-golden-pollen-600: var(--color-golden-pollen-600);
+	--color-golden-pollen-700: var(--color-golden-pollen-700);
+	--color-golden-pollen-800: var(--color-golden-pollen-800);
+	--color-golden-pollen-900: var(--color-golden-pollen-900);
+	--color-golden-pollen-950: var(--color-golden-pollen-950);
+	--color-alabaster-grey-50: var(--color-alabaster-grey-50);
+	--color-alabaster-grey-100: var(--color-alabaster-grey-100);
+	--color-alabaster-grey-200: var(--color-alabaster-grey-200);
+	--color-alabaster-grey-300: var(--color-alabaster-grey-300);
+	--color-alabaster-grey-400: var(--color-alabaster-grey-400);
+	--color-alabaster-grey-500: var(--color-alabaster-grey-500);
+	--color-alabaster-grey-600: var(--color-alabaster-grey-600);
+	--color-alabaster-grey-700: var(--color-alabaster-grey-700);
+	--color-alabaster-grey-800: var(--color-alabaster-grey-800);
+	--color-alabaster-grey-900: var(--color-alabaster-grey-900);
+	--color-alabaster-grey-950: var(--color-alabaster-grey-950);
 	--font-sans: Avenir, Montserrat, Corbel, 'URW Gothic', source-sans-pro, sans-serif;
 	--font-mono:
 		ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;

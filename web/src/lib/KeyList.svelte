@@ -9,6 +9,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import AboutDialog from '$lib/dialogs/AboutDialog.svelte';
 	import AddKeyDialog from '$lib/dialogs/AddKeyDialog.svelte';
+	import PaletteDialog from '$lib/dialogs/PaletteDialog.svelte';
 	import {
 		ArrowUpFromDot,
 		CircleAlert,
@@ -18,6 +19,7 @@
 		Funnel,
 		Info,
 		ListTree,
+		Palette,
 		Regex,
 		Search,
 		Settings
@@ -63,7 +65,7 @@
 	let pattern = $state('*');
 	let useRegex = $state(false);
 	let regexError = $state('');
-	let typeFilter = $state('');
+	let typeFilter = $state('all');
 	let sortBy = $state<'key' | 'type' | 'ttl'>('key');
 	let sortAsc = $state(true);
 	let loading = $state(false);
@@ -71,6 +73,7 @@
 	let hasMore = $state(false);
 	let showAbout = $state(false);
 	let showAddDialog = $state(false);
+	let showPalette = $state(false);
 	let showSettings = $state(false);
 	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 	let showHistory = $state(false);
@@ -79,7 +82,7 @@
 	let inputRef: HTMLInputElement | null = $state(null);
 
 	const keyTypes = [
-		{ value: '', label: 'All types' },
+		{ value: 'all', label: 'All types' },
 		{ value: 'string', label: 'string' },
 		{ value: 'hash', label: 'hash' },
 		{ value: 'list', label: 'list' },
@@ -134,7 +137,7 @@
 	let sortedKeys = $derived(sortKeys(keys));
 
 	// Determine empty state type
-	let hasActiveFilters = $derived(pattern !== '*' || typeFilter !== '');
+	let hasActiveFilters = $derived(pattern !== '*' || typeFilter !== 'all');
 	let isEmpty = $derived(sortedKeys.length === 0 && !loading);
 	let isEmptyDatabase = $derived(isEmpty && dbSize === 0 && !hasActiveFilters);
 	let isEmptySearch = $derived(isEmpty && hasActiveFilters);
@@ -147,7 +150,7 @@
 
 	function clearFilters() {
 		pattern = '*';
-		typeFilter = '';
+		typeFilter = 'all';
 		inputRef?.focus();
 	}
 
@@ -193,15 +196,9 @@
 		try {
 			const c = reset ? 0 : cursor;
 			// "geo" filter uses "zset" since geo data is stored as zset
-			const actualTypeFilter = typeFilter === 'geo' ? 'zset' : typeFilter;
-			const result = await api.getKeys(
-				pattern,
-				c,
-				100,
-				actualTypeFilter || undefined,
-				true,
-				useRegex
-			);
+			const actualTypeFilter =
+				typeFilter === 'all' ? undefined : typeFilter === 'geo' ? 'zset' : typeFilter;
+			const result = await api.getKeys(pattern, c, 100, actualTypeFilter, true, useRegex);
 			const newKeys = result.keys as KeyMeta[];
 			if (reset) {
 				keys = newKeys;
@@ -264,7 +261,7 @@
 				<Button
 					variant="outline"
 					onclick={() => (useRegex = !useRegex)}
-					class={useRegex ? 'bg-accent' : ''}
+					class={useRegex ? 'bg-accent  dark:bg-accent/75' : ''}
 					title={useRegex ? 'Regex mode (click for glob)' : 'Glob mode (click for regex)'}
 					aria-label={useRegex ? 'Regex mode (click for glob)' : 'Glob mode (click for regex)'}
 				>
@@ -334,7 +331,7 @@
 		<div class="mb-3 flex items-center justify-between">
 			<div class="flex flex-col text-sm text-muted-foreground">
 				<span>
-					{#if pattern !== '*' || typeFilter}
+					{#if pattern !== '*' || typeFilter !== 'all'}
 						{sortedKeys.length} of {dbSize} key{dbSize === 1 ? '' : 's'}
 					{:else}
 						{dbSize} total key{dbSize === 1 ? '' : 's'}
@@ -454,7 +451,7 @@
 						<Empty.Title>No Keys Found</Empty.Title>
 						<Empty.Description>
 							No keys match your current search pattern
-							{typeFilter ? `and type filter "${typeFilterLabel}"` : ''}.
+							{typeFilter !== 'all' ? `and type filter "${typeFilterLabel}"` : ''}.
 						</Empty.Description>
 					</Empty.Header>
 					<Empty.Content>
@@ -479,16 +476,28 @@
 				<Info size={14} />
 				<span>About kvweb</span>
 			</button>
-			<Button
-				variant="ghost"
-				size="sm"
-				class="h-7 text-muted-foreground hover:text-foreground"
-				onclick={() => (showSettings = true)}
-				title="Settings and server info"
-				aria-label="Settings and server info"
-			>
-				<Settings size={14} />
-			</Button>
+			<div class="flex items-center">
+				<Button
+					variant="ghost"
+					size="sm"
+					class="h-7 text-muted-foreground hover:text-foreground"
+					onclick={() => (showPalette = true)}
+					title="Color palette"
+					aria-label="Color palette"
+				>
+					<Palette size={14} />
+				</Button>
+				<Button
+					variant="ghost"
+					size="sm"
+					class="h-7 text-muted-foreground hover:text-foreground"
+					onclick={() => (showSettings = true)}
+					title="Settings and server info"
+					aria-label="Settings and server info"
+				>
+					<Settings size={14} />
+				</Button>
+			</div>
 		</div>
 	</div>
 {/if}
@@ -506,6 +515,8 @@
 </Dialog.Root>
 
 <AboutDialog bind:open={showAbout} {version} {commit} {dirty} />
+
+<PaletteDialog bind:open={showPalette} />
 
 <AddKeyDialog
 	bind:open={showAddDialog}

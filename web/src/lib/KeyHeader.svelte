@@ -173,7 +173,7 @@
 							onclick={startEditingTtl}
 							title="Edit TTL"
 							aria-label="Edit TTL"
-							class="ml-1 text-muted-foreground hover:text-foreground"
+							class="ml-1 cursor-pointer text-muted-foreground hover:text-foreground"
 						>
 							<Pencil class="inline h-3 w-3" />
 						</button>

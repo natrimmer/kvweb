@@ -27,8 +27,6 @@
 	let dirty = $state(false);
 	let liveUpdates = $state(false);
 	let healthCheckInterval: ReturnType<typeof setInterval> | null = null;
-	let darkModeEnabled = $state(false);
-
 	function resetToHome() {
 		selectedKey = null;
 	}
@@ -46,8 +44,6 @@
 	}
 
 	onMount(() => {
-		darkModeEnabled = localStorage.getItem('kvweb:darkmode') === '1';
-
 		// Load initial data
 		Promise.all([api.getInfo(), api.getConfig()])
 			.then(([info, config]) => {
@@ -211,7 +207,7 @@
 						<Empty.Root class="h-full">
 							<Empty.Header>
 								<Empty.Media variant="default">
-									<Logo size={240} class="text-alabaster-grey-100" />
+									<Logo size={240} class="text-secondary" />
 								</Empty.Media>
 							</Empty.Header>
 						</Empty.Root>
@@ -235,9 +231,7 @@
 </div>
 
 <Toaster />
-{#if darkModeEnabled}
-	<ModeWatcher />
-{/if}
+<ModeWatcher />
 
 <style>
 	@keyframes marquee {
