@@ -59,6 +59,16 @@ The URL can include username, password, and database number. The `-password` and
 
 The `rediss://` and `valkeys://` schemes enable TLS with system CA certificates. Custom CA certs, client certificates, and other advanced TLS settings are not supported through the URL.
 
+## Supported Types
+
+string, hash, list, set, sorted set, stream, HyperLogLog, geo
+
+## Console
+
+A built-in command console for running ad-hoc Valkey commands directly from the UI. Toggle it with the terminal icon in the header or `Ctrl+``/`Cmd+``.
+
+Respects `--readonly` (only read commands allowed) and `--prefix` (key arguments must match). Blocking commands (SUBSCRIBE, MONITOR), scripting (EVAL), and transactions (MULTI) are always disabled.
+
 ## Versioning
 
 kvweb uses [SemVer](https://semver.org/) with git tags as the source of truth. The version and commit hash are embedded at build time via `git describe`.
@@ -67,13 +77,3 @@ kvweb uses [SemVer](https://semver.org/) with git tags as the source of truth. T
 kvweb --version
 kvweb v0.1.0 (a1b2c3d)
 ```
-
-## Console
-
-A built-in command console for running ad-hoc Valkey commands directly from the UI. Toggle it with the terminal icon in the header or `Ctrl+``/`Cmd+``.
-
-Respects `--readonly` (only read commands allowed) and `--prefix` (key arguments must match). Blocking commands (SUBSCRIBE, MONITOR), scripting (EVAL), and transactions (MULTI) are always disabled.
-
-## Supported Types
-
-string, hash, list, set, sorted set, stream, HyperLogLog, geo
