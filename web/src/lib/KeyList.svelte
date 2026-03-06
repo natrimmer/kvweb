@@ -6,8 +6,8 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Empty from '$lib/components/ui/empty';
 	import { Input } from '$lib/components/ui/input';
-	import * as Select from '$lib/components/ui/select';
 	import * as Kbd from '$lib/components/ui/kbd';
+	import * as Select from '$lib/components/ui/select';
 	import AboutDialog from '$lib/dialogs/AboutDialog.svelte';
 	import AddKeyDialog from '$lib/dialogs/AddKeyDialog.svelte';
 	import BulkDeleteDialog from '$lib/dialogs/BulkDeleteDialog.svelte';
@@ -18,9 +18,13 @@
 		CirclePlus,
 		CircleX,
 		DatabaseZap,
+		Dot,
+		Folder,
 		Funnel,
+		House,
 		Info,
 		ListTree,
+		MoveLeft,
 		Palette,
 		Regex,
 		Search,
@@ -29,7 +33,6 @@
 	} from '@lucide/svelte';
 	import { onMount } from 'svelte';
 	import { api, type KeyMeta } from './api';
-	import KeyTree from './KeyTree.svelte';
 	import SearchHistory, { type HistoryEntry } from './SearchHistory.svelte';
 	import ServerSettings from './ServerSettings.svelte';
 	import { deleteOps, getErrorMessage, modifyOps, toastError } from './utils';
@@ -86,6 +89,8 @@
 	let selectedKeys = $state<Set<string>>(new Set());
 	let lastClickedKey = $state<string | null>(null);
 	let showBulkDelete = $state(false);
+	let currentPrefix = $state('');
+	let prefixStack = $state<string[]>([]);
 
 	const isMac = /mac/i.test(
 		(navigator as Navigator & { userAgentData?: { platform: string } }).userAgentData?.platform ??
@@ -108,6 +113,51 @@
 		{ value: 'type', label: 'Type' },
 		{ value: 'ttl', label: 'TTL' }
 	] as const;
+
+	interface TreeEntry {
+		name: string;
+		fullPrefix: string;
+		isFolder: boolean;
+		count: number;
+		key?: KeyMeta;
+	}
+
+	function buildTreeLevel(keys: KeyMeta[], prefix: string, delimiter = ':'): TreeEntry[] {
+		const folders = new Map<string, number>();
+		const leaves: TreeEntry[] = [];
+
+		for (const k of keys) {
+			if (!k.key.startsWith(prefix)) continue;
+			const rest = k.key.slice(prefix.length);
+			const delimIdx = rest.indexOf(delimiter);
+			if (delimIdx === -1) {
+				// Leaf node — key is directly at this level
+				leaves.push({
+					name: rest,
+					fullPrefix: k.key,
+					isFolder: false,
+					count: 0,
+					key: k
+				});
+			} else {
+				// Folder — group by next segment
+				const segment = rest.slice(0, delimIdx + 1);
+				const folderPrefix = prefix + segment;
+				folders.set(folderPrefix, (folders.get(folderPrefix) ?? 0) + 1);
+			}
+		}
+
+		const folderEntries: TreeEntry[] = [...folders.entries()]
+			.sort(([a], [b]) => a.localeCompare(b))
+			.map(([fp, count]) => ({
+				name: fp.slice(prefix.length),
+				fullPrefix: fp,
+				isFolder: true,
+				count
+			}));
+
+		return [...folderEntries, ...leaves];
+	}
 
 	let typeFilterLabel = $derived(
 		keyTypes.find((t) => t.value === typeFilter)?.label ?? 'All types'
@@ -146,6 +196,12 @@
 	}
 
 	let sortedKeys = $derived(sortKeys(keys));
+	let treeEntries = $derived(buildTreeLevel(sortedKeys, currentPrefix));
+	let selectableKeyNames = $derived(
+		viewMode === 'tree'
+			? treeEntries.filter((e) => !e.isFolder).map((e) => e.fullPrefix)
+			: sortedKeys.map((k) => k.key)
+	);
 
 	// Determine empty state type
 	let hasActiveFilters = $derived(pattern !== '*' || typeFilter !== 'all');
@@ -194,9 +250,11 @@
 		if (debounceTimer) clearTimeout(debounceTimer);
 		debounceTimer = setTimeout(() => {
 			selectedKeys = new Set();
+			currentPrefix = '';
+			prefixStack = [];
 			loadKeys(true);
 			searchHistoryRef?.addToHistory(pattern, useRegex);
-		}, 300);
+		}, 500);
 		return () => {
 			if (debounceTimer) clearTimeout(debounceTimer);
 		};
@@ -250,7 +308,7 @@
 			lastClickedKey = key;
 		} else if (event.shiftKey && lastClickedKey) {
 			// Range select
-			const keyNames = sortedKeys.map((k) => k.key);
+			const keyNames = selectableKeyNames;
 			const fromIdx = keyNames.indexOf(lastClickedKey);
 			const toIdx = keyNames.indexOf(key);
 			if (fromIdx !== -1 && toIdx !== -1) {
@@ -275,9 +333,9 @@
 			selectedKeys = new Set();
 			event.preventDefault();
 		}
-		if ((event.metaKey || event.ctrlKey) && event.key === 'a' && sortedKeys.length > 0) {
+		if ((event.metaKey || event.ctrlKey) && event.key === 'a' && selectableKeyNames.length > 0) {
 			event.preventDefault();
-			selectedKeys = new Set(sortedKeys.map((k) => k.key));
+			selectedKeys = new Set(selectableKeyNames);
 		}
 	}
 
@@ -285,193 +343,288 @@
 		selectedKeys = new Set();
 		loadKeys(true);
 	}
+
+	function navigateTo(prefix: string) {
+		prefixStack = [...prefixStack, currentPrefix];
+		currentPrefix = prefix;
+	}
+
+	function navigateBack() {
+		const prev = prefixStack[prefixStack.length - 1] ?? '';
+		prefixStack = prefixStack.slice(0, -1);
+		currentPrefix = prev;
+	}
+
+	function navigateToRoot() {
+		prefixStack = [];
+		currentPrefix = '';
+	}
 </script>
 
-{#if viewMode === 'tree'}
-	<KeyTree {selected} {onselect} onclose={() => (viewMode = 'list')} />
-{:else}
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="flex h-full flex-col p-4" onkeydown={handleKeydown}>
-		<div class="mb-3 flex gap-2">
-			<div class="relative flex-1">
-				<Input
-					bind:ref={inputRef}
-					type="text"
-					bind:value={pattern}
-					placeholder={useRegex ? 'Regex (e.g., ^user:\\d+)' : 'Pattern (e.g., user:*)'}
-					onfocus={() => (showHistory = true)}
-					onblur={() => setTimeout(() => (showHistory = false), 150)}
-					class="pr-9"
-					title="Search keys by pattern"
-					aria-label="Search keys by pattern"
-				/>
-				{#if pattern && pattern !== '*'}
-					<Button
-						variant="ghost"
-						size="icon"
-						onclick={clearInput}
-						aria-label="Clear search input"
-						title="Clear search input"
-						class="absolute inset-y-0 right-0 rounded-l-none text-muted-foreground hover:bg-transparent focus-visible:ring-ring/50"
-					>
-						<CircleX size={18} />
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div class="flex h-full flex-col p-4" onkeydown={handleKeydown}>
+	<div class="mb-3 flex gap-2">
+		<div class="relative flex-1">
+			<Input
+				bind:ref={inputRef}
+				type="text"
+				bind:value={pattern}
+				placeholder={useRegex ? 'Regex (e.g., ^user:\\d+)' : 'Pattern (e.g., user:*)'}
+				onfocus={() => (showHistory = true)}
+				onblur={() => setTimeout(() => (showHistory = false), 150)}
+				class="pr-9"
+				title="Search keys by pattern"
+				aria-label="Search keys by pattern"
+			/>
+			{#if pattern && pattern !== '*'}
+				<Button
+					variant="ghost"
+					size="icon"
+					onclick={clearInput}
+					aria-label="Clear search input"
+					title="Clear search input"
+					class="absolute inset-y-0 right-0 rounded-l-none text-muted-foreground hover:bg-transparent focus-visible:ring-ring/50"
+				>
+					<CircleX size={18} />
+				</Button>
+			{/if}
+			<SearchHistory bind:this={searchHistoryRef} show={showHistory} onselect={selectHistory} />
+		</div>
+		<ButtonGroup.Root>
+			<Button
+				variant="outline"
+				onclick={() => (useRegex = !useRegex)}
+				class={useRegex ? 'bg-accent  dark:bg-accent/75' : ''}
+				title={useRegex ? 'Regex mode (click for glob)' : 'Glob mode (click for regex)'}
+				aria-label={useRegex ? 'Regex mode (click for glob)' : 'Glob mode (click for regex)'}
+			>
+				<Regex size={18} />
+			</Button>
+			<Button
+				variant="outline"
+				onclick={() => (showFilters = !showFilters)}
+				class={showFilters ? 'bg-accent' : ''}
+				title="Toggle filters"
+				aria-label="Toggle filters"
+			>
+				<Funnel size={18} />
+			</Button>
+			<Button
+				variant="outline"
+				onclick={() => (viewMode = viewMode === 'list' ? 'tree' : 'list')}
+				title={viewMode === 'list' ? 'Switch to tree view' : 'Switch to list view'}
+				aria-label={viewMode === 'list' ? 'Switch to tree view' : 'Switch to list view'}
+				class={viewMode === 'tree' ? 'bg-accent' : ''}
+			>
+				<ListTree size={18} />
+			</Button>
+		</ButtonGroup.Root>
+	</div>
+
+	{#if showFilters}
+		<ButtonGroup.Root class="mb-3 w-full">
+			<Select.Root type="single" value={typeFilter} onValueChange={handleTypeFilterChange}>
+				<Select.Trigger class="flex-1">
+					{typeFilterLabel}
+				</Select.Trigger>
+				<Select.Content>
+					{#each keyTypes as t}
+						<Select.Item value={t.value}>{t.label}</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
+			<Select.Root type="single" value={sortBy} onValueChange={handleSortByChange}>
+				<Select.Trigger class="w-32">
+					Sort: {sortByLabel}
+				</Select.Trigger>
+				<Select.Content>
+					{#each sortOptions as opt}
+						<Select.Item value={opt.value}>{opt.label}</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
+			<Button
+				variant="outline"
+				onclick={() => (sortAsc = !sortAsc)}
+				title={sortAsc
+					? 'Sorting ascending (click for descending)'
+					: 'Sorting descending (click for ascending)'}
+				aria-label={sortAsc
+					? 'Sorting ascending (click for descending)'
+					: 'Sorting descending (click for ascending)'}
+			>
+				{#if sortAsc}
+					<ArrowUpFromDot size={16} />
+				{:else}
+					<ArrowUpFromDot size={16} class="rotate-180" />
+				{/if}
+			</Button>
+		</ButtonGroup.Root>
+	{/if}
+
+	<div class="mb-3 flex items-center justify-between">
+		{#if selectedKeys.size > 0}
+			<div class="flex items-center gap-1.5">
+				<Button
+					variant="ghost"
+					size="icon"
+					class="h-6 w-6 text-muted-foreground"
+					onclick={() => (selectedKeys = new Set())}
+					title="Clear selection"
+					aria-label="Clear selection"
+				>
+					<CircleX size={14} />
+				</Button>
+				<span class="text-sm font-medium">{selectedKeys.size} selected</span>
+			</div>
+			<div class="flex items-center gap-1.5">
+				<Button
+					variant="ghost"
+					size="sm"
+					onclick={() => {
+						if (selectedKeys.size === selectableKeyNames.length) {
+							selectedKeys = new Set();
+						} else {
+							selectedKeys = new Set(selectableKeyNames);
+						}
+					}}
+				>
+					{selectedKeys.size === selectableKeyNames.length ? 'Deselect All' : 'Select All'}
+				</Button>
+				{#if !readOnly}
+					<Button variant="destructive" size="sm" onclick={() => (showBulkDelete = true)}>
+						<Trash2 size={14} />
 					</Button>
 				{/if}
-				<SearchHistory bind:this={searchHistoryRef} show={showHistory} onselect={selectHistory} />
 			</div>
-			<ButtonGroup.Root>
-				<Button
-					variant="outline"
-					onclick={() => (useRegex = !useRegex)}
-					class={useRegex ? 'bg-accent  dark:bg-accent/75' : ''}
-					title={useRegex ? 'Regex mode (click for glob)' : 'Glob mode (click for regex)'}
-					aria-label={useRegex ? 'Regex mode (click for glob)' : 'Glob mode (click for regex)'}
-				>
-					<Regex size={18} />
-				</Button>
-				<Button
-					variant="outline"
-					onclick={() => (viewMode = 'tree')}
-					title="Switch to tree view"
-					aria-label="Switch to tree view"
-				>
-					<ListTree size={18} />
-				</Button>
-				<Button
-					variant="outline"
-					onclick={() => (showFilters = !showFilters)}
-					class={showFilters ? 'bg-accent' : ''}
-					title="Toggle filters"
-					aria-label="Toggle filters"
-				>
-					<Funnel size={18} />
-				</Button>
-			</ButtonGroup.Root>
-		</div>
-
-		{#if showFilters}
-			<ButtonGroup.Root class="mb-3 w-full">
-				<Select.Root type="single" value={typeFilter} onValueChange={handleTypeFilterChange}>
-					<Select.Trigger class="flex-1">
-						{typeFilterLabel}
-					</Select.Trigger>
-					<Select.Content>
-						{#each keyTypes as t}
-							<Select.Item value={t.value}>{t.label}</Select.Item>
-						{/each}
-					</Select.Content>
-				</Select.Root>
-				<Select.Root type="single" value={sortBy} onValueChange={handleSortByChange}>
-					<Select.Trigger class="w-32">
-						Sort: {sortByLabel}
-					</Select.Trigger>
-					<Select.Content>
-						{#each sortOptions as opt}
-							<Select.Item value={opt.value}>{opt.label}</Select.Item>
-						{/each}
-					</Select.Content>
-				</Select.Root>
-				<Button
-					variant="outline"
-					onclick={() => (sortAsc = !sortAsc)}
-					title={sortAsc
-						? 'Sorting ascending (click for descending)'
-						: 'Sorting descending (click for ascending)'}
-					aria-label={sortAsc
-						? 'Sorting ascending (click for descending)'
-						: 'Sorting descending (click for ascending)'}
-				>
-					{#if sortAsc}
-						<ArrowUpFromDot size={16} />
+		{:else}
+			<div class="flex items-center gap-2 text-sm text-muted-foreground">
+				<span>
+					{#if pattern !== '*' || typeFilter !== 'all'}
+						{sortedKeys.length} of {dbSize} key{dbSize === 1 ? '' : 's'}
 					{:else}
-						<ArrowUpFromDot size={16} class="rotate-180" />
+						{dbSize} total key{dbSize === 1 ? '' : 's'}
 					{/if}
-				</Button>
-			</ButtonGroup.Root>
-		{/if}
-
-		<div class="mb-3 flex items-center justify-between">
-			{#if selectedKeys.size > 0}
-				<div class="flex items-center gap-1.5">
+				</span>
+				<span class="text-xs opacity-40">
+					<Kbd.Root>{isMac ? '⌘' : 'Ctrl'}</Kbd.Root> Click to select
+				</span>
+			</div>
+			<span>
+				{#if !readOnly}
 					<Button
-						variant="ghost"
-						size="icon"
-						class="h-6 w-6 text-muted-foreground"
-						onclick={() => (selectedKeys = new Set())}
-						title="Clear selection"
-						aria-label="Clear selection"
-					>
-						<CircleX size={14} />
-					</Button>
-					<span class="text-sm font-medium">{selectedKeys.size} selected</span>
-				</div>
-				<div class="flex items-center gap-1.5">
-					<Button
-						variant="ghost"
+						variant="outline"
 						size="sm"
-						onclick={() => {
-							if (selectedKeys.size === sortedKeys.length) {
-								selectedKeys = new Set();
-							} else {
-								selectedKeys = new Set(sortedKeys.map((k) => k.key));
-							}
-						}}
+						class="hover:bg-accent"
+						onclick={() => (showAddDialog = true)}
 					>
-						{selectedKeys.size === sortedKeys.length ? 'Deselect All' : 'Select All'}
+						<CirclePlus /> New Key
 					</Button>
-					{#if !readOnly}
-						<Button variant="destructive" size="sm" onclick={() => (showBulkDelete = true)}>
-							<Trash2 size={14} />
-						</Button>
+				{/if}
+			</span>
+		{/if}
+	</div>
+
+	{#if typeFilter === 'geo'}
+		<div class="mb-3 text-xs text-muted-foreground">
+			Geo data is stored as sorted sets. Use "View as Geo" toggle in the editor to see coordinates.
+		</div>
+	{/if}
+
+	{#if regexError}
+		<Alert.Root variant="destructive" class="mb-3 border-destructive bg-background">
+			<CircleAlert />
+			<Alert.Title>Regex Error</Alert.Title>
+			<Alert.Description>
+				{regexError}
+			</Alert.Description>
+		</Alert.Root>
+	{/if}
+
+	<div class="flex-1 overflow-y-auto border-t border-muted">
+		{#if sortedKeys.length > 0}
+			{#if viewMode === 'tree'}
+				<div class="flex h-full flex-col gap-3 py-3">
+					<div class="flex items-center gap-3">
+						<ButtonGroup.Root>
+							<Button
+								variant="outline"
+								size="sm"
+								onclick={navigateToRoot}
+								class="px-2"
+								title="Go to root"
+								aria-label="Go to root"
+								disabled={currentPrefix === ''}
+							>
+								<House size={16} />
+							</Button>
+							<Button
+								variant="outline"
+								size="sm"
+								onclick={navigateBack}
+								class="px-2"
+								title="Go back"
+								aria-label="Go back"
+								disabled={prefixStack.length === 0}
+							>
+								<MoveLeft size={16} />
+							</Button>
+						</ButtonGroup.Root>
+						<span class="flex-1 truncate font-mono text-sm text-muted-foreground"
+							>{currentPrefix || '*'}</span
+						>
+					</div>
+
+					<ul class="flex-1 list-none overflow-y-auto">
+						{#each treeEntries as entry (entry.fullPrefix)}
+							{@const isSelected = !entry.isFolder && selectedKeys.has(entry.fullPrefix)}
+							<li>
+								{#if entry.isFolder}
+									<Button
+										variant="ghost"
+										class="w-full justify-start rounded p-2 font-mono text-sm text-foreground hover:bg-primary/10"
+										onclick={() => navigateTo(entry.fullPrefix)}
+										title={`Navigate to: ${entry.fullPrefix}`}
+										aria-label={`Navigate to: ${entry.fullPrefix}`}
+									>
+										<span class="text-muted-foreground">
+											<Folder size={16} />
+										</span>
+										<span class="flex-1 overflow-hidden text-left text-ellipsis">{entry.name}</span>
+										<span class="ml-2 text-xs text-muted-foreground">({entry.count})</span>
+									</Button>
+								{:else}
+									<Button
+										variant="ghost"
+										class="w-full justify-start rounded p-2 font-mono text-sm text-foreground hover:bg-primary/10 {isSelected
+											? 'bg-primary/20 hover:bg-primary/20'
+											: entry.fullPrefix === selected && selectedKeys.size === 0
+												? 'bg-primary/20 hover:bg-primary/20'
+												: ''}"
+										onclick={(e: MouseEvent) => handleKeyClick(e, entry.fullPrefix)}
+										title={`View key: ${entry.fullPrefix}`}
+										aria-label={`View key: ${entry.fullPrefix}`}
+									>
+										<span class="text-muted-foreground">
+											<Dot size={16} />
+										</span>
+										<span class="flex-1 overflow-hidden text-left text-ellipsis">{entry.name}</span>
+										{#if entry.key}
+											<Badge variant="secondary" class="ml-2 text-xs opacity-60"
+												>{entry.key.type}</Badge
+											>
+										{/if}
+									</Button>
+								{/if}
+							</li>
+						{/each}
+					</ul>
+
+					{#if treeEntries.length === 0}
+						<div class="py-8 text-center text-muted-foreground">No keys at this level</div>
 					{/if}
 				</div>
 			{:else}
-				<div class="flex items-center gap-2 text-sm text-muted-foreground">
-					<span>
-						{#if pattern !== '*' || typeFilter !== 'all'}
-							{sortedKeys.length} of {dbSize} key{dbSize === 1 ? '' : 's'}
-						{:else}
-							{dbSize} total key{dbSize === 1 ? '' : 's'}
-						{/if}
-					</span>
-					<span class="text-xs opacity-40">
-						<Kbd.Root>{isMac ? '⌘' : 'Ctrl'}</Kbd.Root> Click to select
-					</span>
-				</div>
-				<span>
-					{#if !readOnly}
-						<Button
-							variant="outline"
-							size="sm"
-							class="hover:bg-accent"
-							onclick={() => (showAddDialog = true)}
-						>
-							<CirclePlus /> New Key
-						</Button>
-					{/if}
-				</span>
-			{/if}
-		</div>
-
-		{#if typeFilter === 'geo'}
-			<div class="mb-3 text-xs text-muted-foreground">
-				Geo data is stored as sorted sets. Use "View as Geo" toggle in the editor to see
-				coordinates.
-			</div>
-		{/if}
-
-		{#if regexError}
-			<Alert.Root variant="destructive" class="mb-3 border-destructive bg-background">
-				<CircleAlert />
-				<Alert.Title>Regex Error</Alert.Title>
-				<Alert.Description>
-					{regexError}
-				</Alert.Description>
-			</Alert.Root>
-		{/if}
-
-		<div class="flex-1 overflow-y-auto border-t border-muted">
-			{#if sortedKeys.length > 0}
 				<ul class="list-none py-1">
 					{#each sortedKeys as item, i (item.key)}
 						{@const hasTtlBoundary =
@@ -508,110 +661,110 @@
 						</li>
 					{/each}
 				</ul>
+			{/if}
 
-				{#if hasMore}
-					<div class="border-t border-muted px-1 py-1">
-						<Button
-							variant="secondary"
-							class="w-full"
-							onclick={() => loadKeys(false)}
-							disabled={loading}
-							title="Load more keys"
-							aria-label="Load more keys"
-						>
-							{loading ? 'Loading...' : 'Load more'}
-						</Button>
-					</div>
-				{/if}
-			{:else if loading}
-				<Empty.Root>
-					<Empty.Header>
-						<Empty.Media variant="icon">
-							<Search class="animate-pulse" />
-						</Empty.Media>
-						<Empty.Title>Loading Keys...</Empty.Title>
-						<Empty.Description>Searching database for matching keys</Empty.Description>
-					</Empty.Header>
-				</Empty.Root>
-			{:else if isEmptyDatabase}
-				<Empty.Root>
-					<Empty.Header>
-						<Empty.Media variant="icon">
-							<DatabaseZap />
-						</Empty.Media>
-						<Empty.Title>No Keys in Database</Empty.Title>
-						<Empty.Description>
-							{!readOnly ? 'Create your first key to get started.' : 'No keys available to view.'}
-						</Empty.Description>
-					</Empty.Header>
-					{#if !readOnly}
-						<Empty.Content>
-							<Button onclick={() => (showAddDialog = true)} class="w-full">
-								<CirclePlus />
-								Create First Key
-							</Button>
-						</Empty.Content>
-					{/if}
-				</Empty.Root>
-			{:else if isEmptySearch}
-				<Empty.Root>
-					<Empty.Header>
-						<Empty.Media variant="icon">
-							<Search />
-						</Empty.Media>
-						<Empty.Title>No Keys Found</Empty.Title>
-						<Empty.Description>
-							No keys match your current search pattern
-							{typeFilter !== 'all' ? `and type filter "${typeFilterLabel}"` : ''}.
-						</Empty.Description>
-					</Empty.Header>
+			{#if hasMore}
+				<div class="border-t border-muted px-1 py-1">
+					<Button
+						variant="secondary"
+						class="w-full"
+						onclick={() => loadKeys(false)}
+						disabled={loading}
+						title="Load more keys"
+						aria-label="Load more keys"
+					>
+						{loading ? 'Loading...' : 'Load more'}
+					</Button>
+				</div>
+			{/if}
+		{:else if loading}
+			<Empty.Root>
+				<Empty.Header>
+					<Empty.Media variant="icon">
+						<Search class="animate-pulse" />
+					</Empty.Media>
+					<Empty.Title>Loading Keys...</Empty.Title>
+					<Empty.Description>Searching database for matching keys</Empty.Description>
+				</Empty.Header>
+			</Empty.Root>
+		{:else if isEmptyDatabase}
+			<Empty.Root>
+				<Empty.Header>
+					<Empty.Media variant="icon">
+						<DatabaseZap />
+					</Empty.Media>
+					<Empty.Title>No Keys in Database</Empty.Title>
+					<Empty.Description>
+						{!readOnly ? 'Create your first key to get started.' : 'No keys available to view.'}
+					</Empty.Description>
+				</Empty.Header>
+				{#if !readOnly}
 					<Empty.Content>
-						<Button variant="outline" onclick={clearFilters} class="w-full">
-							<CircleX />
-							Clear Filters
+						<Button onclick={() => (showAddDialog = true)} class="w-full">
+							<CirclePlus />
+							Create First Key
 						</Button>
 					</Empty.Content>
-				</Empty.Root>
-			{/if}
-		</div>
+				{/if}
+			</Empty.Root>
+		{:else if isEmptySearch}
+			<Empty.Root>
+				<Empty.Header>
+					<Empty.Media variant="icon">
+						<Search />
+					</Empty.Media>
+					<Empty.Title>No Keys Found</Empty.Title>
+					<Empty.Description>
+						No keys match your current search pattern
+						{typeFilter !== 'all' ? `and type filter "${typeFilterLabel}"` : ''}.
+					</Empty.Description>
+				</Empty.Header>
+				<Empty.Content>
+					<Button variant="outline" onclick={clearFilters} class="w-full">
+						<CircleX />
+						Clear Filters
+					</Button>
+				</Empty.Content>
+			</Empty.Root>
+		{/if}
+	</div>
 
-		<!-- Footer with about and settings -->
-		<div class="mt-0 flex items-center justify-between border-t border-border pt-3 text-xs">
-			<button
-				type="button"
-				onclick={() => (showAbout = true)}
-				class="flex cursor-pointer items-center gap-1.5 text-muted-foreground hover:text-foreground hover:underline"
-				title="About kvweb"
-				aria-label="About kvweb"
+	<!-- Footer with about and settings -->
+	<div class="mt-0 flex items-center justify-between border-t border-border pt-3 text-xs">
+		<button
+			type="button"
+			onclick={() => (showAbout = true)}
+			class="flex cursor-pointer items-center gap-1.5 text-muted-foreground hover:text-foreground hover:underline"
+			title="About kvweb"
+			aria-label="About kvweb"
+		>
+			<Info size={14} />
+			<span>About kvweb</span>
+		</button>
+		<div class="flex items-center">
+			<Button
+				variant="ghost"
+				size="sm"
+				class="h-7 text-muted-foreground hover:text-foreground"
+				onclick={() => (showPalette = true)}
+				title="Color palette"
+				aria-label="Color palette"
 			>
-				<Info size={14} />
-				<span>About kvweb</span>
-			</button>
-			<div class="flex items-center">
-				<Button
-					variant="ghost"
-					size="sm"
-					class="h-7 text-muted-foreground hover:text-foreground"
-					onclick={() => (showPalette = true)}
-					title="Color palette"
-					aria-label="Color palette"
-				>
-					<Palette size={14} />
-				</Button>
-				<Button
-					variant="ghost"
-					size="sm"
-					class="h-7 text-muted-foreground hover:text-foreground"
-					onclick={() => (showSettings = true)}
-					title="Settings and server info"
-					aria-label="Settings and server info"
-				>
-					<Settings size={14} />
-				</Button>
-			</div>
+				<Palette size={14} />
+			</Button>
+			<Button
+				variant="ghost"
+				size="sm"
+				class="h-7 text-muted-foreground hover:text-foreground"
+				onclick={() => (showSettings = true)}
+				title="Settings and server info"
+				aria-label="Settings and server info"
+			>
+				<Settings size={14} />
+			</Button>
 		</div>
 	</div>
-{/if}
+</div>
 
 <Dialog.Root bind:open={showSettings}>
 	<Dialog.Content class="flex max-h-[80vh] min-w-3xl flex-col">
