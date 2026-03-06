@@ -74,22 +74,22 @@
 			<Button
 				variant="ghost"
 				size="sm"
-				onclick={navigateBack}
-				class="px-2"
-				title="Go back"
-				aria-label="Go back"
-			>
-				<MoveLeft size={16} />
-			</Button>
-			<Button
-				variant="ghost"
-				size="sm"
 				onclick={navigateToRoot}
 				class="px-2"
 				title="Go to root"
 				aria-label="Go to root"
 			>
 				<House size={16} />
+			</Button>
+			<Button
+				variant="ghost"
+				size="sm"
+				onclick={navigateBack}
+				class="px-2"
+				title="Go back"
+				aria-label="Go back"
+			>
+				<MoveLeft size={16} />
 			</Button>
 			<span class="flex-1 truncate font-mono text-sm text-muted-foreground">{currentPrefix}</span>
 		{:else}
