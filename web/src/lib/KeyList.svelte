@@ -88,6 +88,7 @@
 	let inputRef: HTMLInputElement | null = $state(null);
 	let selectedKeys = $state<Set<string>>(new Set());
 	let lastClickedKey = $state<string | null>(null);
+	let lastClickedTree = $state<string | null>(null);
 	let showBulkDelete = $state(false);
 	let currentPrefix = $state('');
 	let prefixStack = $state<string[]>([]);
@@ -344,6 +345,47 @@
 		loadKeys(true);
 	}
 
+	function keysUnderPrefix(prefix: string): string[] {
+		return sortedKeys.filter((k) => k.key.startsWith(prefix)).map((k) => k.key);
+	}
+
+	function entryKeys(entry: TreeEntry): string[] {
+		return entry.isFolder ? keysUnderPrefix(entry.fullPrefix) : [entry.fullPrefix];
+	}
+
+	function handleTreeClick(event: MouseEvent, entry: TreeEntry) {
+		if (event.metaKey || event.ctrlKey) {
+			const keys = entryKeys(entry);
+			const allSelected = keys.every((k) => selectedKeys.has(k));
+			const next = new Set(selectedKeys);
+			for (const k of keys) {
+				if (allSelected) next.delete(k);
+				else next.add(k);
+			}
+			selectedKeys = next;
+			lastClickedTree = entry.fullPrefix;
+		} else if (event.shiftKey && lastClickedTree) {
+			const fromIdx = treeEntries.findIndex((e) => e.fullPrefix === lastClickedTree);
+			const toIdx = treeEntries.findIndex((e) => e.fullPrefix === entry.fullPrefix);
+			if (fromIdx !== -1 && toIdx !== -1) {
+				const start = Math.min(fromIdx, toIdx);
+				const end = Math.max(fromIdx, toIdx);
+				const next = new Set(selectedKeys);
+				for (let i = start; i <= end; i++) {
+					for (const k of entryKeys(treeEntries[i])) next.add(k);
+				}
+				selectedKeys = next;
+			}
+		} else if (entry.isFolder) {
+			navigateTo(entry.fullPrefix);
+		} else {
+			selectedKeys = new Set();
+			lastClickedTree = entry.fullPrefix;
+			lastClickedKey = entry.fullPrefix;
+			onselect(entry.fullPrefix);
+		}
+	}
+
 	function navigateTo(prefix: string) {
 		prefixStack = [...prefixStack, currentPrefix];
 		currentPrefix = prefix;
@@ -576,14 +618,44 @@
 					</div>
 
 					<ul class="flex-1 list-none overflow-y-auto">
-						{#each treeEntries as entry (entry.fullPrefix)}
-							{@const isSelected = !entry.isFolder && selectedKeys.has(entry.fullPrefix)}
+						{#each treeEntries as entry, i (entry.fullPrefix)}
+							{@const isSelected = entry.isFolder
+								? keysUnderPrefix(entry.fullPrefix).every((k) => selectedKeys.has(k)) &&
+									selectedKeys.size > 0
+								: selectedKeys.has(entry.fullPrefix)}
+							{@const prevEntry = i > 0 ? treeEntries[i - 1] : null}
+							{@const nextEntry = i < treeEntries.length - 1 ? treeEntries[i + 1] : null}
+							{@const prevSelected =
+								isSelected &&
+								prevEntry != null &&
+								(prevEntry.isFolder
+									? keysUnderPrefix(prevEntry.fullPrefix).every((k) => selectedKeys.has(k)) &&
+										selectedKeys.size > 0
+									: selectedKeys.has(prevEntry.fullPrefix))}
+							{@const nextSelected =
+								isSelected &&
+								nextEntry != null &&
+								(nextEntry.isFolder
+									? keysUnderPrefix(nextEntry.fullPrefix).every((k) => selectedKeys.has(k)) &&
+										selectedKeys.size > 0
+									: selectedKeys.has(nextEntry.fullPrefix))}
+							{@const rounding = isSelected
+								? prevSelected && nextSelected
+									? 'rounded-none'
+									: prevSelected
+										? 'rounded-t-none rounded-b'
+										: nextSelected
+											? 'rounded-t rounded-b-none'
+											: 'rounded'
+								: 'rounded'}
 							<li>
 								{#if entry.isFolder}
 									<Button
 										variant="ghost"
-										class="w-full justify-start rounded p-2 font-mono text-sm text-foreground hover:bg-primary/10"
-										onclick={() => navigateTo(entry.fullPrefix)}
+										class="w-full justify-start p-2 font-mono text-sm text-foreground hover:bg-primary/10 {isSelected
+											? 'bg-primary/20 hover:bg-primary/20'
+											: ''} {rounding}"
+										onclick={(e: MouseEvent) => handleTreeClick(e, entry)}
 										title={`Navigate to: ${entry.fullPrefix}`}
 										aria-label={`Navigate to: ${entry.fullPrefix}`}
 									>
@@ -596,12 +668,12 @@
 								{:else}
 									<Button
 										variant="ghost"
-										class="w-full justify-start rounded p-2 font-mono text-sm text-foreground hover:bg-primary/10 {isSelected
+										class="w-full justify-start p-2 font-mono text-sm text-foreground hover:bg-primary/10 {isSelected
 											? 'bg-primary/20 hover:bg-primary/20'
 											: entry.fullPrefix === selected && selectedKeys.size === 0
 												? 'bg-primary/20 hover:bg-primary/20'
-												: ''}"
-										onclick={(e: MouseEvent) => handleKeyClick(e, entry.fullPrefix)}
+												: ''} {rounding}"
+										onclick={(e: MouseEvent) => handleTreeClick(e, entry)}
 										title={`View key: ${entry.fullPrefix}`}
 										aria-label={`View key: ${entry.fullPrefix}`}
 									>
