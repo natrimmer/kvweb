@@ -93,7 +93,7 @@
 	});
 </script>
 
-<div bind:this={mapContainer} class="h-full min-h-75 w-full rounded border border-border"></div>
+<div bind:this={mapContainer} class="z-0 h-full min-h-75 w-full rounded border border-border"></div>
 
 <style>
 	:global(.leaflet-container) {
