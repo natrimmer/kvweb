@@ -461,6 +461,13 @@
 				placeholder={useRegex ? 'Regex (e.g., ^user:\\d+)' : 'Pattern (e.g., user:*)'}
 				onfocus={() => (showHistory = true)}
 				onblur={() => setTimeout(() => (showHistory = false), 150)}
+				onkeydown={(e) => {
+					if (e.key === 'Escape' && showHistory) {
+						showHistory = false;
+						e.preventDefault();
+						e.stopPropagation();
+					}
+				}}
 				class="pr-9"
 				title="Search keys by pattern"
 				aria-label="Search keys by pattern"
