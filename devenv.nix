@@ -24,6 +24,7 @@ in
     pkgs.nixd
     pkgs.nil
     pkgs.valkey
+    pkgs.zstd
   ];
 
   languages = {
@@ -176,7 +177,7 @@ in
       echo "  lint       - Run linters"
       echo "  deps       - Update dependencies"
       echo "  seed [TYPE]- Populate valkey with sample data"
-      echo "               Types: all, string, hash, list, set, zset, geo, stream, hll, ttl"
+      echo "               Types: all, string, hash, list, set, zset, geo, stream, hll, ttl, compressed"
       echo "  ports      - Show service ports"
       echo "  commands   - Show this help"
     '';

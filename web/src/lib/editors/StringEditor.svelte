@@ -13,12 +13,13 @@
 	interface Props {
 		keyName: string;
 		value: string;
+		encoding?: string;
 		readOnly: boolean;
 		typeHeaderExpanded: boolean;
 		onDataChange: () => void;
 	}
 
-	let { keyName, value, readOnly, typeHeaderExpanded, onDataChange }: Props = $props();
+	let { keyName, value, encoding, readOnly, typeHeaderExpanded, onDataChange }: Props = $props();
 
 	// Editor state
 	let stringEditMode = $state(false); // false = view, true = edit
@@ -89,7 +90,7 @@
 		// Proceed with save
 		saving = true;
 		try {
-			await api.setKey(keyName, editValue, 0); // TTL handled by parent
+			await api.setKey(keyName, editValue, 0, encoding); // TTL handled by parent
 			toast.success('Value saved');
 			onDataChange();
 		} catch (e) {
@@ -129,7 +130,13 @@
 <div class="flex min-h-0 flex-1 flex-col">
 	<TypeHeader expanded={typeHeaderExpanded}>
 		<div class="flex items-center justify-between gap-2">
-			<div class="flex-1"></div>
+			<div class="flex flex-1 items-center gap-2">
+				{#if encoding}
+					<span class="rounded bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground"
+						>{encoding}</span
+					>
+				{/if}
+			</div>
 			{#if !readOnly && isNumeric && !isJsonValue}
 				<ButtonGroup.Root>
 					<Button

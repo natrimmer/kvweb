@@ -349,6 +349,7 @@
 			<StringEditor
 				keyName={key}
 				value={keyInfo.value as string}
+				encoding={keyInfo.encoding}
 				{readOnly}
 				{typeHeaderExpanded}
 				onDataChange={handleDataChange}

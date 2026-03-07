@@ -63,6 +63,10 @@ The `rediss://` and `valkeys://` schemes enable TLS with system CA certificates.
 
 string, hash, list, set, sorted set, stream, HyperLogLog, geo
 
+## Compressed Values
+
+String values compressed with gzip or zstd are automatically detected via magic bytes, decompressed for display, and re-compressed on save. A label in the editor shows the encoding.
+
 ## Console
 
 A built-in command console for running ad-hoc Valkey commands directly from the UI. Toggle it with the terminal icon in the header or `Ctrl+``/`Cmd+``.

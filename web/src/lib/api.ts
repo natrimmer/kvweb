@@ -50,6 +50,7 @@ export interface KeyInfo {
 	ttl: number;
 	length?: number;
 	pagination?: PaginationInfo;
+	encoding?: string;
 }
 
 export interface ServerInfo {
@@ -163,10 +164,10 @@ export const api = {
 		return request(url);
 	},
 
-	setKey(key: string, value: string, ttl = 0): Promise<void> {
+	setKey(key: string, value: string, ttl = 0, encoding?: string): Promise<void> {
 		return request(`/key/${encodeURIComponent(key)}`, {
 			method: 'PUT',
-			body: JSON.stringify({ value, ttl })
+			body: JSON.stringify({ value, ttl, ...(encoding && { encoding }) })
 		});
 	},
 

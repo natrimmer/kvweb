@@ -3,20 +3,21 @@
 # Parse arguments
 TYPE="${1:-all}"  # Default to "all" if no argument provided
 
-if [[ "$TYPE" != "all" && "$TYPE" != "string" && "$TYPE" != "hash" && "$TYPE" != "list" && "$TYPE" != "set" && "$TYPE" != "zset" && "$TYPE" != "geo" && "$TYPE" != "stream" && "$TYPE" != "hll" && "$TYPE" != "ttl" ]]; then
+if [[ "$TYPE" != "all" && "$TYPE" != "string" && "$TYPE" != "hash" && "$TYPE" != "list" && "$TYPE" != "set" && "$TYPE" != "zset" && "$TYPE" != "geo" && "$TYPE" != "stream" && "$TYPE" != "hll" && "$TYPE" != "ttl" && "$TYPE" != "compressed" ]]; then
     echo "Usage: $0 [TYPE]"
     echo ""
     echo "TYPE can be one of:"
-    echo "  all     - Seed all data types (default)"
-    echo "  string  - String values only"
-    echo "  hash    - Hash values only"
-    echo "  list    - List values only"
-    echo "  set     - Set values only"
-    echo "  zset    - Sorted set values only"
-    echo "  geo     - Geospatial values only"
-    echo "  stream  - Stream values only"
-    echo "  hll     - HyperLogLog values only"
-    echo "  ttl     - Keys with TTL only"
+    echo "  all        - Seed all data types (default)"
+    echo "  string     - String values only"
+    echo "  hash       - Hash values only"
+    echo "  list       - List values only"
+    echo "  set        - Set values only"
+    echo "  zset       - Sorted set values only"
+    echo "  geo        - Geospatial values only"
+    echo "  stream     - Stream values only"
+    echo "  hll        - HyperLogLog values only"
+    echo "  ttl        - Keys with TTL only"
+    echo "  compressed - Gzip/zstd compressed string values"
     exit 1
 fi
 
@@ -280,6 +281,37 @@ if [[ "$TYPE" == "all" || "$TYPE" == "hll" ]]; then
     for i in $(seq 1 10000); do
         $CLI PFADD "hll:visitors" "visitor-$RANDOM-$i"
     done
+fi
+
+# ===================
+# COMPRESSED (gzip/zstd)
+# ===================
+
+if [[ "$TYPE" == "all" || "$TYPE" == "compressed" ]]; then
+
+    # gzip: plain text
+    echo -n "Hello, this is a gzip-compressed string value stored in Valkey!" |
+    gzip -c | valkey-cli -x -p "$PORT_VALKEY" SET "string:compressed:gzip:text" > /dev/null
+
+    # gzip: JSON
+    echo -n '{"name":"Alice","role":"admin","settings":{"theme":"dark","notifications":true},"tags":["staff","verified"]}' |
+    gzip -c | valkey-cli -x -p "$PORT_VALKEY" SET "string:compressed:gzip:json" > /dev/null
+
+    # gzip: large text
+    echo -n "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum." |
+    gzip -c | valkey-cli -x -p "$PORT_VALKEY" SET "string:compressed:gzip:large" > /dev/null
+
+    # zstd: plain text
+    echo -n "Hello, this is a zstd-compressed string value stored in Valkey!" |
+    zstd -c -q | valkey-cli -x -p "$PORT_VALKEY" SET "string:compressed:zstd:text" > /dev/null
+
+    # zstd: JSON
+    echo -n '{"users":[{"id":1,"name":"Bob","email":"bob@example.com"},{"id":2,"name":"Carol","email":"carol@example.com"}],"total":2}' |
+    zstd -c -q | valkey-cli -x -p "$PORT_VALKEY" SET "string:compressed:zstd:json" > /dev/null
+
+    # zstd: large text
+    echo -n "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum." |
+    zstd -c -q | valkey-cli -x -p "$PORT_VALKEY" SET "string:compressed:zstd:large" > /dev/null
 fi
 
 # ===================

@@ -508,6 +508,7 @@ func (h *Handler) handleGetKey(w http.ResponseWriter, r *http.Request) {
 	var value any
 	var length int64
 	var pagination map[string]any
+	var encoding string // detected compression encoding (gzip, zstd)
 
 	switch keyType {
 	case "string":
@@ -519,6 +520,15 @@ func (h *Handler) handleGetKey(w http.ResponseWriter, r *http.Request) {
 			keyType = "hyperloglog"
 			count, _ := h.client.PFCount(ctx, key)
 			value = map[string]any{"count": count}
+		} else if enc := valkey.DetectEncoding(val); enc != "" {
+			decompressed, decErr := valkey.Decompress(val, enc)
+			if decErr == nil {
+				value = decompressed
+				encoding = enc
+			} else {
+				// Decompression failed, show raw value
+				value = val
+			}
 		} else {
 			value = val
 		}
@@ -650,6 +660,10 @@ func (h *Handler) handleGetKey(w http.ResponseWriter, r *http.Request) {
 		resp["pagination"] = pagination
 	}
 
+	if encoding != "" {
+		resp["encoding"] = encoding
+	}
+
 	jsonResponse(w, resp)
 }
 
@@ -664,13 +678,24 @@ func (h *Handler) handleSetKey(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var body struct {
-		Value string `json:"value"`
-		TTL   int64  `json:"ttl"` // seconds, 0 = no expiry
+		Value    string `json:"value"`
+		TTL      int64  `json:"ttl"`      // seconds, 0 = no expiry
+		Encoding string `json:"encoding"` // "gzip", "zstd", or ""
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		jsonError(w, "Invalid request body", http.StatusBadRequest)
 		return
+	}
+
+	// Re-compress if the value was originally compressed
+	if body.Encoding != "" {
+		compressed, compErr := valkey.Compress(body.Value, body.Encoding)
+		if compErr != nil {
+			jsonError(w, "Failed to compress value", http.StatusInternalServerError)
+			return
+		}
+		body.Value = compressed
 	}
 
 	ttl := time.Duration(0)
