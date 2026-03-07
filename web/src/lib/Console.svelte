@@ -72,6 +72,20 @@
 	async function submit() {
 		const cmd = input.trim();
 		if (!cmd || loading) return;
+		if (cmd == 'exit') {
+			outputHistory = [
+				...outputHistory,
+				{ type: 'command', text: 'exit' },
+				{
+					type: 'result',
+					text: 'you can close the console pane by clicking the same button you used to open it. thanks for using kvweb. i love you.'
+				}
+			];
+			scrollToBottom();
+			input = '';
+			inputEl?.focus();
+			return;
+		}
 
 		if (commandHistory[commandHistory.length - 1] !== cmd) {
 			commandHistory = [...commandHistory, cmd];
