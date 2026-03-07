@@ -3,7 +3,6 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import * as ButtonGroup from '$lib/components/ui/button-group';
-	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Empty from '$lib/components/ui/empty';
 	import { Input } from '$lib/components/ui/input';
 	import * as Kbd from '$lib/components/ui/kbd';
@@ -35,7 +34,7 @@
 	import { onMount } from 'svelte';
 	import { api, type KeyMeta } from './api';
 	import SearchHistory, { type HistoryEntry } from './SearchHistory.svelte';
-	import ServerSettings from './ServerSettings.svelte';
+	import ServerSettingsDialog from '$lib/dialogs/ServerSettingsDialog.svelte';
 	import { deleteOps, getErrorMessage, modifyOps, toastError } from './utils';
 	import { ws } from './ws';
 
@@ -857,17 +856,7 @@
 	</div>
 </div>
 
-<Dialog.Root bind:open={showSettings}>
-	<Dialog.Content class="flex max-h-[80vh] min-w-3xl flex-col">
-		<Dialog.Header>
-			<Dialog.Title>Server Settings</Dialog.Title>
-			<Dialog.Description>View server information and manage database settings</Dialog.Description>
-		</Dialog.Header>
-		<div class="min-h-0 flex-1">
-			<ServerSettings {readOnly} {disableFlush} />
-		</div>
-	</Dialog.Content>
-</Dialog.Root>
+<ServerSettingsDialog bind:open={showSettings} {readOnly} {disableFlush} />
 
 <AboutDialog bind:open={showAbout} {version} {commit} {dirty} />
 
