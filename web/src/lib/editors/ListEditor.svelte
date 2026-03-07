@@ -1,5 +1,4 @@
 <script lang="ts">
-	import AddItemForm from '$lib/editors/AddItemForm.svelte';
 	import { api, type PaginationInfo } from '$lib/api';
 	import ActionsToggle from '$lib/components/ActionsToggle.svelte';
 	import TableWidthToggle from '$lib/components/TableWidthToggle.svelte';
@@ -11,6 +10,7 @@
 	import DeleteItemDialog from '$lib/dialogs/DeleteItemDialog.svelte';
 	import ExpandedItemDialog from '$lib/dialogs/ExpandedItemDialog.svelte';
 	import LargeValueWarningDialog from '$lib/dialogs/LargeValueWarningDialog.svelte';
+	import AddItemForm from '$lib/editors/AddItemForm.svelte';
 	import InlineEditor from '$lib/editors/InlineEditor.svelte';
 	import ItemActions from '$lib/editors/ItemActions.svelte';
 	import PaginationControls from '$lib/editors/PaginationControls.svelte';
@@ -392,7 +392,7 @@
 						{#each items as item, i}
 							{@const realIndex = (currentPage - 1) * pageSize + i}
 							<Table.Row>
-								<Table.Cell class="align-top">
+								<Table.Cell>
 									<Button
 										size="sm"
 										variant="outline"
@@ -404,9 +404,7 @@
 										<ChevronsLeftRight class="h-3 w-3" />
 									</Button>
 								</Table.Cell>
-								<Table.Cell class="align-top font-mono text-muted-foreground"
-									>{realIndex}</Table.Cell
-								>
+								<Table.Cell class="font-mono text-muted-foreground">{realIndex}</Table.Cell>
 								<Table.Cell class="font-mono">
 									{#if editingIndex === realIndex}
 										<InlineEditor

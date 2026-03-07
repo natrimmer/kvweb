@@ -1,5 +1,4 @@
 <script lang="ts">
-	import AddItemForm from '$lib/editors/AddItemForm.svelte';
 	import { api, type HashPair, type PaginationInfo } from '$lib/api';
 	import ActionsToggle from '$lib/components/ActionsToggle.svelte';
 	import TableWidthToggle from '$lib/components/TableWidthToggle.svelte';
@@ -10,6 +9,7 @@
 	import DeleteItemDialog from '$lib/dialogs/DeleteItemDialog.svelte';
 	import ExpandedItemDialog from '$lib/dialogs/ExpandedItemDialog.svelte';
 	import LargeValueWarningDialog from '$lib/dialogs/LargeValueWarningDialog.svelte';
+	import AddItemForm from '$lib/editors/AddItemForm.svelte';
 	import InlineEditor from '$lib/editors/InlineEditor.svelte';
 	import ItemActions from '$lib/editors/ItemActions.svelte';
 	import PaginationControls from '$lib/editors/PaginationControls.svelte';
@@ -403,7 +403,7 @@
 					<Table.Body>
 						{#each fields as { field, value }}
 							<Table.Row>
-								<Table.Cell class="align-top">
+								<Table.Cell>
 									<Button
 										size="sm"
 										variant="outline"
@@ -415,7 +415,7 @@
 										<ChevronsLeftRight class="h-3 w-3" />
 									</Button>
 								</Table.Cell>
-								<Table.Cell class="align-top font-mono text-muted-foreground">
+								<Table.Cell class="font-mono text-muted-foreground">
 									{#if editMode === 'field' && editingField === field}
 										<InlineEditor
 											bind:value={editingValue}
