@@ -644,6 +644,11 @@ func (c *Client) HRename(ctx context.Context, key, oldField, newField string) (s
 	return value, nil
 }
 
+// MemoryUsage returns the memory usage of a single key in bytes.
+func (c *Client) MemoryUsage(ctx context.Context, key string) (int64, error) {
+	return c.client.Do(ctx, c.client.B().MemoryUsage().Key(key).Build()).ToInt64()
+}
+
 // MemoryUsageBatch returns memory usage in bytes for each key using pipelined MEMORY USAGE calls.
 // Keys that error (deleted, unsupported) are silently skipped.
 func (c *Client) MemoryUsageBatch(ctx context.Context, keys []string) (map[string]int64, error) {

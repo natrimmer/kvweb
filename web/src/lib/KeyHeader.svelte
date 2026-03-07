@@ -6,12 +6,13 @@
 	import { Check, ChevronDown, ChevronUp, Copy, Pencil, RefreshCw, X } from '@lucide/svelte/icons';
 	import type { KeyType } from './api';
 	import { formatShortcut } from './keyboard';
-	import { copyToClipboard, formatTtl } from './utils';
+	import { copyToClipboard, formatBytes, formatTtl } from './utils';
 
 	interface Props {
 		keyName: string;
 		keyType: KeyType;
 		liveTtl: number | null;
+		memory?: number;
 		readOnly: boolean;
 		updatingTtl: boolean;
 		renamingKey: boolean;
@@ -30,6 +31,7 @@
 		keyName,
 		keyType,
 		liveTtl,
+		memory,
 		readOnly,
 		updatingTtl,
 		renamingKey,
@@ -164,6 +166,11 @@
 			<Badge variant="secondary" class="shrink-0 uppercase"
 				>{keyType}{#if geoViewActive}(geo){/if}</Badge
 			>
+			{#if memory}
+				<span class="shrink-0 text-sm text-muted-foreground">
+					Mem: {formatBytes(memory)}
+				</span>
+			{/if}
 			{#if !editingTtl}
 				<span class="shrink-0 text-sm text-muted-foreground">
 					TTL: {formatTtl(liveTtl ?? -1)}

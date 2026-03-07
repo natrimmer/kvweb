@@ -48,6 +48,7 @@ export interface KeyInfo {
 		| StreamEntry[]
 		| HLLData;
 	ttl: number;
+	memory?: number;
 	length?: number;
 	pagination?: PaginationInfo;
 	encoding?: string;

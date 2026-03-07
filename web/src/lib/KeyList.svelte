@@ -863,17 +863,12 @@
 	</div>
 
 	<!-- Footer with about and settings -->
-	<div class="mt-0 flex items-center justify-between border-t border-border pt-3 text-xs">
-		<button
-			type="button"
-			onclick={() => (showAbout = true)}
-			class="flex cursor-pointer items-center gap-1.5 text-muted-foreground hover:text-foreground hover:underline"
-			title="About kvweb"
-			aria-label="About kvweb"
-		>
-			<Info size={14} />
-			<span>About kvweb</span>
-		</button>
+	<span class="mt-0 flex items-center justify-between border-t border-border pt-3 text-xs">
+		<span>
+			{#if usedMemoryHuman}
+				<span class="text-muted-foreground">{usedMemoryHuman} memory usage</span>
+			{/if}
+		</span>
 		<div class="flex items-center">
 			<Button
 				variant="ghost"
@@ -895,22 +890,30 @@
 			>
 				<Settings size={14} />
 			</Button>
-			{#if onToggleConsole}
-				<Button
-					variant="ghost"
-					size="sm"
-					class="h-7 {consoleVisible
-						? 'text-primary'
-						: 'text-muted-foreground'} hover:text-foreground"
-					onclick={onToggleConsole}
-					title="Toggle console"
-					aria-label="Toggle console"
-				>
-					<SquareTerminal size={14} />
-				</Button>
-			{/if}
+			<Button
+				variant="ghost"
+				size="sm"
+				class="h-7 {consoleVisible
+					? 'text-primary'
+					: 'text-muted-foreground'} hover:text-foreground"
+				onclick={onToggleConsole}
+				title="Toggle console"
+				aria-label="Toggle console"
+			>
+				<SquareTerminal size={14} />
+			</Button>
+			<Button
+				variant="ghost"
+				size="sm"
+				onclick={() => (showAbout = true)}
+				class="h-7 {showAbout ? 'text-primary' : 'text-muted-foreground'} hover:text-foreground"
+				title="About kvweb"
+				aria-label="About kvweb"
+			>
+				<Info size={14} />
+			</Button>
 		</div>
-	</div>
+	</span>
 </div>
 
 <ServerSettingsDialog bind:open={showSettings} {readOnly} {disableFlush} />

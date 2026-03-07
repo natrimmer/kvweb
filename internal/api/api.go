@@ -503,6 +503,7 @@ func (h *Handler) handleGetKey(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ttl, _ := h.client.TTL(r.Context(), key)
+	memory, _ := h.client.MemoryUsage(r.Context(), key)
 	ctx := r.Context()
 
 	var value any
@@ -646,10 +647,11 @@ func (h *Handler) handleGetKey(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := map[string]any{
-		"key":   key,
-		"type":  keyType,
-		"value": value,
-		"ttl":   ttl,
+		"key":    key,
+		"type":   keyType,
+		"value":  value,
+		"ttl":    ttl,
+		"memory": memory,
 	}
 
 	if length > 0 {

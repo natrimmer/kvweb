@@ -331,6 +331,7 @@
 			keyName={key}
 			keyType={keyInfo.type}
 			{liveTtl}
+			memory={keyInfo.memory}
 			{readOnly}
 			{updatingTtl}
 			{renamingKey}
