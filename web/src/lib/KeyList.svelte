@@ -11,6 +11,7 @@
 	import AddKeyDialog from '$lib/dialogs/AddKeyDialog.svelte';
 	import BulkDeleteDialog from '$lib/dialogs/BulkDeleteDialog.svelte';
 	import PaletteDialog from '$lib/dialogs/PaletteDialog.svelte';
+	import ServerSettingsDialog from '$lib/dialogs/ServerSettingsDialog.svelte';
 	import {
 		ArrowUpFromDot,
 		CircleAlert,
@@ -31,11 +32,10 @@
 		SquareTerminal,
 		Trash2
 	} from '@lucide/svelte';
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import { api, type KeyMeta } from './api';
 	import SearchHistory, { type HistoryEntry } from './SearchHistory.svelte';
-	import ServerSettingsDialog from '$lib/dialogs/ServerSettingsDialog.svelte';
-	import { deleteOps, getErrorMessage, modifyOps, toastError } from './utils';
+	import { deleteOps, formatBytes, getErrorMessage, modifyOps, toastError } from './utils';
 	import { ws } from './ws';
 
 	interface Props {
@@ -76,7 +76,7 @@
 	let useRegex = $state(false);
 	let regexError = $state('');
 	let typeFilter = $state('all');
-	let sortBy = $state<'key' | 'type' | 'ttl'>('key');
+	let sortBy = $state<'key' | 'type' | 'ttl' | 'memory'>('key');
 	let sortAsc = $state(true);
 	let loading = $state(false);
 	let cursor = $state(0);
@@ -96,6 +96,8 @@
 	let showBulkDelete = $state(false);
 	let currentPrefix = $state('');
 	let prefixStack = $state<string[]>([]);
+	let memoryCache = $state<Map<string, number>>(new Map());
+	let memoryLoading = $state(false);
 
 	const isMac = /mac/i.test(
 		(navigator as Navigator & { userAgentData?: { platform: string } }).userAgentData?.platform ??
@@ -116,7 +118,8 @@
 	const sortOptions = [
 		{ value: 'key', label: 'Name' },
 		{ value: 'type', label: 'Type' },
-		{ value: 'ttl', label: 'TTL' }
+		{ value: 'ttl', label: 'TTL' },
+		{ value: 'memory', label: 'Memory' }
 	] as const;
 
 	interface TreeEntry {
@@ -176,7 +179,7 @@
 	}
 
 	function handleSortByChange(value: string | undefined) {
-		if (value === 'key' || value === 'type' || value === 'ttl') {
+		if (value === 'key' || value === 'type' || value === 'ttl' || value === 'memory') {
 			sortBy = value;
 		}
 	}
@@ -193,6 +196,15 @@
 					const aTtl = a.ttl < 0 ? Infinity : a.ttl;
 					const bTtl = b.ttl < 0 ? Infinity : b.ttl;
 					return aTtl - bTtl || a.key.localeCompare(b.key);
+				case 'memory': {
+					const aBytes = memoryCache.get(a.key);
+					const bBytes = memoryCache.get(b.key);
+					// Keys without data sort last
+					if (aBytes === undefined && bBytes === undefined) return a.key.localeCompare(b.key);
+					if (aBytes === undefined) return 1;
+					if (bBytes === undefined) return -1;
+					return aBytes - bBytes || a.key.localeCompare(b.key);
+				}
 				default:
 					return 0;
 			}
@@ -200,7 +212,10 @@
 		return sortAsc ? sorted : sorted.reverse();
 	}
 
-	let sortedKeys = $derived(sortKeys(keys));
+	let sortedKeys = $derived.by(() => {
+		memoryCache; // track for reactivity when memory data arrives
+		return sortKeys(keys);
+	});
 	let treeEntries = $derived(buildTreeLevel(sortedKeys, currentPrefix));
 	let selectableKeyNames = $derived(
 		viewMode === 'tree'
@@ -247,6 +262,33 @@
 		});
 	});
 
+	// Lazy-load memory usage when sort mode is "memory"
+	$effect(() => {
+		if (sortBy !== 'memory') return;
+		const currentKeys = keys; // track: re-fire on load more
+		if (currentKeys.length === 0) return;
+
+		// Read cache without tracking to avoid infinite loop (we write to it below)
+		const cache = untrack(() => memoryCache);
+		const uncached = currentKeys.map((k) => k.key).filter((k) => !cache.has(k));
+		if (uncached.length === 0) return;
+
+		memoryLoading = true;
+		api
+			.getKeysMemory(uncached)
+			.then((result) => {
+				const next = new Map(memoryCache);
+				for (const [k, v] of Object.entries(result.memory)) {
+					next.set(k, v);
+				}
+				memoryCache = next;
+				memoryLoading = false;
+			})
+			.catch(() => {
+				memoryLoading = false;
+			});
+	});
+
 	// Debounced search when pattern, type filter, or regex mode changes
 	$effect(() => {
 		pattern; // track dependency
@@ -277,6 +319,7 @@
 			const newKeys = result.keys as KeyMeta[];
 			if (reset) {
 				keys = newKeys;
+				memoryCache = new Map();
 			} else {
 				keys = [...keys, ...newKeys];
 			}
@@ -689,6 +732,11 @@
 											<Badge variant="secondary" class="ml-2 text-xs opacity-60"
 												>{entry.key.type}</Badge
 											>
+											{#if memoryCache.has(entry.fullPrefix)}
+												<span class="ml-1 text-xs text-muted-foreground opacity-60"
+													>{formatBytes(memoryCache.get(entry.fullPrefix)!)}</span
+												>
+											{/if}
 										{/if}
 									</Button>
 								{/if}
@@ -733,6 +781,11 @@
 							>
 								<span class="flex-1 overflow-hidden text-left text-ellipsis">{item.key}</span>
 								<Badge variant="secondary" class="ml-2 text-xs opacity-60">{item.type}</Badge>
+								{#if memoryCache.has(item.key)}
+									<span class="ml-1 text-xs text-muted-foreground opacity-60"
+										>{formatBytes(memoryCache.get(item.key)!)}</span
+									>
+								{/if}
 							</Button>
 						</li>
 					{/each}
@@ -752,6 +805,10 @@
 						{loading ? 'Loading...' : 'Load more'}
 					</Button>
 				</div>
+			{/if}
+
+			{#if memoryLoading}
+				<div class="px-2 py-1 text-xs text-muted-foreground">Loading memory usage data...</div>
 			{/if}
 		{:else if loading}
 			<Empty.Root>

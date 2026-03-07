@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
+	import { formatBytes } from '$lib/utils';
 	import { TriangleAlert } from '@lucide/svelte/icons';
 
 	interface Props {
@@ -11,12 +12,6 @@
 	}
 
 	let { open = $bindable(), valueSize, onConfirm, onCancel }: Props = $props();
-
-	function formatSize(bytes: number): string {
-		if (bytes < 1024) return `${bytes} bytes`;
-		if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-		return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-	}
 </script>
 
 <Dialog.Root bind:open>
@@ -27,8 +22,8 @@
 				Large Value Warning
 			</Dialog.Title>
 			<Dialog.Description>
-				The value you're trying to add is {formatSize(valueSize)}, which exceeds the recommended 1MB
-				limit.
+				The value you're trying to add is {formatBytes(valueSize)}, which exceeds the recommended
+				1MB limit.
 			</Dialog.Description>
 		</Dialog.Header>
 		<div class="space-y-3 pt-4 text-sm text-muted-foreground">

@@ -644,6 +644,32 @@ func (c *Client) HRename(ctx context.Context, key, oldField, newField string) (s
 	return value, nil
 }
 
+// MemoryUsageBatch returns memory usage in bytes for each key using pipelined MEMORY USAGE calls.
+// Keys that error (deleted, unsupported) are silently skipped.
+func (c *Client) MemoryUsageBatch(ctx context.Context, keys []string) (map[string]int64, error) {
+	if len(keys) == 0 {
+		return map[string]int64{}, nil
+	}
+
+	cmds := make([]valkey.Completed, len(keys))
+	for i, key := range keys {
+		cmds[i] = c.client.B().MemoryUsage().Key(key).Build()
+	}
+
+	results := c.client.DoMulti(ctx, cmds...)
+
+	usage := make(map[string]int64, len(keys))
+	for i, r := range results {
+		bytes, err := r.ToInt64()
+		if err != nil {
+			continue // key deleted or unsupported
+		}
+		usage[keys[i]] = bytes
+	}
+
+	return usage, nil
+}
+
 // KeyMetadata represents metadata about a key
 type KeyMetadata struct {
 	Type string

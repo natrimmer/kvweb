@@ -349,6 +349,14 @@ export const api = {
 		});
 	},
 
+	// Memory usage
+	getKeysMemory(keys: string[]): Promise<{ memory: Record<string, number> }> {
+		return request('/keys/memory', {
+			method: 'POST',
+			body: JSON.stringify({ keys })
+		});
+	},
+
 	// Console
 	exec(command: string): Promise<ExecResult> {
 		return request('/exec', {

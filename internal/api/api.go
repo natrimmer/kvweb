@@ -48,6 +48,7 @@ func New(cfg *config.Config, client *valkey.Client) *Handler {
 	h.mux.HandleFunc("POST /api/key/{key}/expire", h.handleExpire)
 	h.mux.HandleFunc("POST /api/key/{key}/rename", h.handleRename)
 	h.mux.HandleFunc("POST /api/keys/delete", h.handleDeleteKeys)
+	h.mux.HandleFunc("POST /api/keys/memory", h.handleKeysMemory)
 	h.mux.HandleFunc("POST /api/flush", h.handleFlush)
 	h.mux.HandleFunc("GET /api/notifications", h.handleGetNotifications)
 	h.mux.HandleFunc("POST /api/notifications", h.handleSetNotifications)
@@ -1616,4 +1617,43 @@ func (h *Handler) handleHLLAdd(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jsonResponse(w, map[string]string{"status": "ok"})
+}
+
+// Memory usage handler
+
+func (h *Handler) handleKeysMemory(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Keys []string `json:"keys"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		jsonError(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if len(body.Keys) == 0 {
+		jsonError(w, "No keys specified", http.StatusBadRequest)
+		return
+	}
+
+	if len(body.Keys) > 10000 {
+		jsonError(w, "Too many keys (max 10000)", http.StatusBadRequest)
+		return
+	}
+
+	for _, key := range body.Keys {
+		if h.checkKeyPrefix(w, key) {
+			return
+		}
+	}
+
+	memory, err := h.client.MemoryUsageBatch(r.Context(), body.Keys)
+	if err != nil {
+		internalError(w, err)
+		return
+	}
+
+	jsonResponse(w, map[string]any{
+		"memory": memory,
+	})
 }

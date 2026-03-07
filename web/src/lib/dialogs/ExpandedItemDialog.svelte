@@ -4,7 +4,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import LargeValueWarningDialog from '$lib/dialogs/LargeValueWarningDialog.svelte';
-	import { highlightJson, isLargeValue, toastError } from '$lib/utils';
+	import { formatBytes, highlightJson, isLargeValue, toastError } from '$lib/utils';
 	import { Braces, Pencil, RemoveFormatting, View } from '@lucide/svelte/icons';
 	import { toast } from 'svelte-sonner';
 
@@ -137,12 +137,6 @@
 		editValue = originalValue;
 		open = false;
 		onCancel();
-	}
-
-	function formatBytes(bytes: number): string {
-		if (bytes < 1024) return `${bytes} B`;
-		if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-		return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 	}
 </script>
 
