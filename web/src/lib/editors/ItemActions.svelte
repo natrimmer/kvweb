@@ -54,18 +54,6 @@
 			<X class="h-4 w-4" />
 		</Button>
 	{:else}
-		{#if showEdit && onEdit}
-			<Button
-				size="sm"
-				variant="ghost"
-				onclick={onEdit}
-				title={editLabel}
-				aria-label={editLabel}
-				class="h-8 w-8 p-0"
-			>
-				<Pencil class="h-4 w-4" />
-			</Button>
-		{/if}
 		{#if showRename && onRename}
 			<Button
 				size="sm"
@@ -76,6 +64,18 @@
 				class="h-8 w-8 p-0"
 			>
 				<FileEdit class="h-4 w-4" />
+			</Button>
+		{/if}
+		{#if showEdit && onEdit}
+			<Button
+				size="sm"
+				variant="ghost"
+				onclick={onEdit}
+				title={editLabel}
+				aria-label={editLabel}
+				class="h-8 w-8 p-0"
+			>
+				<Pencil class="h-4 w-4" />
 			</Button>
 		{/if}
 		{#if onDelete}
