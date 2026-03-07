@@ -32,6 +32,7 @@
 		pageSize: number;
 		readOnly: boolean;
 		typeHeaderExpanded: boolean;
+		showActions?: boolean;
 		cursorBased?: boolean;
 		hasMore?: boolean;
 		onPageChange: (page: number) => void;
@@ -47,6 +48,7 @@
 		pageSize,
 		readOnly,
 		typeHeaderExpanded,
+		showActions = $bindable(true),
 		cursorBased = false,
 		hasMore = false,
 		onPageChange,
@@ -57,7 +59,6 @@
 	// View state
 	let rawView = $state(false);
 	let fullWidth = $state(false);
-	let showActions = $state(true);
 	let prettyPrint = $state(false);
 
 	// Add form state

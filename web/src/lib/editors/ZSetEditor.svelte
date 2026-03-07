@@ -45,6 +45,7 @@
 		pageSize: number;
 		readOnly: boolean;
 		typeHeaderExpanded: boolean;
+		showActions?: boolean;
 		onPageChange: (page: number) => void;
 		onPageSizeChange: (size: number) => void;
 		onDataChange: () => void;
@@ -60,6 +61,7 @@
 		pageSize,
 		readOnly,
 		typeHeaderExpanded,
+		showActions = $bindable(true),
 		onPageChange,
 		onPageSizeChange,
 		onDataChange,
@@ -70,7 +72,6 @@
 	// View state
 	let rawView = $state(false);
 	let fullWidth = $state(false);
-	let showActions = $state(true);
 	let prettyPrint = $state(false);
 	let viewMode = $state<'zset' | 'geo'>('zset');
 	let geoMembers = $state<GeoMember[]>([]);

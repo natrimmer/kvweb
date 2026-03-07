@@ -67,6 +67,9 @@
 		typeHeaderExpanded = !typeHeaderExpanded;
 	}
 
+	// Shared editor state (persists across key/type switches)
+	let showActions = $state(true);
+
 	// Optional callback from child editors to provide custom copy value
 	let zsetGetCopyValue: (() => string) | undefined = $state(undefined);
 	let zsetGeoViewActive = $state(false);
@@ -359,6 +362,7 @@
 				{pageSize}
 				{readOnly}
 				{typeHeaderExpanded}
+				bind:showActions
 				onPageChange={goToPage}
 				onPageSizeChange={changePageSize}
 				onDataChange={handleDataChange}
@@ -372,6 +376,7 @@
 				{pageSize}
 				{readOnly}
 				{typeHeaderExpanded}
+				bind:showActions
 				cursorBased={true}
 				hasMore={nextCursor !== undefined && nextCursor !== 0}
 				onPageChange={handleCursorPageChange}
@@ -387,6 +392,7 @@
 				{pageSize}
 				{readOnly}
 				{typeHeaderExpanded}
+				bind:showActions
 				cursorBased={true}
 				hasMore={nextCursor !== undefined && nextCursor !== 0}
 				onPageChange={handleCursorPageChange}
@@ -402,6 +408,7 @@
 				{pageSize}
 				{readOnly}
 				{typeHeaderExpanded}
+				bind:showActions
 				onPageChange={goToPage}
 				onPageSizeChange={changePageSize}
 				onDataChange={handleDataChange}
@@ -417,6 +424,7 @@
 				{pageSize}
 				{readOnly}
 				{typeHeaderExpanded}
+				bind:showActions
 				onPageChange={goToPage}
 				onPageSizeChange={changePageSize}
 				onDataChange={handleDataChange}
