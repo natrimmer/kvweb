@@ -263,21 +263,5 @@
 		</Resizable.PaneGroup>
 	</main>
 </div>
-
 <Toaster />
 <ModeWatcher />
-
-<style>
-	@keyframes marquee {
-		from {
-			transform: translateX(0);
-		}
-		to {
-			transform: translateX(-50%);
-		}
-	}
-
-	.marquee-content {
-		animation: marquee 30s linear infinite;
-	}
-</style>
