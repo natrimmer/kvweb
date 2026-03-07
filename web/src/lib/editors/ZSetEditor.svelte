@@ -155,7 +155,14 @@
 		const keyChanged = previousKeyName !== null && keyName !== previousKeyName;
 		const membersChanged = members.length !== previousMembersLength;
 
-		if (viewMode === 'geo' && (keyChanged || membersChanged)) {
+		// Reset to zset view when key changes to avoid calling geoGet on a non-zset key
+		if (keyChanged) {
+			viewMode = 'zset';
+			geoViewActive = false;
+			geoMembers = [];
+		}
+
+		if (viewMode === 'geo' && membersChanged) {
 			loadGeoData();
 		}
 
