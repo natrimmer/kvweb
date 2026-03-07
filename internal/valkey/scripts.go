@@ -24,7 +24,7 @@ func NewScript(script string) *Script {
 
 // Eval executes the script with the given keys and args
 // Uses EVALSHA for efficiency, falls back to EVAL if script not cached
-func (s *Script) Eval(ctx context.Context, c *Client, keys []string, args []string) (interface{}, error) {
+func (s *Script) Eval(ctx context.Context, c *Client, keys []string, args []string) (any, error) {
 	// Build EVALSHA command with all keys and args
 	allArgs := []string{"EVALSHA", s.sha1, fmt.Sprintf("%d", len(keys))}
 	allArgs = append(allArgs, keys...)
@@ -46,7 +46,7 @@ func (s *Script) Eval(ctx context.Context, c *Client, keys []string, args []stri
 }
 
 // evalScript executes the script using EVAL (loads and runs in one command)
-func (s *Script) evalScript(ctx context.Context, c *Client, keys []string, args []string) (interface{}, error) {
+func (s *Script) evalScript(ctx context.Context, c *Client, keys []string, args []string) (any, error) {
 	// Build EVAL command with all keys and args
 	allArgs := []string{"EVAL", s.script, fmt.Sprintf("%d", len(keys))}
 	allArgs = append(allArgs, keys...)

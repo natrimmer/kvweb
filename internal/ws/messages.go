@@ -2,8 +2,8 @@ package ws
 
 // Message is the wrapper for all WebSocket messages
 type Message struct {
-	Type string      `json:"type"` // "key_event", "stats", "status"
-	Data interface{} `json:"data"`
+	Type string `json:"type"` // "key_event", "stats", "status"
+	Data any    `json:"data"`
 }
 
 // KeyEventData represents a key operation event

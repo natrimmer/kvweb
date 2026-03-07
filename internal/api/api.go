@@ -1230,7 +1230,7 @@ func (h *Handler) handleHashRename(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonResponse(w, map[string]interface{}{
+	jsonResponse(w, map[string]any{
 		"status": "ok",
 		"value":  value,
 	})
@@ -1339,7 +1339,7 @@ func (h *Handler) handleZSetRename(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonResponse(w, map[string]interface{}{
+	jsonResponse(w, map[string]any{
 		"status": "ok",
 		"score":  score,
 	})
@@ -1376,7 +1376,7 @@ func (h *Handler) handleZSetIncrScore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonResponse(w, map[string]interface{}{
+	jsonResponse(w, map[string]any{
 		"score": newScore,
 	})
 }

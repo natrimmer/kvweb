@@ -675,7 +675,7 @@ func (c *Client) GetKeyMetadata(ctx context.Context, key string) (*KeyMetadata, 
 	}
 
 	// Result should be an array: [type, size, ttl]
-	arr, ok := result.([]interface{})
+	arr, ok := result.([]any)
 	if !ok || len(arr) != 3 {
 		return nil, fmt.Errorf("unexpected result format from script")
 	}
