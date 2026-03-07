@@ -822,7 +822,7 @@
 			<Button
 				variant="ghost"
 				size="sm"
-				class="h-7 text-muted-foreground hover:text-foreground"
+				class="h-7 {showPalette ? 'text-primary' : 'text-muted-foreground'} hover:text-foreground"
 				onclick={() => (showPalette = true)}
 				title="Color palette"
 				aria-label="Color palette"
@@ -832,7 +832,7 @@
 			<Button
 				variant="ghost"
 				size="sm"
-				class="h-7 text-muted-foreground hover:text-foreground"
+				class="h-7 {showSettings ? 'text-primary' : 'text-muted-foreground'} hover:text-foreground"
 				onclick={() => (showSettings = true)}
 				title="Settings and server info"
 				aria-label="Settings and server info"
