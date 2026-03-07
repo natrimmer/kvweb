@@ -78,6 +78,9 @@ if [[ "$TYPE" == "all" || "$TYPE" == "hash" ]]; then
     for i in $(seq 1 600); do
         $CLI HSET "hash:many" "field_$(printf '%03d' "$i")" "value_$i"
     done
+
+    # Long field and value
+    $CLI HSET "hash:long" yijwM8jYyLqSEKYkDj9MjXCjHQQvsO5bXMjanLKk+439PsVTLNvaWquNIOOWig2ps2q1Y+lKxvSk5d0B7n4BWBIhGcNSHwZDKkjgqI4f8uwi65g1p6E2ZQvy9ZKBaOb9DpfCMhpo2 "FYJRXmJDcPgwMGb+/Nt3biNjAshzwsvxypDjCjsTqRNQCBGJnAKLnCtB6CS0ZZJav8flGNAIkePt5d0B7n4BWBIhGcNSHwZDKkjgqI4f8uwi65g1p6E2ZQvy9ZKBaOb9DpfCMhpo2"
 fi
 
 # ===================
@@ -102,6 +105,9 @@ if [[ "$TYPE" == "all" || "$TYPE" == "list" ]]; then
         '{"id":1,"type":"task","title":"Review PR"}' \
         '{"id":2,"type":"bug","title":"Fix login"}' \
         '{"id":3,"type":"feature","title":"Add export"}'
+
+    # Long item
+    $CLI RPUSH "list:long" "T6DghQrcnUIe+ABbJmhYZuzlvtSA5iwqF4j58VHNbp6vDd+2g+GdK/d8m5wWibc82D/R+Gl82dF/5d0B7n4BWBIhGcNSHwZDKkjgqI4f8uwi65g1p6E2ZQvy9ZKBaOb9DpfCMhpo25d0B7n4BWBIhGcNSHwZDKkjgqI4f8uwi65g1p6E2ZQvy9ZKBaOb9DpfCMhpo2"
 fi
 
 # ===================
@@ -164,6 +170,9 @@ if [[ "$TYPE" == "all" || "$TYPE" == "zset" ]]; then
         1705312200 '{"type":"post","content":"Hello world"}' \
         1705315800 '{"type":"comment","content":"Nice!"}' \
         1705319400 '{"type":"share","content":"Check this out"}'
+
+    # Long member
+    $CLI ZADD "zset:long" 9843568734658746538764598623879695842376984579824735987459864387265874362875634876598437985739875932465923746593482698546983426 "HZwdVBl34IyoSR3j4OPQH/oL85VGqOnLu2vWLLNjE3DxMIR+ik4V4bgdMd0iltTmbuCmBLIWgNch5d0B7n4BWBIhGcNSHwZDKkjgqI4f8uwi65g1p6E2ZQvy9ZKBaOb9DpfCMhpo25d0B7n4BWBIhGcNSHwZDKkjgqI4f8uwi65g1p6E2ZQvy9ZKBaOb9DpfCMhpo2"
 fi
 
 # ===================
@@ -242,6 +251,9 @@ if [[ "$TYPE" == "all" || "$TYPE" == "stream" ]]; then
     $CLI XADD "stream:json" "*" \
         event "user.created" \
         payload '{"userId":123,"email":"test@example.com"}'
+
+    # Long field and value
+    $CLI XADD "stream:long" "*" FYJRXmJDcPgwMGb+/Nt3biNjAshzwsvxypDjCjsTqRNQCBGJnAKLnCtB6CS0ZZJav8flGNAIkePt5d0B7n4BWBIhGcNSHwZDKkjgqI4f8uwi65g1p6E2ZQvy9ZKBaOb9DpfCMhpo2 "hvuWdfadwIalROG2Le8ySZzcaDBn0nYdAwNh0/8j1gLvdex4N+LYkXbFSsjgKRVGgu3/2/zzBLRs5d0B7n4BWBIhGcNSHwZDKkjgqI4f8uwi65g1p6E2ZQvy9ZKBaOb9DpfCMhpo2"
 fi
 
 # ===================
