@@ -25,6 +25,8 @@ in
     pkgs.nil
     pkgs.valkey
     pkgs.zstd
+    pkgs.docker
+    pkgs.colima
   ];
 
   languages = {

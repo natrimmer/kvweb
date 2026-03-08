@@ -1,0 +1,12 @@
+.devenv/
+.direnv/
+.git/
+dist/
+local/
+logs/
+web/node_modules/
+web/dist/
+static/dist/*
+*.exe
+*.test
+.DS_Store

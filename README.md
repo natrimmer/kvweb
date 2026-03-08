@@ -27,6 +27,12 @@ Go backend with embedded Svelte frontend in a single binary.
 
 Download the latest binary from [GitHub Releases](https://github.com/natrimmer/kvweb/releases/latest), extract it, and add it to your PATH.
 
+With Docker:
+
+```
+docker run --rm -p 8080:8080 ghcr.io/natrimmer/kvweb -url host.docker.internal:6379
+```
+
 With Nix:
 
 ```
