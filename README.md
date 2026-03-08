@@ -2,7 +2,26 @@
 
 A web-based GUI for browsing and editing Valkey/Redis databases. Inspired by [pgweb](https://github.com/sosedoff/pgweb).
 
-Single binary. Go backend with embedded Svelte frontend.
+Go backend with embedded Svelte frontend in a single binary.
+
+## Features
+
+- **Browse and edit** string, hash, list, set, sorted set, stream, HyperLogLog, and geo keys
+- **Search** with glob patterns or regex, filter by type, sort by name/type/TTL/memory
+- **Tree view** for navigating keys by prefix hierarchy, or flat list view
+- **Inline editing** with per-type editors — rename fields, adjust scores, update coordinates
+- **Live updates** via WebSocket keyspace notifications to see changes as they happen
+- **Command console** for running ad-hoc Valkey commands
+- **Compressed values** — gzip and zstd auto-detected, decompressed for display, re-compressed on save
+- **Geo map view** — plot sorted set members on an interactive OpenStreetMap
+- **JSON syntax highlighting** with compact/formatted toggle
+- **Dark mode** with system preference detection and manual toggle
+- **Read-only mode** — disable all writes via `--readonly`
+- **Prefix isolation** — restrict visible keys with `--prefix`
+- **Bulk operations** — multi-select keys for batch delete
+- **Keyboard shortcuts** — delete, select all, range select, console toggle
+- **Copy to clipboard** — copy key names or full values in one click
+- **TTL management** — set, edit, and watch live countdowns
 
 ## Install
 
@@ -59,25 +78,16 @@ The URL can include username, password, and database number. The `-password` and
 
 The `rediss://` and `valkeys://` schemes enable TLS with system CA certificates. Custom CA certs, client certificates, and other advanced TLS settings are not supported through the URL.
 
-## Supported Types
-
-string, hash, list, set, sorted set, stream, HyperLogLog, geo
-
-## Compressed Values
-
-String values compressed with gzip or zstd are automatically detected via magic bytes, decompressed for display, and re-compressed on save. A label in the editor shows the encoding.
-
-## Console
-
-A built-in command console for running ad-hoc Valkey commands directly from the UI. Toggle it with the terminal icon in the header or `Ctrl+``/`Cmd+``.
-
-Respects `--readonly` (only read commands allowed) and `--prefix` (key arguments must match). Blocking commands (SUBSCRIBE, MONITOR), scripting (EVAL), and transactions (MULTI) are always disabled.
-
 ## Versioning
 
 kvweb uses [SemVer](https://semver.org/) with git tags as the source of truth. The version and commit hash are embedded at build time via `git describe`.
 
 ```
+git tag -a v0.2.0 -m "v0.2.0"
+git push origin v0.2.0
+```
+
+```
 kvweb --version
-kvweb v0.1.0 (a1b2c3d)
+kvweb v0.2.0 (a1b2c3d)
 ```
