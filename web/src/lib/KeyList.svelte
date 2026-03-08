@@ -12,6 +12,7 @@
 	import BulkDeleteDialog from '$lib/dialogs/BulkDeleteDialog.svelte';
 	import PaletteDialog from '$lib/dialogs/PaletteDialog.svelte';
 	import ServerSettingsDialog from '$lib/dialogs/ServerSettingsDialog.svelte';
+	import SlowLogDialog from '$lib/dialogs/SlowLogDialog.svelte';
 	import {
 		ArrowUpFromDot,
 		CircleAlert,
@@ -21,6 +22,7 @@
 		Dot,
 		Folder,
 		Funnel,
+		Gauge,
 		House,
 		Info,
 		ListTree,
@@ -85,6 +87,7 @@
 	let showAddDialog = $state(false);
 	let showPalette = $state(false);
 	let showSettings = $state(false);
+	let showSlowLog = $state(false);
 	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 	let showHistory = $state(false);
 	let searchHistoryRef: SearchHistory | undefined = $state();
@@ -900,6 +903,16 @@
 			<Button
 				variant="ghost"
 				size="sm"
+				class="h-7 {showSlowLog ? 'text-primary' : 'text-muted-foreground'} hover:text-foreground"
+				onclick={() => (showSlowLog = true)}
+				title="Slow log"
+				aria-label="Slow log"
+			>
+				<Gauge size={14} />
+			</Button>
+			<Button
+				variant="ghost"
+				size="sm"
 				class="h-7 {consoleVisible
 					? 'text-primary'
 					: 'text-muted-foreground'} hover:text-foreground"
@@ -922,6 +935,8 @@
 		</div>
 	</span>
 </div>
+
+<SlowLogDialog bind:open={showSlowLog} />
 
 <ServerSettingsDialog bind:open={showSettings} {readOnly} {disableFlush} />
 

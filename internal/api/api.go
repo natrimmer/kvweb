@@ -90,6 +90,9 @@ func New(cfg *config.Config, client *valkey.Client) *Handler {
 	// Console
 	h.mux.HandleFunc("POST /api/exec", h.handleExec)
 
+	// Slow log
+	h.mux.HandleFunc("GET /api/slowlog", h.handleSlowLog)
+
 	return h
 }
 
@@ -1682,5 +1685,37 @@ func (h *Handler) handleKeysMemory(w http.ResponseWriter, r *http.Request) {
 
 	jsonResponse(w, map[string]any{
 		"memory": memory,
+	})
+}
+
+// Slow log handler
+
+func (h *Handler) handleSlowLog(w http.ResponseWriter, r *http.Request) {
+	countStr := r.URL.Query().Get("count")
+	count := int64(128)
+	if countStr != "" {
+		if c, err := strconv.ParseInt(countStr, 10, 64); err == nil && c > 0 {
+			count = c
+		}
+	}
+	if count > 1000 {
+		count = 1000
+	}
+
+	entries, err := h.client.SlowLogGet(r.Context(), count)
+	if err != nil {
+		internalError(w, err)
+		return
+	}
+
+	length, err := h.client.SlowLogLen(r.Context())
+	if err != nil {
+		internalError(w, err)
+		return
+	}
+
+	jsonResponse(w, map[string]any{
+		"entries": entries,
+		"length":  length,
 	})
 }

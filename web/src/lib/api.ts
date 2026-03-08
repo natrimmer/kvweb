@@ -115,6 +115,20 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 	return res.json();
 }
 
+export interface SlowLogEntry {
+	id: number;
+	timestamp: number;
+	duration: number; // microseconds
+	args: string[];
+	clientAddr: string;
+	clientName: string;
+}
+
+export interface SlowLogResponse {
+	entries: SlowLogEntry[];
+	length: number;
+}
+
 export interface ExecResult {
 	type: 'string' | 'integer' | 'array' | 'nil' | 'error';
 	value: string | number | ExecResult[] | null;
@@ -357,6 +371,12 @@ export const api = {
 			method: 'POST',
 			body: JSON.stringify({ keys })
 		});
+	},
+
+	// Slow log
+	getSlowLog(count?: number): Promise<SlowLogResponse> {
+		const params = count ? `?count=${count}` : '';
+		return request(`/slowlog${params}`);
 	},
 
 	// Console

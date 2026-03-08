@@ -675,6 +675,76 @@ func (c *Client) MemoryUsageBatch(ctx context.Context, keys []string) (map[strin
 	return usage, nil
 }
 
+// SlowLogEntry represents a single entry from the slow log
+type SlowLogEntry struct {
+	ID         int64    `json:"id"`
+	Timestamp  int64    `json:"timestamp"`
+	Duration   int64    `json:"duration"` // microseconds
+	Args       []string `json:"args"`
+	ClientAddr string   `json:"clientAddr"`
+	ClientName string   `json:"clientName"`
+}
+
+// SlowLogGet returns the last count entries from the slow log
+func (c *Client) SlowLogGet(ctx context.Context, count int64) ([]SlowLogEntry, error) {
+	result, err := c.client.Do(ctx, c.client.B().Arbitrary("SLOWLOG", "GET", strconv.FormatInt(count, 10)).Build()).ToAny()
+	if err != nil {
+		return nil, err
+	}
+
+	rawEntries, ok := result.([]any)
+	if !ok {
+		return nil, fmt.Errorf("unexpected SLOWLOG response type")
+	}
+
+	entries := make([]SlowLogEntry, 0, len(rawEntries))
+	for _, raw := range rawEntries {
+		fields, ok := raw.([]any)
+		if !ok || len(fields) < 4 {
+			continue
+		}
+
+		entry := SlowLogEntry{}
+
+		if id, ok := fields[0].(int64); ok {
+			entry.ID = id
+		}
+		if ts, ok := fields[1].(int64); ok {
+			entry.Timestamp = ts
+		}
+		if dur, ok := fields[2].(int64); ok {
+			entry.Duration = dur
+		}
+		if args, ok := fields[3].([]any); ok {
+			entry.Args = make([]string, 0, len(args))
+			for _, a := range args {
+				if s, ok := a.(string); ok {
+					entry.Args = append(entry.Args, s)
+				}
+			}
+		}
+		if len(fields) > 4 {
+			if addr, ok := fields[4].(string); ok {
+				entry.ClientAddr = addr
+			}
+		}
+		if len(fields) > 5 {
+			if name, ok := fields[5].(string); ok {
+				entry.ClientName = name
+			}
+		}
+
+		entries = append(entries, entry)
+	}
+
+	return entries, nil
+}
+
+// SlowLogLen returns the number of entries in the slow log
+func (c *Client) SlowLogLen(ctx context.Context) (int64, error) {
+	return c.client.Do(ctx, c.client.B().Arbitrary("SLOWLOG", "LEN").Build()).ToInt64()
+}
+
 // KeyMetadata represents metadata about a key
 type KeyMetadata struct {
 	Type string
