@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { api, type PaginationInfo, type StreamEntry } from '$lib/api';
 	import ActionsToggle from '$lib/components/ActionsToggle.svelte';
+	import ValueCell from '$lib/components/ValueCell.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as ButtonGroup from '$lib/components/ui/button-group';
 	import { Input } from '$lib/components/ui/input';
@@ -398,7 +399,7 @@
 								<ChevronsLeftRight class="h-3 w-3" />
 							</Button>
 						</div>
-						<div class="flex-1">
+						<div class="min-w-0 flex-1">
 							<div class="mb-2 flex items-center justify-between gap-2">
 								<div class="font-mono text-xs text-muted-foreground">{entry.id}</div>
 								{#if !readOnly && showActions}
@@ -414,25 +415,18 @@
 									</Button>
 								{/if}
 							</div>
-							<div class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+							<div class="grid grid-cols-[minmax(auto,12rem)_1fr] gap-x-4 gap-y-1 text-sm">
 								{#each Object.entries(entry.fields) as [field, val]}
-									<span class="font-mono text-muted-foreground">{field}</span>
-									<span class="font-mono">
-										<div class="flex items-center gap-1">
-											{#if fieldHighlights[entry.id]?.[field]}
-												<!-- JSON value with highlighting -->
-												<div
-													class="[&>pre]:m-0 [&>pre]:overflow-hidden [&>pre]:bg-transparent [&>pre]:p-0 [&>pre]:text-sm [&>pre]:text-ellipsis [&>pre]:whitespace-nowrap"
-												>
-													{@html fieldHighlights[entry.id][field]}
-												</div>
-											{:else}
-												<!-- Plain text value -->
-												<span class="break-all">
-													{val.length > 100 ? val.slice(0, 100) + '…' : val}
-												</span>
-											{/if}
-										</div>
+									<span
+										class="overflow-hidden font-mono text-ellipsis whitespace-nowrap text-muted-foreground"
+										title={field}>{field}</span
+									>
+									<span class="min-w-0 font-mono">
+										<ValueCell
+											value={val}
+											jsonHtml={fieldHighlights[entry.id]?.[field]}
+											class="max-w-none"
+										/>
 									</span>
 								{/each}
 							</div>

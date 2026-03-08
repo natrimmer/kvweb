@@ -2,6 +2,7 @@
 	import AddItemForm from '$lib/editors/AddItemForm.svelte';
 	import { api, type PaginationInfo } from '$lib/api';
 	import ActionsToggle from '$lib/components/ActionsToggle.svelte';
+	import ValueCell from '$lib/components/ValueCell.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as ButtonGroup from '$lib/components/ui/button-group';
 	import { Input } from '$lib/components/ui/input';
@@ -384,20 +385,8 @@
 								/>
 							</div>
 						{:else}
-							<div class="flex flex-1 items-center gap-1">
-								{#if memberHighlights[member]}
-									<!-- JSON value with highlighting -->
-									<div
-										class="[&>pre]:m-0 [&>pre]:overflow-hidden [&>pre]:bg-transparent [&>pre]:p-0 [&>pre]:text-sm [&>pre]:text-ellipsis [&>pre]:whitespace-nowrap"
-									>
-										{@html memberHighlights[member]}
-									</div>
-								{:else}
-									<!-- Plain text value -->
-									<span class="font-mono text-sm break-all">
-										{member.length > 100 ? member.slice(0, 100) + '…' : member}
-									</span>
-								{/if}
+							<div class="min-w-0 flex-1">
+								<ValueCell value={member} jsonHtml={memberHighlights[member]} class="max-w-none" />
 							</div>
 						{/if}
 						{#if !readOnly && showActions}

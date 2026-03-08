@@ -18,8 +18,8 @@
 		variant="outline"
 		class={fullWidth ? 'bg-accent' : ''}
 		onclick={() => onToggle(true)}
-		title="Full width"
-		aria-label="Full width"
+		title="Fit width"
+		aria-label="Fit width"
 		{disabled}
 	>
 		<ChevronsLeftRight class="h-4 w-4" />

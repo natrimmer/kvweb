@@ -161,7 +161,12 @@
 					</Button>
 				</span>
 			{:else}
-				<h2 class="min-w-0 font-mono text-lg leading-none break-all">{keyName}</h2>
+				<h2
+					class="min-w-0 overflow-hidden font-mono text-lg leading-none text-ellipsis whitespace-nowrap"
+					title={keyName}
+				>
+					{keyName}
+				</h2>
 			{/if}
 			<Badge variant="secondary" class="shrink-0 uppercase"
 				>{keyType}{#if geoViewActive}(geo){/if}</Badge

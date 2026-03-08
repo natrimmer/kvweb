@@ -3,6 +3,7 @@
 	import { api, type GeoMember, type PaginationInfo, type ZSetMember } from '$lib/api';
 	import ActionsToggle from '$lib/components/ActionsToggle.svelte';
 	import TableWidthToggle from '$lib/components/TableWidthToggle.svelte';
+	import ValueCell from '$lib/components/ValueCell.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as ButtonGroup from '$lib/components/ui/button-group';
 	import { Input } from '$lib/components/ui/input';
@@ -71,7 +72,7 @@
 
 	// View state
 	let rawView = $state(false);
-	let fullWidth = $state(false);
+	let fullWidth = $state(true);
 	let prettyPrint = $state(false);
 	let viewMode = $state<'zset' | 'geo'>('zset');
 	let geoMembers = $state<GeoMember[]>([]);
@@ -704,21 +705,7 @@
 												onCancel={cancelEditing}
 											/>
 										{:else}
-											<div class="flex items-center gap-1">
-												{#if memberHighlights[member]}
-													<!-- JSON value with highlighting -->
-													<div
-														class="[&>pre]:m-0 [&>pre]:overflow-hidden [&>pre]:bg-transparent [&>pre]:p-0 [&>pre]:text-sm [&>pre]:text-ellipsis [&>pre]:whitespace-nowrap"
-													>
-														{@html memberHighlights[member]}
-													</div>
-												{:else}
-													<!-- Plain text value -->
-													<span class="break-all">
-														{member.length > 100 ? member.slice(0, 100) + '…' : member}
-													</span>
-												{/if}
-											</div>
+											<ValueCell value={member} jsonHtml={memberHighlights[member]} />
 										{/if}
 									</Table.Cell>
 									<Table.Cell class="font-mono text-muted-foreground">
@@ -807,21 +794,7 @@
 											onCancel={cancelEditing}
 										/>
 									{:else}
-										<div class="flex items-center gap-1">
-											{#if memberHighlights[member]}
-												<!-- JSON value with highlighting -->
-												<div
-													class="[&>pre]:m-0 [&>pre]:overflow-hidden [&>pre]:bg-transparent [&>pre]:p-0 [&>pre]:text-sm [&>pre]:text-ellipsis [&>pre]:whitespace-nowrap"
-												>
-													{@html memberHighlights[member]}
-												</div>
-											{:else}
-												<!-- Plain text value -->
-												<span class="break-all">
-													{member.length > 100 ? member.slice(0, 100) + '…' : member}
-												</span>
-											{/if}
-										</div>
+										<ValueCell value={member} jsonHtml={memberHighlights[member]} />
 									{/if}
 								</Table.Cell>
 								<Table.Cell class="font-mono text-muted-foreground">

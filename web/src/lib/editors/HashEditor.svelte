@@ -2,6 +2,7 @@
 	import { api, type HashPair, type PaginationInfo } from '$lib/api';
 	import ActionsToggle from '$lib/components/ActionsToggle.svelte';
 	import TableWidthToggle from '$lib/components/TableWidthToggle.svelte';
+	import ValueCell from '$lib/components/ValueCell.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as ButtonGroup from '$lib/components/ui/button-group';
 	import { Input } from '$lib/components/ui/input';
@@ -58,7 +59,7 @@
 
 	// View state
 	let rawView = $state(false);
-	let fullWidth = $state(false);
+	let fullWidth = $state(true);
 	let prettyPrint = $state(false);
 
 	// Add form state
@@ -426,7 +427,7 @@
 											onCancel={cancelEditing}
 										/>
 									{:else}
-										{field}
+										<ValueCell value={field} />
 									{/if}
 								</Table.Cell>
 								<Table.Cell class="font-mono">
@@ -437,21 +438,10 @@
 											onCancel={cancelEditing}
 										/>
 									{:else}
-										<div class="flex items-center gap-1">
-											{#if isJson(value)}
-												<!-- JSON value with highlighting -->
-												<div
-													class="[&>pre]:m-0 [&>pre]:overflow-hidden [&>pre]:bg-transparent [&>pre]:p-0 [&>pre]:text-sm [&>pre]:text-ellipsis [&>pre]:whitespace-nowrap"
-												>
-													{@html highlightJson(value, prettyPrint)}
-												</div>
-											{:else}
-												<!-- Plain text value -->
-												<span class="break-all">
-													{value.length > 100 ? value.slice(0, 100) + '…' : value}
-												</span>
-											{/if}
-										</div>
+										<ValueCell
+											{value}
+											jsonHtml={isJson(value) ? highlightJson(value, prettyPrint) : undefined}
+										/>
 									{/if}
 								</Table.Cell>
 								{#if !readOnly && showActions}
