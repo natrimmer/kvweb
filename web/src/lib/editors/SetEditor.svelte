@@ -424,7 +424,7 @@
 
 <ExpandedItemDialog
 	bind:open={expandedDialogOpen}
-	title="Set Member: {expandedMember.slice(0, 50)}{expandedMember.length > 50 ? '...' : ''}"
+	title="Set Member"
 	value={expandedMember}
 	{readOnly}
 	onSave={saveExpandedEdit}

@@ -152,9 +152,9 @@
 		{#if metadata && metadata.length > 0}
 			<div class="mb-2 flex flex-wrap gap-2">
 				{#each metadata as item}
-					<div class="flex items-baseline gap-1.5 text-sm">
-						<span class="text-muted-foreground">{item.label}:</span>
-						<span class="font-mono">{item.value}</span>
+					<div class="flex min-w-0 items-baseline gap-1.5 text-sm">
+						<span class="shrink-0 text-muted-foreground">{item.label}:</span>
+						<span class="min-w-0 font-mono break-all whitespace-pre-wrap">{item.value}</span>
 					</div>
 				{/each}
 			</div>
@@ -218,9 +218,12 @@
 			{#if !editMode && fields}
 				<!-- Structured fields view (e.g. stream entries) -->
 				<div class="rounded border border-border bg-muted/50 p-4">
-					<div class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+					<div class="grid grid-cols-[minmax(auto,12rem)_1fr] gap-x-4 gap-y-2 text-sm">
 						{#each Object.entries(fields) as [field, val]}
-							<span class="font-mono text-muted-foreground">{field}</span>
+							<span
+								class="overflow-hidden font-mono text-ellipsis whitespace-nowrap text-muted-foreground"
+								title={field}>{field}</span
+							>
 							<span class="font-mono">
 								{#if fieldHighlightsMap[field]}
 									<div class="[&>pre]:m-0 [&>pre]:bg-transparent [&>pre]:p-0 [&>pre]:text-sm">
