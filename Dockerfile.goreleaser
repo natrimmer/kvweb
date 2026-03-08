@@ -1,6 +1,7 @@
 FROM alpine:3.21
+ARG TARGETPLATFORM
 RUN apk add --no-cache ca-certificates && adduser -D kvweb
 USER kvweb
-COPY kvweb /kvweb
+COPY ${TARGETPLATFORM}/kvweb /kvweb
 EXPOSE 8080
 ENTRYPOINT ["/kvweb", "-host", "0.0.0.0"]

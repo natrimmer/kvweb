@@ -31,31 +31,16 @@ checksum:
   name_template: "checksums.txt"
   algorithm: sha256
 
-dockers:
-  - image_templates:
-      - "ghcr.io/natrimmer/kvweb:{{ .Version }}-amd64"
-    use: buildx
-    goarch: amd64
-    dockerfile: Dockerfile.goreleaser
-    build_flag_templates:
-      - "--platform=linux/amd64"
-  - image_templates:
-      - "ghcr.io/natrimmer/kvweb:{{ .Version }}-arm64"
-    use: buildx
-    goarch: arm64
-    dockerfile: Dockerfile.goreleaser
-    build_flag_templates:
-      - "--platform=linux/arm64"
-
-docker_manifests:
-  - name_template: "ghcr.io/natrimmer/kvweb:{{ .Version }}"
-    image_templates:
-      - "ghcr.io/natrimmer/kvweb:{{ .Version }}-amd64"
-      - "ghcr.io/natrimmer/kvweb:{{ .Version }}-arm64"
-  - name_template: "ghcr.io/natrimmer/kvweb:latest"
-    image_templates:
-      - "ghcr.io/natrimmer/kvweb:{{ .Version }}-amd64"
-      - "ghcr.io/natrimmer/kvweb:{{ .Version }}-arm64"
+dockers_v2:
+  - dockerfile: Dockerfile.goreleaser
+    images:
+      - "ghcr.io/natrimmer/kvweb"
+    tags:
+      - "{{ .Version }}"
+      - latest
+    platforms:
+      - linux/amd64
+      - linux/arm64
 
 changelog:
   sort: asc
