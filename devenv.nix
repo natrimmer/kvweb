@@ -162,9 +162,9 @@ in
     '';
 
     seed.exec = ''
-      chmod +x ./seed_valkey.sh
+      chmod +x ./scripts/seed_valkey.sh
       TYPE="''${1:-all}"
-      ./seed_valkey.sh "$TYPE"
+      ./scripts/seed_valkey.sh "$TYPE"
     '';
 
     commands.exec = ''
