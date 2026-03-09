@@ -162,7 +162,7 @@
 				</span>
 			{:else}
 				<h2
-					class="min-w-0 overflow-hidden font-mono text-lg leading-none text-ellipsis whitespace-nowrap"
+					class="min-w-0 overflow-hidden font-mono text-lg leading-tight text-ellipsis whitespace-nowrap"
 					title={keyName}
 				>
 					{keyName}
