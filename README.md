@@ -4,6 +4,14 @@ A web-based GUI for browsing and editing Valkey/Redis databases. Inspired by [pg
 
 Go backend with embedded Svelte frontend in a single binary.
 
+![Tree view with sorted set editor](screenshots/screenshot-1.png)
+
+![Geo map view with command console](screenshots/screenshot-2.png)
+
+![JSON syntax highlighting](screenshots/screenshot-3.png)
+
+![HyperLogLog cardinality viewer](screenshots/screenshot-4.png)
+
 ## Features
 
 - **Browse and edit** string, hash, list, set, sorted set, stream, HyperLogLog, and geo keys
