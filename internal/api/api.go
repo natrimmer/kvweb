@@ -3,7 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"regexp"
 	"sort"
@@ -146,7 +146,7 @@ func jsonError(w http.ResponseWriter, message string, code int) {
 
 // internalError logs the real error server-side and returns a generic message to the client
 func internalError(w http.ResponseWriter, err error) {
-	log.Printf("Error: %v", err)
+	slog.Error("Internal server error", "error", err)
 	jsonError(w, "Internal server error", http.StatusInternalServerError)
 }
 
@@ -225,7 +225,7 @@ func (h *Handler) handleInfo(w http.ResponseWriter, r *http.Request) {
 
 	dbSize, err := h.client.DBSize(r.Context())
 	if err != nil {
-		log.Printf("DBSize error: %v", err)
+		slog.Error("DBSize failed", "error", err)
 	}
 
 	jsonResponse(w, map[string]any{

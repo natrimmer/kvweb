@@ -2,6 +2,7 @@ package ws
 
 import (
 	"encoding/json"
+	"log/slog"
 	"sync"
 )
 
@@ -31,7 +32,9 @@ func (h *Hub) Run() {
 		case client := <-h.register:
 			h.mu.Lock()
 			h.clients[client] = true
+			count := len(h.clients)
 			h.mu.Unlock()
+			slog.Info("WebSocket client connected", "clients", count)
 
 		case client := <-h.unregister:
 			h.mu.Lock()
@@ -39,11 +42,14 @@ func (h *Hub) Run() {
 				delete(h.clients, client)
 				close(client.send)
 			}
+			count := len(h.clients)
 			h.mu.Unlock()
+			slog.Info("WebSocket client disconnected", "clients", count)
 
 		case msg := <-h.broadcast:
 			data, err := json.Marshal(msg)
 			if err != nil {
+				slog.Error("WebSocket broadcast marshal failed", "type", msg.Type, "error", err)
 				continue
 			}
 			h.mu.RLock()
@@ -51,7 +57,7 @@ func (h *Hub) Run() {
 				select {
 				case client.send <- data:
 				default:
-					// Client buffer full, skip
+					slog.Warn("WebSocket client buffer full, message dropped", "type", msg.Type)
 				}
 			}
 			h.mu.RUnlock()
@@ -64,7 +70,7 @@ func (h *Hub) Broadcast(msg Message) {
 	select {
 	case h.broadcast <- msg:
 	default:
-		// Broadcast buffer full, drop message
+		slog.Warn("WebSocket broadcast buffer full, message dropped", "type", msg.Type)
 	}
 }
 

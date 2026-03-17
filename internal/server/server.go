@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"strings"
 	"sync/atomic"
@@ -77,7 +77,7 @@ func (s *Server) initNotifications(ctx context.Context) {
 	// Check current setting
 	current, err := s.client.GetNotifyKeyspaceEvents(ctx)
 	if err != nil {
-		log.Printf("Warning: Could not check keyspace notifications: %v", err)
+		slog.Warn("Could not check keyspace notifications", "error", err)
 		return
 	}
 
@@ -87,23 +87,23 @@ func (s *Server) initNotifications(ctx context.Context) {
 		// A = all commands (includes HyperLogLog which has no dedicated flag)
 		// g = generic (DEL, EXPIRE, RENAME), e = expired, x = evicted
 		if err := s.client.SetNotifyKeyspaceEvents(ctx, "KEAgex"); err != nil {
-			log.Printf("Warning: Could not enable keyspace notifications: %v", err)
+			slog.Warn("Could not enable keyspace notifications", "error", err)
 			return
 		}
 		current = "KEAgex"
-		log.Println("Enabled Valkey keyspace notifications")
+		slog.Info("Enabled Valkey keyspace notifications")
 	}
 
 	// Start subscriber if notifications are enabled
 	if current != "" {
 		events, err := s.client.SubscribeKeyspace(ctx, s.cfg.ValkeyDB)
 		if err != nil {
-			log.Printf("Warning: Could not subscribe to keyspace notifications: %v", err)
+			slog.Warn("Could not subscribe to keyspace notifications", "error", err)
 			return
 		}
 		s.keyEvents = events
 		s.liveUpdates.Store(true)
-		log.Println("Subscribed to Valkey keyspace notifications")
+		slog.Info("Subscribed to Valkey keyspace notifications")
 	}
 }
 
@@ -142,13 +142,13 @@ func (s *Server) enableLiveUpdates() {
 
 	events, err := s.client.SubscribeKeyspace(s.ctx, s.cfg.ValkeyDB)
 	if err != nil {
-		log.Printf("Warning: Could not subscribe to keyspace notifications: %v", err)
+		slog.Warn("Could not subscribe to keyspace notifications", "error", err)
 		return
 	}
 
 	s.keyEvents = events
 	s.liveUpdates.Store(true)
-	log.Println("Live updates enabled at runtime")
+	slog.Info("Live updates enabled at runtime")
 
 	// Start the event broadcaster
 	go s.runEventBroadcaster(s.ctx)
@@ -167,7 +167,7 @@ func (s *Server) disableLiveUpdates() {
 	}
 
 	s.liveUpdates.Store(false)
-	log.Println("Live updates disabled at runtime")
+	slog.Info("Live updates disabled at runtime")
 
 	// Broadcast updated status to all connected clients
 	s.wsHub.Broadcast(ws.Message{
@@ -221,11 +221,11 @@ func (s *Server) runStatsBroadcaster(ctx context.Context) {
 		case <-ticker.C:
 			dbSize, err := s.client.DBSize(ctx)
 			if err != nil {
-				log.Printf("Stats broadcast: DBSize error: %v", err)
+				slog.Error("Stats broadcast failed", "op", "DBSize", "error", err)
 			}
 			memStats, err := s.client.GetMemoryStats(ctx)
 			if err != nil {
-				log.Printf("Stats broadcast: GetMemoryStats error: %v", err)
+				slog.Error("Stats broadcast failed", "op", "GetMemoryStats", "error", err)
 			}
 
 			statsData := ws.StatsData{
@@ -256,7 +256,7 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 	conn, err := websocket.Accept(w, r, opts)
 	if err != nil {
-		log.Printf("WebSocket accept error: %v", err)
+		slog.Error("WebSocket accept failed", "error", err)
 		return
 	}
 

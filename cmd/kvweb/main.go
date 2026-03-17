@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/url"
 	"os"
 	"os/exec"
@@ -62,7 +62,8 @@ func main() {
 	// Initialize Valkey client
 	client, err := valkey.New(cfg)
 	if err != nil {
-		log.Fatalf("Failed to connect to Valkey: %v", err)
+		slog.Error("Failed to connect to Valkey", "error", err)
+		os.Exit(1)
 	}
 	defer client.Close()
 
@@ -74,7 +75,7 @@ func main() {
 		url := fmt.Sprintf("http://%s:%d", cfg.Host, cfg.Port)
 		go func() {
 			if err := openBrowser(url); err != nil {
-				log.Printf("Failed to open browser: %v", err)
+				slog.Warn("Failed to open browser", "error", err)
 			}
 		}()
 	}
@@ -85,19 +86,21 @@ func main() {
 
 	go func() {
 		<-stop
-		log.Println("Shutting down...")
+		slog.Info("Shutting down...")
 		if err := srv.Shutdown(); err != nil {
-			log.Fatalf("Error during shutdown: %v", err)
+			slog.Error("Error during shutdown", "error", err)
+			os.Exit(1)
 		}
 	}()
 
-	log.Printf("Connected to Valkey at %s", redactURL(cfg.ValkeyURL))
+	slog.Info("Connected to Valkey", "addr", redactURL(cfg.ValkeyURL))
 	if cfg.Host == "0.0.0.0" || cfg.Host == "" {
-		log.Printf("WARNING: Binding to all interfaces — server will be accessible on your network")
+		slog.Warn("Binding to all interfaces — server will be accessible on your network")
 	}
-	log.Printf("kvweb running at http://%s:%d", cfg.Host, cfg.Port)
+	slog.Info("kvweb running", "addr", fmt.Sprintf("http://%s:%d", cfg.Host, cfg.Port))
 	if err := srv.Start(); err != nil {
-		log.Fatalf("Server error: %v", err)
+		slog.Error("Server error", "error", err)
+		os.Exit(1)
 	}
 }
 
