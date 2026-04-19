@@ -6,7 +6,11 @@
  * Detects if the current platform is macOS.
  */
 export function isMac(): boolean {
-	return /Mac|iPhone|iPad|iPod/.test(navigator.platform);
+	const uad = (navigator as Navigator & { userAgentData?: { platform: string } }).userAgentData;
+	if (uad) {
+		return uad.platform === 'macOS';
+	}
+	return /Mac|iPhone|iPad|iPod/.test(navigator.userAgent);
 }
 
 /**
