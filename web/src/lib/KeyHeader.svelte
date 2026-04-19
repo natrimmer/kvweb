@@ -54,6 +54,33 @@
 	let editingTtl = $state(false);
 	let editingKeyName = $state(false);
 
+	const MIN_SPIN_MS = 465;
+	let spinning = $state(false);
+	let spinStart = 0;
+	let spinTimer: ReturnType<typeof setTimeout> | null = null;
+
+	$effect(() => {
+		if (loading) {
+			spinning = true;
+			spinStart = Date.now();
+			if (spinTimer) {
+				clearTimeout(spinTimer);
+				spinTimer = null;
+			}
+		} else if (spinning) {
+			const elapsed = Date.now() - spinStart;
+			const remaining = MIN_SPIN_MS - elapsed;
+			if (remaining <= 0) {
+				spinning = false;
+			} else {
+				spinTimer = setTimeout(() => {
+					spinning = false;
+					spinTimer = null;
+				}, remaining);
+			}
+		}
+	});
+
 	// Sync editTtl only when key changes (not on every liveTtl countdown tick)
 	$effect(() => {
 		if (keyName !== lastKeyName) {
@@ -242,7 +269,7 @@
 			title="Refresh key data"
 			aria-label="Refresh key data"
 		>
-			<RefreshCw class={loading ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} />
+			<RefreshCw class={spinning ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} />
 		</Button>
 		<ButtonGroup.Root class="shrink-0">
 			<Button
