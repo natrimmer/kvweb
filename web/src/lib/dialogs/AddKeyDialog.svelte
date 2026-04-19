@@ -633,6 +633,7 @@
 						bind:value={stringValue}
 						placeholder="Enter initial value"
 						rows={4}
+						class="mb-2"
 					/>
 				</div>
 			{:else if selectedType === 'list'}

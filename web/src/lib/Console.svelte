@@ -195,12 +195,12 @@
 
 	<!-- Input -->
 	<div class="flex items-center border-t border-border px-3 py-2 font-mono text-sm">
-		<span class="mr-2 text-primary">valkey&gt;</span>
+		<span class="mr-2 text-primary">kv&gt;</span>
 		<input
 			bind:this={inputEl}
 			bind:value={input}
 			onkeydown={handleKeydown}
-			class="flex-1 bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
+			class="flex-1 bg-transparent text-foreground outline-none placeholder:text-muted-foreground/50"
 			placeholder="Enter command..."
 			disabled={loading}
 			spellcheck="false"

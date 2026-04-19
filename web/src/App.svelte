@@ -161,7 +161,7 @@
 			class="group flex cursor-pointer items-center gap-2 text-xl font-semibold text-foreground transition-colors hover:text-primary"
 			title="Return to home"
 		>
-			<Logo size={24} class="text-primary transition-colors group-hover:text-primary" />
+			<Logo size={24} class="pb-1 text-primary transition-colors group-hover:text-primary" />
 			kvweb
 		</button>
 
@@ -237,7 +237,7 @@
 										</Empty.Media>
 										<Empty.Title>No Key Selected</Empty.Title>
 										<Empty.Description>
-											Select a key from the list to view or edit its value.
+											Select a key from the list to view{readOnly ? '' : ' or edit'} its value.
 										</Empty.Description>
 									</Empty.Header>
 								</Empty.Root>
