@@ -142,59 +142,14 @@
 	}
 </script>
 
-<div class="flex flex-col pb-6">
-	<!-- Row 1: Key name, type badge, TTL, copy buttons, delete -->
-	<div class="flex items-center gap-3">
-		<div class="flex min-w-0 flex-1 items-center gap-2">
-			{#if editingKeyName}
-				<span class="flex items-center gap-1">
-					<Input
-						type="text"
-						bind:value={editKeyName}
-						placeholder="Key name"
-						class="h-8 w-48 text-sm"
-						onkeydown={(e) => {
-							if (e.key === 'Enter') handleKeyRename();
-							if (e.key === 'Escape') cancelEditingKeyName();
-						}}
-						title="Key name"
-						aria-label="Key name"
-					/>
-					<Button
-						variant="default"
-						size="sm"
-						onclick={handleKeyRename}
-						disabled={renamingKey}
-						title="Save key name"
-						aria-label="Save key name"
-						class="h-8"
-					>
-						{#if renamingKey}
-							...
-						{:else}
-							<Check class="size-4" />
-						{/if}
-					</Button>
-					<Button
-						variant="destructive"
-						size="sm"
-						onclick={cancelEditingKeyName}
-						disabled={renamingKey}
-						title="Cancel rename"
-						aria-label="Cancel rename"
-						class="h-8"
-					>
-						<X class="size-4" />
-					</Button>
-				</span>
-			{:else}
-				<h2
-					class="min-w-0 overflow-hidden font-mono text-lg leading-tight text-ellipsis whitespace-nowrap"
-					title={keyName}
-				>
-					{keyName}
-				</h2>
-			{/if}
+<div class="@container flex flex-col gap-2 pb-6">
+	<!-- Row 1: 1-col by default, 2-col when container wide enough -->
+	<div class="flex flex-col gap-2 @md:flex-row @md:items-center @md:gap-3">
+		<!-- Left: key name truncates, meta items wrap within column -->
+		<div class="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+			<h2 class="truncate font-mono text-lg leading-tight" title={keyName}>
+				{keyName}
+			</h2>
 			<Badge variant="secondary" class="shrink-0 uppercase"
 				>{keyType}{#if geoViewActive}(geo){/if}</Badge
 			>
@@ -203,141 +158,185 @@
 					Mem: {formatBytes(memory)}
 				</span>
 			{/if}
-			{#if !editingTtl}
-				<span class="shrink-0 text-sm text-muted-foreground">
-					TTL: {formatTtl(liveTtl ?? -1)}
-					{#if !readOnly}
-						<button
-							type="button"
-							onclick={startEditingTtl}
-							title="Edit TTL"
-							aria-label="Edit TTL"
-							class="ml-1 cursor-pointer text-muted-foreground hover:text-foreground"
-						>
-							<Pencil class="inline h-3 w-3" />
-						</button>
-					{/if}
-				</span>
-			{:else}
-				<span class="flex shrink-0 items-center gap-1 text-sm">
-					<span class="text-muted-foreground">TTL:</span>
-					<Input
-						type="number"
-						bind:value={editTtl}
-						placeholder="seconds"
-						class="h-8 w-32 text-sm"
-						onkeydown={(e) => {
-							if (e.key === 'Enter') handleTtlUpdate();
-							if (e.key === 'Escape') cancelEditingTtl();
-						}}
-						title="TTL in seconds"
-						aria-label="TTL in seconds"
-					/>
-					<Button
-						variant="default"
-						size="sm"
-						onclick={handleTtlUpdate}
-						disabled={updatingTtl}
-						title="Save TTL"
-						aria-label="Save TTL"
-						class="h-8"
+			<span class="shrink-0 text-sm text-muted-foreground">
+				TTL: {formatTtl(liveTtl ?? -1)}
+				{#if !readOnly}
+					<button
+						type="button"
+						onclick={startEditingTtl}
+						title="Edit TTL"
+						aria-label="Edit TTL"
+						class="ml-1 cursor-pointer text-muted-foreground hover:text-foreground"
 					>
-						{#if updatingTtl}
-							...
-						{:else}
-							<Check class="size-4" />
-						{/if}
+						<Pencil class="inline h-3 w-3" />
+					</button>
+				{/if}
+			</span>
+		</div>
+		<!-- Right: buttons, always at natural size -->
+		<div class="flex shrink-0 items-center gap-2">
+			<Button
+				variant="outline"
+				size="sm"
+				onclick={onRefresh}
+				disabled={loading}
+				title="Refresh key data"
+				aria-label="Refresh key data"
+			>
+				<RefreshCw class={spinning ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} />
+			</Button>
+			<ButtonGroup.Root>
+				<Button
+					variant="outline"
+					size="sm"
+					onclick={copyKeyName}
+					title="Copy key name to clipboard"
+					aria-label="Copy key name to clipboard"
+				>
+					{#if copiedKey}
+						<Check class="h-4 w-4 text-primary" />
+					{:else}
+						<Copy class="h-4 w-4" />
+					{/if}
+					Key
+				</Button>
+				<Button
+					variant="outline"
+					size="sm"
+					onclick={handleCopyValue}
+					title="Copy value to clipboard"
+					aria-label="Copy value to clipboard"
+				>
+					{#if copiedValue}
+						<Check class="h-4 w-4 text-primary" />
+					{:else}
+						<Copy class="h-4 w-4" />
+					{/if}
+					Value
+				</Button>
+			</ButtonGroup.Root>
+			{#if !readOnly}
+				<ButtonGroup.Root>
+					<Button
+						variant="outline"
+						size="sm"
+						onclick={handleRenameClick}
+						title="Rename this key"
+						aria-label="Rename this key"
+					>
+						Rename
 					</Button>
 					<Button
 						variant="destructive"
 						size="sm"
-						onclick={cancelEditingTtl}
-						title="Cancel TTL edit"
-						aria-label="Cancel TTL edit"
-						class="h-8"
+						onclick={onDelete}
+						title={`Delete this key (${formatShortcut('Delete')})`}
+						aria-label="Delete this key"
 					>
-						<X class="size-4" />
+						Delete
 					</Button>
-				</span>
+				</ButtonGroup.Root>
 			{/if}
+			<Button
+				variant="outline"
+				size="sm"
+				onclick={onToggleTypeHeader}
+				aria-label={typeHeaderExpanded ? 'Collapse type controls' : 'Expand type controls'}
+				title={typeHeaderExpanded ? 'Collapse type controls' : 'Expand type controls'}
+				class="text-muted-foreground hover:text-foreground"
+			>
+				{#if typeHeaderExpanded}
+					<ChevronUp class="h-5 w-5" />
+				{:else}
+					<ChevronDown class="h-5 w-5" />
+				{/if}
+			</Button>
 		</div>
-		<Button
-			variant="outline"
-			size="sm"
-			onclick={onRefresh}
-			disabled={loading}
-			title="Refresh key data"
-			aria-label="Refresh key data"
-		>
-			<RefreshCw class={spinning ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} />
-		</Button>
-		<ButtonGroup.Root class="shrink-0">
-			<Button
-				variant="outline"
-				size="sm"
-				onclick={copyKeyName}
-				title="Copy key name to clipboard"
-				aria-label="Copy key name to clipboard"
-			>
-				{#if copiedKey}
-					<Check class="h-4 w-4 text-primary" />
-				{:else}
-					<Copy class="h-4 w-4" />
-				{/if}
-				Key
-			</Button>
-			<Button
-				variant="outline"
-				size="sm"
-				onclick={handleCopyValue}
-				title="Copy value to clipboard"
-				aria-label="Copy value to clipboard"
-			>
-				{#if copiedValue}
-					<Check class="h-4 w-4 text-primary" />
-				{:else}
-					<Copy class="h-4 w-4" />
-				{/if}
-				Value
-			</Button>
-		</ButtonGroup.Root>
-		{#if !readOnly}
-			<ButtonGroup.Root class="shrink-0">
-				<Button
-					variant="outline"
-					size="sm"
-					onclick={handleRenameClick}
-					title="Rename this key"
-					aria-label="Rename this key"
-					class="shrink-0"
-				>
-					Rename
-				</Button>
-				<Button
-					variant="destructive"
-					size="sm"
-					onclick={onDelete}
-					class="shrink-0"
-					title={`Delete this key (${formatShortcut('Delete')})`}
-					aria-label="Delete this key"
-				>
-					Delete
-				</Button>
-			</ButtonGroup.Root>
-		{/if}
-		<Button
-			variant="outline"
-			size="sm"
-			onclick={onToggleTypeHeader}
-			aria-label={typeHeaderExpanded ? 'Collapse type controls' : 'Expand type controls'}
-			title={typeHeaderExpanded ? 'Collapse type controls' : 'Expand type controls'}
-			class="shrink-0 text-muted-foreground hover:text-foreground"
-		>
-			{#if typeHeaderExpanded}
-				<ChevronUp class="h-5 w-5" />
-			{:else}
-				<ChevronDown class="h-5 w-5" />
-			{/if}
-		</Button>
 	</div>
+
+	<!-- Row 2: editing UI, shown below header when active -->
+	{#if editingKeyName}
+		<div class="flex items-center gap-1">
+			<Input
+				type="text"
+				bind:value={editKeyName}
+				placeholder="Key name"
+				class="h-8 w-64 text-sm"
+				onkeydown={(e) => {
+					if (e.key === 'Enter') handleKeyRename();
+					if (e.key === 'Escape') cancelEditingKeyName();
+				}}
+				title="Key name"
+				aria-label="Key name"
+			/>
+			<Button
+				variant="default"
+				size="sm"
+				onclick={handleKeyRename}
+				disabled={renamingKey}
+				title="Save key name"
+				aria-label="Save key name"
+				class="h-8"
+			>
+				{#if renamingKey}
+					...
+				{:else}
+					<Check class="size-4" />
+				{/if}
+			</Button>
+			<Button
+				variant="outline"
+				size="sm"
+				onclick={cancelEditingKeyName}
+				disabled={renamingKey}
+				title="Cancel rename"
+				aria-label="Cancel rename"
+				class="h-8"
+			>
+				<X class="size-4" />
+			</Button>
+		</div>
+	{/if}
+	{#if editingTtl}
+		<div class="flex items-center gap-1 text-sm">
+			<span class="text-muted-foreground">TTL:</span>
+			<Input
+				type="number"
+				bind:value={editTtl}
+				placeholder="seconds"
+				class="h-8 w-32 text-sm"
+				onkeydown={(e) => {
+					if (e.key === 'Enter') handleTtlUpdate();
+					if (e.key === 'Escape') cancelEditingTtl();
+				}}
+				title="TTL in seconds"
+				aria-label="TTL in seconds"
+			/>
+			<Button
+				variant="default"
+				size="sm"
+				onclick={handleTtlUpdate}
+				disabled={updatingTtl}
+				title="Save TTL"
+				aria-label="Save TTL"
+				class="h-8"
+			>
+				{#if updatingTtl}
+					...
+				{:else}
+					<Check class="size-4" />
+				{/if}
+			</Button>
+			<Button
+				variant="outline"
+				size="sm"
+				onclick={cancelEditingTtl}
+				title="Cancel TTL edit"
+				aria-label="Cancel TTL edit"
+				class="h-8"
+			>
+				<X class="size-4" />
+			</Button>
+		</div>
+	{/if}
 </div>
