@@ -166,11 +166,6 @@
 		</button>
 
 		<div class="ml-auto flex items-center gap-3 text-sm">
-			{#if readOnly}
-				<Badge variant="default" class="bg-accent text-accent-foreground hover:bg-accent"
-					>READ-ONLY</Badge
-				>
-			{/if}
 			{#if liveUpdates}
 				{#if wsConnected}
 					<div
@@ -189,6 +184,9 @@
 						<span>Live (reconnecting...)</span>
 					</div>
 				{/if}
+			{/if}
+			{#if readOnly}
+				<Badge variant="default" class="bg-accent text-accent-foreground">READ-ONLY</Badge>
 			{/if}
 		</div>
 	</header>
