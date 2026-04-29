@@ -45,3 +45,6 @@ result
 
 # AI
 CLAUDE.md
+
+# DB snapshots
+*.rdb
