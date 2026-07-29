@@ -44,12 +44,10 @@
 	function isJson(str: string): boolean {
 		if (!str || str.length < 2) return false;
 		const trimmed = str.trim();
-		if (
-			!(
-				(trimmed.startsWith('{') && trimmed.endsWith('}')) ||
-				(trimmed.startsWith('[') && trimmed.endsWith(']'))
-			)
-		) {
+		if (!(
+			(trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+			(trimmed.startsWith('[') && trimmed.endsWith(']'))
+		)) {
 			return false;
 		}
 		try {
