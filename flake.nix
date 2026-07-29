@@ -29,7 +29,7 @@
 
             nativeBuildInputs = [
               pkgs.nodejs
-              pkgs.pnpm_9
+              pkgs.pnpm_10
               pkgs.pnpmConfigHook
             ];
 
@@ -37,9 +37,9 @@
               pname = "kvweb-ui";
               inherit version;
               src = ./web;
-              pnpm = pkgs.pnpm_9;
+              pnpm = pkgs.pnpm_10;
               fetcherVersion = 3;
-              hash = "sha256-jxTyz3jH3lGLPkiXIrorEkhsmMK9G69I8B3KmIlmW6s=";
+              hash = "sha256-HnEIzvrn8ofqCH+rRA8lnXY6lS5vmEnpu6KBMvzojtU=";
             };
 
             buildPhase = ''
@@ -60,7 +60,7 @@
             inherit version;
             src = ./.;
 
-            vendorHash = "sha256-C3nny5VhV6QO9at1gT076midRrY8evnhZgZTOL9Nvhs=";
+            vendorHash = "sha256-i1ZxT/pvJMnRSccLb53mlQNdyvzrVqKTKndfzUKqrHU=";
 
             env.CGO_ENABLED = 0;
 
