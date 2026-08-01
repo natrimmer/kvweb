@@ -106,61 +106,58 @@ func TestFormatResult(t *testing.T) {
 	})
 }
 
-func TestKeyPositions(t *testing.T) {
+func TestScanMatchPattern(t *testing.T) {
 	cases := []struct {
-		name     string
-		cmd      string
-		argCount int
-		want     []int
+		name string
+		args []string
+		want string
+		ok   bool
 	}{
-		{"NoArgs", "GET", 1, nil},
-		{"SingleKey", "GET", 2, []int{1}},
-		{"SingleKeyWithValue", "SET", 3, []int{1}},
-		{"AdminCommandHasNoKeys", "INFO", 2, nil},
-		{"ConfigHasNoKeys", "CONFIG", 3, nil},
-		{"MemoryHasNoKeys", "MEMORY", 3, nil},
-		{"MultiKeyMGET", "MGET", 4, []int{1, 2, 3}},
-		{"MultiKeyDEL", "DEL", 3, []int{1, 2}},
-		{"RenameChecksBoth", "RENAME", 3, []int{1, 2}},
-		{"RenameWithOneArg", "RENAME", 2, []int{1}},
-		{"RenameBare", "RENAME", 1, nil},
+		{"NoOptions", []string{"SCAN", "0"}, "", false},
+		{"Match", []string{"SCAN", "0", "MATCH", "app:*"}, "app:*", true},
+		{"Lowercase", []string{"SCAN", "0", "match", "app:*"}, "app:*", true},
+		{"AfterCount", []string{"SCAN", "0", "COUNT", "10", "MATCH", "app:*"}, "app:*", true},
+		{"BeforeCount", []string{"SCAN", "0", "MATCH", "app:*", "COUNT", "10"}, "app:*", true},
+		{"WithType", []string{"SCAN", "0", "MATCH", "app:*", "TYPE", "string"}, "app:*", true},
+		{"DanglingMatch", []string{"SCAN", "0", "MATCH"}, "", false},
+		// An option value reading "MATCH" sits at an odd offset, so it is skipped.
+		{"ValueNamedMatch", []string{"SCAN", "0", "TYPE", "MATCH", "COUNT", "10"}, "", false},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := keyPositions(tc.cmd, tc.argCount)
-			if !slices.Equal(got, tc.want) {
-				t.Errorf("keyPositions(%q, %d) = %v, want %v", tc.cmd, tc.argCount, got, tc.want)
+			got, ok := scanMatchPattern(tc.args)
+			if got != tc.want || ok != tc.ok {
+				t.Errorf("scanMatchPattern(%v) = %q, %v, want %q, %v", tc.args, got, ok, tc.want, tc.ok)
 			}
 		})
 	}
 }
 
-func TestCheckPrefixArgs(t *testing.T) {
+func TestPatternWithinPrefix(t *testing.T) {
 	const prefix = "app:"
 
 	cases := []struct {
-		name string
-		args []string
-		want bool
+		name    string
+		pattern string
+		want    bool
 	}{
-		{"MatchingKey", []string{"GET", "app:key"}, true},
-		{"NonMatchingKey", []string{"GET", "other:key"}, false},
-		{"NoKeyArgs", []string{"PING"}, true},
-		{"AdminCommand", []string{"INFO", "memory"}, true},
-		{"ConfigGet", []string{"CONFIG", "GET", "maxmemory"}, true},
-		{"AllKeysMatch", []string{"MGET", "app:a", "app:b"}, true},
-		{"OneKeyOutside", []string{"MGET", "app:a", "other:b"}, false},
-		{"RenameBothInside", []string{"RENAME", "app:a", "app:b"}, true},
-		{"RenameDestinationOutside", []string{"RENAME", "app:a", "other:b"}, false},
-		{"RenameSourceOutside", []string{"RENAME", "other:a", "app:b"}, false},
-		{"PrefixIsNotASubstringMatch", []string{"GET", "not-app:key"}, false},
+		{"PrefixWildcard", "app:*", true},
+		{"DeeperWildcard", "app:user:*", true},
+		{"ExactKey", "app:key", true},
+		{"QuestionMark", "app:key?", true},
+		{"MatchEverything", "*", false},
+		{"OtherNamespace", "other:*", false},
+		{"WildcardInsideThePrefix", "ap*", false},
+		{"CharacterClassHead", "[a]pp:*", false},
+		{"EscapeHead", `\app:*`, false},
+		{"PrefixIsNotASubstringMatch", "not-app:*", false},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := checkPrefixArgs(tc.args[0], tc.args, prefix); got != tc.want {
-				t.Errorf("checkPrefixArgs(%v) = %v, want %v", tc.args, got, tc.want)
+			if got := patternWithinPrefix(tc.pattern, prefix); got != tc.want {
+				t.Errorf("patternWithinPrefix(%q, %q) = %v, want %v", tc.pattern, prefix, got, tc.want)
 			}
 		})
 	}

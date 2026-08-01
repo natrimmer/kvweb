@@ -3,9 +3,13 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/natrimmer/kvweb/internal/valkey"
 )
 
 // execRequest is the request body for POST /api/exec
@@ -66,16 +70,16 @@ func (h *Handler) handleExec(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Prefix enforcement: check key arguments
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	// Prefix enforcement: every key the command touches must be inside the prefix
 	if h.cfg.Prefix != "" {
-		if !checkPrefixArgs(cmd, args, h.cfg.Prefix) {
-			jsonError(w, "Key does not match required prefix: "+h.cfg.Prefix, http.StatusForbidden)
+		if err := h.checkPrefix(ctx, cmd, args); err != nil {
+			jsonError(w, err.Error(), http.StatusForbidden)
 			return
 		}
 	}
-
-	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
-	defer cancel()
 
 	result, err := h.client.Exec(ctx, args)
 	if err != nil {
@@ -159,53 +163,80 @@ func formatResult(v any) map[string]any {
 	}
 }
 
-// checkPrefixArgs validates that key arguments match the required prefix.
-func checkPrefixArgs(cmd string, args []string, prefix string) bool {
-	positions := keyPositions(cmd, len(args))
-	for _, pos := range positions {
-		if pos < len(args) && !strings.HasPrefix(args[pos], prefix) {
-			return false
-		}
-	}
-	return true
-}
+// checkPrefix reports why a command may not run under the configured key
+// prefix, or nil if it may.
+//
+// Most commands are settled by asking the server which of their arguments are
+// keys. The exceptions are the commands that reach the whole keyspace without
+// naming a key: they carry a pattern instead, or no argument at all, so they
+// are decided here before the server is consulted.
+func (h *Handler) checkPrefix(ctx context.Context, cmd string, args []string) error {
+	prefix := h.cfg.Prefix
 
-// keyPositions returns the argument indices (0-based) that are key arguments for the given command.
-func keyPositions(cmd string, argCount int) []int {
-	// Commands with no key arguments
 	switch cmd {
-	case "PING", "INFO", "DBSIZE", "TIME", "LASTSAVE", "BGSAVE", "BGREWRITEAOF",
-		"CONFIG", "CLIENT", "SLOWLOG", "COMMAND", "MEMORY", "LATENCY",
-		"CLUSTER", "ACL", "DEBUG", "OBJECT":
+	case "FLUSHDB", "FLUSHALL":
+		return fmt.Errorf("%s would delete keys outside the %q prefix", cmd, prefix)
+
+	case "RANDOMKEY":
+		return fmt.Errorf("RANDOMKEY cannot be limited to the %q prefix; use SCAN 0 MATCH %s*", prefix, prefix)
+
+	case "KEYS":
+		if len(args) < 2 {
+			return nil // wrong arity; the server rejects it
+		}
+		if !patternWithinPrefix(args[1], prefix) {
+			return fmt.Errorf("KEYS may only match inside the %q prefix; try KEYS %s*", prefix, prefix)
+		}
 		return nil
-	}
 
-	// Commands where all args after the command name are keys
-	switch cmd {
-	case "MGET", "DEL", "EXISTS", "UNLINK", "TOUCH", "WATCH":
-		positions := make([]int, argCount-1)
-		for i := range positions {
-			positions[i] = i + 1
+	case "SCAN":
+		pattern, ok := scanMatchPattern(args)
+		if !ok {
+			return fmt.Errorf("SCAN must be limited to the %q prefix; add MATCH %s*", prefix, prefix)
 		}
-		return positions
-	}
-
-	// RENAME: both args are keys
-	if cmd == "RENAME" || cmd == "RENAMENX" {
-		if argCount > 2 {
-			return []int{1, 2}
-		}
-		if argCount > 1 {
-			return []int{1}
+		if !patternWithinPrefix(pattern, prefix) {
+			return fmt.Errorf("SCAN may only match inside the %q prefix; try MATCH %s*", prefix, prefix)
 		}
 		return nil
 	}
 
-	// Default: first arg after command is the key
-	if argCount > 1 {
-		return []int{1}
+	keys, err := h.client.GetKeys(ctx, args)
+	switch {
+	case errors.Is(err, valkey.ErrNoKeyArguments), errors.Is(err, valkey.ErrCommandNotUnderstood):
+		return nil
+	case err != nil:
+		return fmt.Errorf("could not determine which keys %s touches, so it is refused under the %q prefix: %v", cmd, prefix, err)
+	}
+
+	for _, key := range keys {
+		if !strings.HasPrefix(key, prefix) {
+			return fmt.Errorf("key %q does not match the required prefix %q", key, prefix)
+		}
 	}
 	return nil
+}
+
+// scanMatchPattern returns the MATCH pattern of a SCAN command. Every SCAN
+// option takes exactly one argument, so the option names sit at even offsets;
+// a value that happens to read "MATCH" is therefore not mistaken for one.
+func scanMatchPattern(args []string) (string, bool) {
+	for i := 2; i+1 < len(args); i += 2 {
+		if strings.EqualFold(args[i], "MATCH") {
+			return args[i+1], true
+		}
+	}
+	return "", false
+}
+
+// patternWithinPrefix reports whether every key a glob pattern can match lies
+// under prefix. Only the literal head of the pattern says anything about that,
+// since the first metacharacter can expand to anything from there on.
+func patternWithinPrefix(pattern, prefix string) bool {
+	head := pattern
+	if i := strings.IndexAny(pattern, `*?[\`); i >= 0 {
+		head = pattern[:i]
+	}
+	return strings.HasPrefix(head, prefix)
 }
 
 // blockedCommands are always blocked regardless of readonly mode.

@@ -254,6 +254,8 @@ func TestExecPrefixEnforcement(t *testing.T) {
 			for _, command := range []string{
 				"GET other:key", "SET other:key x", "DEL other:key", "TYPE other:key",
 				"EXPIRE other:key 60", "LRANGE other:key 0 -1",
+				// MEMORY takes a key despite looking like an admin command.
+				"MEMORY USAGE other:key",
 			} {
 				h.Post("/api/exec", map[string]any{"command": command}).
 					ExpectError(http.StatusForbidden, "prefix")
@@ -287,19 +289,90 @@ func TestExecPrefixEnforcement(t *testing.T) {
 			}
 		})
 
-		t.Run("KeylessFirstArgumentsAreTreatedAsKeys", func(t *testing.T) {
-			// keyPositions falls back to "argument 1 is the key", which is right
-			// for most commands but not for SCAN's cursor or ECHO's message.
-			// Under a prefix those become unrunnable in the console. The effect
-			// is fail-closed, but it does mean SCAN cannot be used to browse.
-			h.With(t).Post("/api/exec", map[string]any{"command": "SCAN 0"}).
-				ExpectError(http.StatusForbidden, "prefix")
-			h.With(t).Post("/api/exec", map[string]any{"command": "ECHO hello"}).
-				ExpectError(http.StatusForbidden, "prefix")
+		t.Run("ArgumentsThatAreNotKeysAreNotChecked", func(t *testing.T) {
+			// A cursor, a message, an option token and a numkeys count all sit
+			// where a key would be for most commands. None of them is a key.
+			h.SeedZSet("app:z1", map[string]float64{"m": 1})
+			h.SeedZSet("app:z2", map[string]float64{"m": 2})
+			h.SeedSet("app:s1", "m")
+			h.SeedSet("app:s2", "m")
+			h.SeedStream("app:stream", map[string]string{"field": "value"})
+			for _, command := range []string{
+				"ECHO hello",
+				"BITOP AND app:dst app:key",
+				"ZDIFF 2 app:z1 app:z2",
+				"SINTERCARD 2 app:s1 app:s2",
+				"XREAD COUNT 1 STREAMS app:stream 0",
+			} {
+				if result := exec(t, h, command); result.Type == "error" {
+					t.Errorf("%s failed: %v", command, result.Value)
+				}
+			}
+		})
 
-			// A cursor that happens to start with the prefix would slip through,
-			// which is only reachable because the argument is not really a key.
+		t.Run("DestinationKeysCannotEscape", func(t *testing.T) {
+			// Every one of these writes to, or reads from, its second key.
+			h.SeedList("app:list", "a", "b")
+			for _, command := range []string{
+				"COPY app:key other:copied",
+				"MSET app:key v other:escaped v",
+				"MSETNX other:escaped v",
+				"RPOPLPUSH app:list other:escaped",
+				"LMOVE app:list other:escaped LEFT RIGHT",
+				"SMOVE app:set other:escaped m",
+				"SORT app:list ALPHA STORE other:escaped",
+				"SINTERSTORE other:escaped app:key",
+				"ZUNIONSTORE app:dst 1 other:key",
+				"ZRANGESTORE app:dst other:key 0 -1",
+				"PFMERGE app:hll other:key",
+				"BITOP AND other:escaped app:key",
+			} {
+				h.With(t).Post("/api/exec", map[string]any{"command": command}).
+					ExpectError(http.StatusForbidden, "prefix")
+			}
+			if got := h.TypeOf("other:escaped"); got != "none" {
+				t.Errorf("a key escaped the prefix: other:escaped is a %s", got)
+			}
+			if got := h.TypeOf("other:copied"); got != "none" {
+				t.Error("COPY wrote outside the prefix")
+			}
+		})
+
+		t.Run("ScanBrowsesWithinThePrefix", func(t *testing.T) {
+			// SCAN reaches the whole keyspace, so it has to say where it looks.
+			if result := exec(t, h, "SCAN 0 MATCH app:*"); result.Type == "error" {
+				t.Errorf("SCAN MATCH failed: %v", result.Value)
+			}
+			exec(t, h, "SCAN 0 COUNT 10 MATCH app:* TYPE string")
 			exec(t, h, "KEYS app:*")
+
+			for _, command := range []string{
+				"SCAN 0", "SCAN 0 COUNT 10", "SCAN 0 MATCH *", "SCAN 0 MATCH other:*",
+				"KEYS *", "KEYS other:*", "RANDOMKEY",
+			} {
+				h.With(t).Post("/api/exec", map[string]any{"command": command}).
+					ExpectError(http.StatusForbidden, "prefix")
+			}
+		})
+
+		t.Run("FlushIsRefusedUnderAPrefix", func(t *testing.T) {
+			// Flushing takes no key argument but destroys every key there is.
+			for _, command := range []string{"FLUSHDB", "FLUSHALL"} {
+				h.With(t).Post("/api/exec", map[string]any{"command": command}).
+					ExpectError(http.StatusForbidden, "prefix")
+			}
+			if got := h.GetString("other:key"); got != "secret" {
+				t.Errorf("out-of-prefix value is %q, want the original", got)
+			}
+		})
+
+		t.Run("UnknownCommandsReachTheServerForItsError", func(t *testing.T) {
+			// The prefix check cannot resolve keys for these, but neither can
+			// the server run them, so the console shows the real error.
+			result := exec(t, h, "NOSUCHCOMMAND app:key")
+			if result.Type != "error" {
+				t.Errorf("result = %+v, want the server's unknown-command error", result)
+			}
 		})
 	})
 }
