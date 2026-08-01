@@ -7,13 +7,11 @@ import (
 	"fmt"
 )
 
-// Script represents a Lua script that can be executed atomically
 type Script struct {
 	script string
 	sha1   string
 }
 
-// NewScript creates a new Script with the given Lua code
 func NewScript(script string) *Script {
 	hash := sha1.Sum([]byte(script))
 	return &Script{
@@ -22,10 +20,9 @@ func NewScript(script string) *Script {
 	}
 }
 
-// Eval executes the script with the given keys and args
-// Uses EVALSHA for efficiency, falls back to EVAL if script not cached
+// Eval sends EVALSHA and retries as EVAL if the server has not cached the
+// script, so callers never have to preload it.
 func (s *Script) Eval(ctx context.Context, c *Client, keys []string, args []string) (any, error) {
-	// Build EVALSHA command with all keys and args
 	allArgs := []string{"EVALSHA", s.sha1, fmt.Sprintf("%d", len(keys))}
 	allArgs = append(allArgs, keys...)
 	allArgs = append(allArgs, args...)
@@ -33,7 +30,6 @@ func (s *Script) Eval(ctx context.Context, c *Client, keys []string, args []stri
 	result := c.client.Do(ctx, c.client.B().Arbitrary(allArgs...).Build())
 	err := result.Error()
 
-	// If script not found, load it with EVAL
 	if err != nil && isNoScriptError(err) {
 		return s.evalScript(ctx, c, keys, args)
 	}
@@ -45,9 +41,8 @@ func (s *Script) Eval(ctx context.Context, c *Client, keys []string, args []stri
 	return result.ToAny()
 }
 
-// evalScript executes the script using EVAL (loads and runs in one command)
+// evalScript ships the whole script body, which loads and runs it in one command.
 func (s *Script) evalScript(ctx context.Context, c *Client, keys []string, args []string) (any, error) {
-	// Build EVAL command with all keys and args
 	allArgs := []string{"EVAL", s.script, fmt.Sprintf("%d", len(keys))}
 	allArgs = append(allArgs, keys...)
 	allArgs = append(allArgs, args...)
@@ -60,8 +55,8 @@ func (s *Script) evalScript(ctx context.Context, c *Client, keys []string, args 
 	return result.ToAny()
 }
 
-// Load preloads the script on the server using SCRIPT LOAD
-// This is optional but can improve performance if the script will be used many times
+// Load caches the script server-side with SCRIPT LOAD. Optional: Eval falls
+// back to EVAL on its own.
 func (s *Script) Load(ctx context.Context, c *Client) error {
 	sha, err := c.client.Do(ctx, c.client.B().ScriptLoad().Script(s.script).Build()).ToString()
 	if err != nil {
@@ -73,7 +68,6 @@ func (s *Script) Load(ctx context.Context, c *Client) error {
 	return nil
 }
 
-// isNoScriptError checks if the error is a "NOSCRIPT" error from Redis/Valkey
 func isNoScriptError(err error) bool {
 	if err == nil {
 		return false
@@ -256,8 +250,8 @@ var (
 	`)
 )
 
-// LoadAllScripts preloads all built-in scripts on the server
-// This is optional but improves performance by avoiding EVAL fallback
+// LoadAllScripts caches every built-in script so the first Eval of each one
+// does not pay for the EVAL fallback.
 func LoadAllScripts(ctx context.Context, c *Client) error {
 	scripts := []*Script{
 		scriptListRemoveByIndex,

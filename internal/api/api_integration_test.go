@@ -137,11 +137,11 @@ func TestKeysEndpoint(t *testing.T) {
 		})
 
 		t.Run("InvalidCursor", func(t *testing.T) {
-			h.Get("/api/keys?cursor=abc").ExpectError(http.StatusBadRequest, "invalid cursor")
+			h.Get("/api/keys?cursor=abc").ExpectError(http.StatusBadRequest, "Invalid cursor")
 		})
 
 		t.Run("InvalidCount", func(t *testing.T) {
-			h.Get("/api/keys?count=abc").ExpectError(http.StatusBadRequest, "invalid count")
+			h.Get("/api/keys?count=abc").ExpectError(http.StatusBadRequest, "Invalid count")
 		})
 
 		t.Run("Metadata", func(t *testing.T) {

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
-	import { formatBytes } from '$lib/utils';
+	import { formatBytes, largeValueThreshold } from '$lib/utils';
 	import { TriangleAlert } from '@lucide/svelte/icons';
 
 	interface Props {
@@ -19,24 +19,27 @@
 		<Dialog.Header>
 			<Dialog.Title class="flex items-center gap-2">
 				<TriangleAlert class="h-5 w-5 text-yellow-500" />
-				Large Value Warning
+				Large Value
 			</Dialog.Title>
 			<Dialog.Description>
-				The value you're trying to add is {formatBytes(valueSize)}, which exceeds the recommended
-				1MB limit.
+				This value is {formatBytes(valueSize)}, over the {formatBytes(largeValueThreshold)} warning threshold.
 			</Dialog.Description>
 		</Dialog.Header>
 		<div class="space-y-3 pt-4 text-sm text-muted-foreground">
-			<p>Large values can cause performance issues:</p>
-			<ul class="mb-8 ml-5 list-disc space-y-1">
+			<p>Storing values this size means:</p>
+			<ul class="ml-5 list-disc space-y-1">
 				<li>Slower read/write operations</li>
 				<li>Increased memory usage</li>
 				<li>Higher network latency</li>
 				<li>Replication delays</li>
 			</ul>
+			<p class="mb-8">
+				kvweb caps each request at 1 MB total, so a value near that size may be refused even after
+				you confirm.
+			</p>
 			<p class="font-medium text-foreground">
 				Consider storing large data in object storage (S3, etc.) and keeping only references in
-				Redis/Valkey.
+				Valkey/Redis.
 			</p>
 		</div>
 		<Dialog.Footer>

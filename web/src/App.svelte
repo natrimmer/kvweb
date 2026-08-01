@@ -170,7 +170,7 @@
 				{#if wsConnected}
 					<div
 						class="flex items-center gap-1.5 text-xs text-primary"
-						title="Receiving real-time updates from server"
+						title="Showing key changes as they happen"
 					>
 						<Radio class="h-3.5 w-3.5 animate-pulse" />
 						<span>Live</span>
@@ -178,7 +178,7 @@
 				{:else}
 					<div
 						class="flex items-center gap-1.5 text-xs text-yellow-600"
-						title="Live updates enabled but WebSocket disconnected (reconnecting...)"
+						title="Live updates are on, but the connection to the server dropped. Reconnecting."
 					>
 						<Radio class="h-3.5 w-3.5 opacity-50" />
 						<span>Live (reconnecting...)</span>

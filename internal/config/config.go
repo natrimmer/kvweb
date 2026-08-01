@@ -2,7 +2,6 @@ package config
 
 import "fmt"
 
-// Config holds all application configuration
 type Config struct {
 	// HTTP server settings
 	Host string
@@ -19,7 +18,7 @@ type Config struct {
 	// Security settings
 	ReadOnly     bool
 	Prefix       string // Only show/allow keys matching this prefix
-	DisableFlush bool   // Block FLUSHDB even in write mode
+	DisableFlush bool   // Block FLUSHDB and FLUSHALL even in write mode
 	MaxKeys      int64  // Limit SCAN count to prevent UI overload (0 = no limit)
 	CORSOrigin   string // Allowed CORS origin (default: same-origin only)
 
@@ -35,7 +34,6 @@ type Config struct {
 	Dirty   bool
 }
 
-// New creates a new Config with default values
 func New() *Config {
 	return &Config{
 		Host:      "localhost",
@@ -45,7 +43,6 @@ func New() *Config {
 	}
 }
 
-// Addr returns the HTTP server address
 func (c *Config) Addr() string {
 	return fmt.Sprintf("%s:%d", c.Host, c.Port)
 }

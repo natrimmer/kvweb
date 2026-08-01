@@ -455,9 +455,8 @@
 				<AlertDialog.Header>
 					<AlertDialog.Title>Delete Key</AlertDialog.Title>
 					<AlertDialog.Description>
-						Are you sure you want to delete <code class="rounded bg-muted px-1 font-mono"
-							>{key}</code
-						>? This action cannot be undone.
+						Deletes <code class="rounded bg-muted px-1 font-mono">{key}</code> immediately. This can't
+						be undone.
 					</AlertDialog.Description>
 				</AlertDialog.Header>
 				<AlertDialog.Footer>

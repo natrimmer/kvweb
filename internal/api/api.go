@@ -18,7 +18,6 @@ import (
 // maxBodySize is the maximum allowed request body size (1MB)
 const maxBodySize = 1 << 20
 
-// Handler handles API requests
 type Handler struct {
 	cfg                     *config.Config
 	client                  *valkey.Client
@@ -27,7 +26,6 @@ type Handler struct {
 	onNotificationsDisabled func() // Callback when notifications are disabled at runtime
 }
 
-// New creates a new API handler
 func New(cfg *config.Config, client *valkey.Client) *Handler {
 	h := &Handler{
 		cfg:    cfg,
@@ -35,7 +33,6 @@ func New(cfg *config.Config, client *valkey.Client) *Handler {
 		mux:    http.NewServeMux(),
 	}
 
-	// Register routes
 	h.mux.HandleFunc("GET /api/health", h.handleHealth)
 	h.mux.HandleFunc("GET /api/config", h.handleConfig)
 	h.mux.HandleFunc("GET /api/info", h.handleInfo)
@@ -96,17 +93,14 @@ func New(cfg *config.Config, client *valkey.Client) *Handler {
 	return h
 }
 
-// SetOnNotificationsEnabled sets the callback for when notifications are enabled at runtime
 func (h *Handler) SetOnNotificationsEnabled(fn func()) {
 	h.onNotificationsEnabled = fn
 }
 
-// SetOnNotificationsDisabled sets the callback for when notifications are disabled at runtime
 func (h *Handler) SetOnNotificationsDisabled(fn func()) {
 	h.onNotificationsDisabled = fn
 }
 
-// ServeHTTP implements http.Handler
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if h.cfg.CORSOrigin != "" {
 		w.Header().Set("Access-Control-Allow-Origin", h.cfg.CORSOrigin)
@@ -185,7 +179,6 @@ func (h *Handler) applyPrefixToPattern(pattern string) string {
 // Handlers
 
 func (h *Handler) handleHealth(w http.ResponseWriter, r *http.Request) {
-	// Check database connectivity by pinging
 	err := h.client.Ping(r.Context())
 
 	status := "ok"
@@ -269,7 +262,7 @@ func (h *Handler) handleKeys(w http.ResponseWriter, r *http.Request) {
 		var err error
 		cursor, err = strconv.ParseUint(cursorStr, 10, 64)
 		if err != nil {
-			jsonError(w, fmt.Sprintf("invalid cursor: %v", err), http.StatusBadRequest)
+			jsonError(w, fmt.Sprintf("Invalid cursor: %v", err), http.StatusBadRequest)
 			return
 		}
 	}
@@ -280,7 +273,7 @@ func (h *Handler) handleKeys(w http.ResponseWriter, r *http.Request) {
 		var err error
 		count, err = strconv.ParseInt(countStr, 10, 64)
 		if err != nil {
-			jsonError(w, fmt.Sprintf("invalid count: %v", err), http.StatusBadRequest)
+			jsonError(w, fmt.Sprintf("Invalid count: %v", err), http.StatusBadRequest)
 			return
 		}
 	}
@@ -468,7 +461,6 @@ func (h *Handler) handleGetKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse pagination params
 	pageStr := r.URL.Query().Get("page")
 	page := int64(1)
 	if pageStr != "" {
@@ -606,17 +598,13 @@ func (h *Handler) handleGetKey(w http.ResponseWriter, r *http.Request) {
 		}
 	case "stream":
 		length, _ = h.client.XLen(ctx, key)
-		// Streams use ID-based pagination for efficiency
-		// We fetch only the entries needed using XRANGE with cursor
-
-		// To support page jumping, we need to find the starting ID for the requested page
-		// For page 1, start from beginning. For others, we need to skip entries.
+		// Streams paginate by ID, not offset, so jumping to page N means first
+		// learning the ID of the (N-1)*pageSize'th entry. XRANGE walks to that
+		// entry and its ID becomes the cursor the page is read from.
 		var startAfterID string
 		if page > 1 {
-			// We need to skip (page-1) * pageSize entries to find the start ID
 			skipCount := (page - 1) * pageSize
 			if skipCount < length {
-				// Fetch entries up to but not including the target page to get the cursor
 				skipEntries, err := h.client.XRange(ctx, key, "-", "+", skipCount)
 				if err != nil {
 					internalError(w, err)
@@ -628,7 +616,6 @@ func (h *Handler) handleGetKey(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		// Now fetch the actual page using the cursor
 		entries, nextCursor, err := h.client.XRangePage(ctx, key, startAfterID, pageSize)
 		if err == nil {
 			value = entries
@@ -1439,7 +1426,6 @@ func (h *Handler) handleGeoGet(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	// Get total count
 	length, _ := h.client.ZCard(ctx, key)
 
 	// Get paginated members

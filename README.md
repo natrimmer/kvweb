@@ -18,7 +18,7 @@ Go backend with embedded Svelte frontend in a single binary.
 - **Search** with glob patterns or regex, filter by type, sort by name/type/TTL/memory
 - **Tree view** for navigating keys by prefix hierarchy, or flat list view
 - **Inline editing** with per-type editors — rename fields, adjust scores, update coordinates
-- **Live updates** via WebSocket keyspace notifications to see changes as they happen
+- **Live updates** — key changes show up as they happen, via keyspace notifications
 - **Command console** for running ad-hoc Valkey commands
 - **Compressed values** — gzip and zstd auto-detected, decompressed for display, re-compressed on save
 - **Geo map view** — plot sorted set members on an interactive OpenStreetMap
@@ -27,7 +27,7 @@ Go backend with embedded Svelte frontend in a single binary.
 - **Read-only mode** — disable all writes via `--readonly`
 - **Prefix isolation** — restrict visible keys with `--prefix`
 - **Bulk operations** — multi-select keys for batch delete
-- **Keyboard shortcuts** — delete, select all, range select, console toggle
+- **Keyboard shortcuts** — delete, select all, range select, clear console
 - **Copy to clipboard** — copy key names or full values in one click
 - **TTL management** — set, edit, and watch live countdowns
 
@@ -52,8 +52,14 @@ Or build from source (requires Go, Node.js, pnpm):
 ```
 git clone https://github.com/natrimmer/kvweb
 cd kvweb
-build
+cd web && pnpm install && pnpm build && cd ..
+rm -rf static/dist && cp -r web/dist static/
+go build -o kvweb ./cmd/kvweb
 ```
+
+The frontend has to be built into `static/dist/` first, because the binary embeds
+it from there. Inside the devenv shell, `build` does all of the above and stamps
+the version from `git describe`.
 
 ## Usage
 
@@ -70,9 +76,10 @@ kvweb [flags]
 | `-port` | `8080` | HTTP listen port |
 | `-readonly` | `false` | Disable write operations |
 | `-prefix` | | Only show keys matching this prefix |
-| `-disable-flush` | `true` | Block FLUSHDB even in write mode |
+| `-disable-flush` | `true` | Block FLUSHDB and FLUSHALL even in write mode |
 | `-max-keys` | `0` | Limit SCAN count per request (0 = no limit) |
 | `-notifications` | `false` | Auto-enable keyspace notifications for live updates |
+| `-cors-origin` | | Allowed CORS origin (e.g. `http://localhost:5173`). Omit to disallow cross-origin requests |
 | `-open` | `false` | Open browser on start |
 | `-dev` | `false` | Skip serving embedded frontend (API + WebSocket only) |
 
@@ -95,7 +102,7 @@ The `rediss://` and `valkeys://` schemes enable TLS with system CA certificates.
 ## Testing
 
 The test suite runs against a real Redis and a real Valkey server, launched by
-the tests themselves — there are no mocks.
+the tests themselves. There are no mocks.
 
 ```
 tests               # everything CI runs

@@ -18,7 +18,6 @@ type Client struct {
 	cfg    *config.Config
 }
 
-// New creates a new Valkey client
 func New(cfg *config.Config) (*Client, error) {
 	var opts valkey.ClientOption
 
@@ -48,7 +47,6 @@ func New(cfg *config.Config) (*Client, error) {
 		return nil, fmt.Errorf("failed to create client: %w", err)
 	}
 
-	// Test connection
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -63,7 +61,6 @@ func New(cfg *config.Config) (*Client, error) {
 	}, nil
 }
 
-// Close closes the client connection
 func (c *Client) Close() {
 	c.client.Close()
 }
@@ -73,12 +70,10 @@ func (c *Client) Raw() valkey.Client {
 	return c.client
 }
 
-// Ping tests the connection
 func (c *Client) Ping(ctx context.Context) error {
 	return c.client.Do(ctx, c.client.B().Ping().Build()).Error()
 }
 
-// Info returns server information
 func (c *Client) Info(ctx context.Context, section string) (string, error) {
 	cmd := c.client.B().Info()
 	if section != "" {
@@ -87,12 +82,12 @@ func (c *Client) Info(ctx context.Context, section string) (string, error) {
 	return c.client.Do(ctx, cmd.Build()).ToString()
 }
 
-// DBSize returns the number of keys in the current database
 func (c *Client) DBSize(ctx context.Context) (int64, error) {
 	return c.client.Do(ctx, c.client.B().Dbsize().Build()).ToInt64()
 }
 
-// Keys returns keys matching the pattern
+// Keys pages through the keyspace with SCAN, not the blocking KEYS command.
+// Returns one page of matches and the cursor for the next call.
 func (c *Client) Keys(ctx context.Context, pattern string, cursor uint64, count int64) ([]string, uint64, error) {
 	result := c.client.Do(ctx, c.client.B().Scan().Cursor(cursor).Match(pattern).Count(count).Build())
 	entry, err := result.AsScanEntry()
@@ -102,12 +97,10 @@ func (c *Client) Keys(ctx context.Context, pattern string, cursor uint64, count 
 	return entry.Elements, entry.Cursor, nil
 }
 
-// Get returns the value of a key
 func (c *Client) Get(ctx context.Context, key string) (string, error) {
 	return c.client.Do(ctx, c.client.B().Get().Key(key).Build()).ToString()
 }
 
-// Set sets the value of a key
 func (c *Client) Set(ctx context.Context, key, value string, ttl time.Duration) error {
 	cmd := c.client.B().Set().Key(key).Value(value)
 	if ttl > 0 {
@@ -125,12 +118,10 @@ func (c *Client) IncrByFloat(ctx context.Context, key string, amount float64) (s
 	return fmt.Sprintf("%g", result), nil
 }
 
-// Del deletes keys
 func (c *Client) Del(ctx context.Context, keys ...string) (int64, error) {
 	return c.client.Do(ctx, c.client.B().Del().Key(keys...).Build()).ToInt64()
 }
 
-// Type returns the type of a key
 func (c *Client) Type(ctx context.Context, key string) (string, error) {
 	return c.client.Do(ctx, c.client.B().Type().Key(key).Build()).ToString()
 }
@@ -140,48 +131,40 @@ func (c *Client) TTL(ctx context.Context, key string) (int64, error) {
 	return c.client.Do(ctx, c.client.B().Ttl().Key(key).Build()).ToInt64()
 }
 
-// Expire sets a TTL on a key
 func (c *Client) Expire(ctx context.Context, key string, ttl time.Duration) (bool, error) {
 	result, err := c.client.Do(ctx, c.client.B().Expire().Key(key).Seconds(int64(ttl.Seconds())).Build()).ToInt64()
 	return result == 1, err
 }
 
-// Persist removes the TTL from a key
 func (c *Client) Persist(ctx context.Context, key string) (bool, error) {
 	result, err := c.client.Do(ctx, c.client.B().Persist().Key(key).Build()).ToInt64()
 	return result == 1, err
 }
 
-// Rename renames a key
 func (c *Client) Rename(ctx context.Context, key, newkey string) error {
 	return c.client.Do(ctx, c.client.B().Rename().Key(key).Newkey(newkey).Build()).Error()
 }
 
-// FlushDB deletes all keys in the current database
 func (c *Client) FlushDB(ctx context.Context) error {
 	return c.client.Do(ctx, c.client.B().Flushdb().Build()).Error()
 }
 
 // List operations
 
-// LLen returns the length of a list
 func (c *Client) LLen(ctx context.Context, key string) (int64, error) {
 	return c.client.Do(ctx, c.client.B().Llen().Key(key).Build()).ToInt64()
 }
 
-// LRange returns elements from a list
 func (c *Client) LRange(ctx context.Context, key string, start, stop int64) ([]string, error) {
 	return c.client.Do(ctx, c.client.B().Lrange().Key(key).Start(start).Stop(stop).Build()).AsStrSlice()
 }
 
 // Set operations
 
-// SCard returns the number of members in a set
 func (c *Client) SCard(ctx context.Context, key string) (int64, error) {
 	return c.client.Do(ctx, c.client.B().Scard().Key(key).Build()).ToInt64()
 }
 
-// SMembers returns all members of a set
 func (c *Client) SMembers(ctx context.Context, key string) ([]string, error) {
 	return c.client.Do(ctx, c.client.B().Smembers().Key(key).Build()).AsStrSlice()
 }
@@ -198,12 +181,10 @@ func (c *Client) SScan(ctx context.Context, key string, cursor uint64, count int
 
 // Hash operations
 
-// HLen returns the number of fields in a hash
 func (c *Client) HLen(ctx context.Context, key string) (int64, error) {
 	return c.client.Do(ctx, c.client.B().Hlen().Key(key).Build()).ToInt64()
 }
 
-// HGetAll returns all fields and values in a hash
 func (c *Client) HGetAll(ctx context.Context, key string) (map[string]string, error) {
 	return c.client.Do(ctx, c.client.B().Hgetall().Key(key).Build()).AsStrMap()
 }
@@ -227,18 +208,15 @@ func (c *Client) HScan(ctx context.Context, key string, cursor uint64, count int
 
 // Sorted set operations
 
-// ZCard returns the number of members in a sorted set
 func (c *Client) ZCard(ctx context.Context, key string) (int64, error) {
 	return c.client.Do(ctx, c.client.B().Zcard().Key(key).Build()).ToInt64()
 }
 
-// ZMember represents a member with score in a sorted set
 type ZMember struct {
 	Member string  `json:"member"`
 	Score  float64 `json:"score"`
 }
 
-// ZRangeWithScores returns members with scores from a sorted set
 func (c *Client) ZRangeWithScores(ctx context.Context, key string, start, stop int64) ([]ZMember, error) {
 	result, err := c.client.Do(ctx, c.client.B().Zrange().Key(key).Min(toString(start)).Max(toString(stop)).Withscores().Build()).AsZScores()
 	if err != nil {
@@ -257,13 +235,11 @@ func toString(i int64) string {
 
 // Geospatial operations
 
-// GeoPosition represents geographic coordinates
 type GeoPosition struct {
 	Longitude float64 `json:"longitude"`
 	Latitude  float64 `json:"latitude"`
 }
 
-// GeoMember represents a member with geographic coordinates
 type GeoMember struct {
 	Member    string  `json:"member"`
 	Longitude float64 `json:"longitude"`
@@ -304,25 +280,21 @@ func (c *Client) GeoPos(ctx context.Context, key string, members ...string) ([]*
 	return positions, nil
 }
 
-// GeoAdd adds a member with coordinates to a geospatial index
 func (c *Client) GeoAdd(ctx context.Context, key string, longitude, latitude float64, member string) error {
 	return c.client.Do(ctx, c.client.B().Geoadd().Key(key).LongitudeLatitudeMember().LongitudeLatitudeMember(longitude, latitude, member).Build()).Error()
 }
 
 // Stream operations
 
-// XLen returns the number of entries in a stream
 func (c *Client) XLen(ctx context.Context, key string) (int64, error) {
 	return c.client.Do(ctx, c.client.B().Xlen().Key(key).Build()).ToInt64()
 }
 
-// StreamEntry represents an entry in a stream
 type StreamEntry struct {
 	ID     string            `json:"id"`
 	Fields map[string]string `json:"fields"`
 }
 
-// XRange returns entries from a stream
 func (c *Client) XRange(ctx context.Context, key, start, stop string, count int64) ([]StreamEntry, error) {
 	cmd := c.client.B().Xrange().Key(key).Start(start).End(stop)
 	if count > 0 {
@@ -383,17 +355,14 @@ func (c *Client) XRangePage(ctx context.Context, key string, startAfterID string
 
 // List write operations
 
-// LPush prepends values to a list
 func (c *Client) LPush(ctx context.Context, key string, values ...string) error {
 	return c.client.Do(ctx, c.client.B().Lpush().Key(key).Element(values...).Build()).Error()
 }
 
-// RPush appends values to a list
 func (c *Client) RPush(ctx context.Context, key string, values ...string) error {
 	return c.client.Do(ctx, c.client.B().Rpush().Key(key).Element(values...).Build()).Error()
 }
 
-// LSet sets the value at an index in a list
 func (c *Client) LSet(ctx context.Context, key string, index int64, value string) error {
 	return c.client.Do(ctx, c.client.B().Lset().Key(key).Index(index).Element(value).Build()).Error()
 }
@@ -423,17 +392,14 @@ func (c *Client) LRemByIndex(ctx context.Context, key string, index int64) error
 
 // Set write operations
 
-// SAdd adds members to a set
 func (c *Client) SAdd(ctx context.Context, key string, members ...string) error {
 	return c.client.Do(ctx, c.client.B().Sadd().Key(key).Member(members...).Build()).Error()
 }
 
-// SRem removes members from a set
 func (c *Client) SRem(ctx context.Context, key string, members ...string) error {
 	return c.client.Do(ctx, c.client.B().Srem().Key(key).Member(members...).Build()).Error()
 }
 
-// SIsMember checks if a member exists in a set
 func (c *Client) SIsMember(ctx context.Context, key string, member string) (bool, error) {
 	result, err := c.client.Do(ctx, c.client.B().Sismember().Key(key).Member(member).Build()).ToInt64()
 	return result == 1, err
@@ -441,17 +407,14 @@ func (c *Client) SIsMember(ctx context.Context, key string, member string) (bool
 
 // Hash write operations
 
-// HSet sets a field value in a hash
 func (c *Client) HSet(ctx context.Context, key, field, value string) error {
 	return c.client.Do(ctx, c.client.B().Hset().Key(key).FieldValue().FieldValue(field, value).Build()).Error()
 }
 
-// HDel removes fields from a hash
 func (c *Client) HDel(ctx context.Context, key string, fields ...string) error {
 	return c.client.Do(ctx, c.client.B().Hdel().Key(key).Field(fields...).Build()).Error()
 }
 
-// HExists checks if a field exists in a hash
 func (c *Client) HExists(ctx context.Context, key, field string) (bool, error) {
 	result, err := c.client.Do(ctx, c.client.B().Hexists().Key(key).Field(field).Build()).ToInt64()
 	return result == 1, err
@@ -459,24 +422,20 @@ func (c *Client) HExists(ctx context.Context, key, field string) (bool, error) {
 
 // Sorted set write operations
 
-// ZAdd adds a member with score to a sorted set
 func (c *Client) ZAdd(ctx context.Context, key string, member string, score float64) error {
 	return c.client.Do(ctx, c.client.B().Zadd().Key(key).ScoreMember().ScoreMember(score, member).Build()).Error()
 }
 
-// ZIncrBy increments the score of a member in a sorted set
 func (c *Client) ZIncrBy(ctx context.Context, key string, member string, amount float64) (float64, error) {
 	return c.client.Do(ctx, c.client.B().Zincrby().Key(key).Increment(amount).Member(member).Build()).AsFloat64()
 }
 
-// ZRem removes members from a sorted set
 func (c *Client) ZRem(ctx context.Context, key string, members ...string) error {
 	return c.client.Do(ctx, c.client.B().Zrem().Key(key).Member(members...).Build()).Error()
 }
 
 // Stream write operations
 
-// XAddMulti appends an entry with multiple fields to a stream
 func (c *Client) XAddMulti(ctx context.Context, key string, fields map[string]string) (string, error) {
 	if len(fields) == 0 {
 		return "", fmt.Errorf("at least one field is required")
@@ -489,7 +448,6 @@ func (c *Client) XAddMulti(ctx context.Context, key string, fields map[string]st
 	return c.client.Do(ctx, c.client.B().Arbitrary(args...).Build()).ToString()
 }
 
-// XDel removes one or more entries from a stream by ID
 func (c *Client) XDel(ctx context.Context, key string, ids ...string) (int64, error) {
 	if len(ids) == 0 {
 		return 0, fmt.Errorf("at least one ID is required")
@@ -504,12 +462,10 @@ func (c *Client) PFCount(ctx context.Context, key string) (int64, error) {
 	return c.client.Do(ctx, c.client.B().Pfcount().Key(key).Build()).ToInt64()
 }
 
-// PFAdd adds elements to a HyperLogLog
 func (c *Client) PFAdd(ctx context.Context, key string, elements ...string) error {
 	return c.client.Do(ctx, c.client.B().Pfadd().Key(key).Element(elements...).Build()).Error()
 }
 
-// MemoryStats represents memory usage statistics
 type MemoryStats struct {
 	UsedMemory      int64
 	UsedMemoryHuman string
@@ -598,7 +554,6 @@ func (c *Client) GetNotifyKeyspaceEvents(ctx context.Context) (string, error) {
 	return result["notify-keyspace-events"], nil
 }
 
-// SetNotifyKeyspaceEvents enables/disables keyspace notifications
 func (c *Client) SetNotifyKeyspaceEvents(ctx context.Context, value string) error {
 	return c.client.Do(ctx, c.client.B().ConfigSet().ParameterValue().ParameterValue("notify-keyspace-events", value).Build()).Error()
 }
