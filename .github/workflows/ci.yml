@@ -138,9 +138,12 @@ jobs:
       - name: go vet
         run: go vet ./...
 
-      - uses: golangci/golangci-lint-action@v6
+      # Action v6 installs the golangci-lint v1 series, which is built with Go
+      # 1.24 and refuses a module targeting a newer Go. v9 installs v2. Pin the
+      # version to the one devenv provides, so CI lints what you lint locally.
+      - uses: golangci/golangci-lint-action@v9
         with:
-          version: latest
+          version: v2.12.2
 
   web:
     name: Check (frontend)
