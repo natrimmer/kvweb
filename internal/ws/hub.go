@@ -15,7 +15,6 @@ type Hub struct {
 	mu         sync.RWMutex
 }
 
-// NewHub creates a new Hub
 func NewHub() *Hub {
 	return &Hub{
 		clients:    make(map[*Client]bool),
@@ -25,7 +24,6 @@ func NewHub() *Hub {
 	}
 }
 
-// Run starts the hub's main loop
 func (h *Hub) Run() {
 	for {
 		select {
@@ -65,7 +63,6 @@ func (h *Hub) Run() {
 	}
 }
 
-// Broadcast sends a message to all connected clients
 func (h *Hub) Broadcast(msg Message) {
 	select {
 	case h.broadcast <- msg:
@@ -74,17 +71,14 @@ func (h *Hub) Broadcast(msg Message) {
 	}
 }
 
-// Register adds a client to the hub
 func (h *Hub) Register(c *Client) {
 	h.register <- c
 }
 
-// Unregister removes a client from the hub
 func (h *Hub) Unregister(c *Client) {
 	h.unregister <- c
 }
 
-// ClientCount returns the number of connected clients
 func (h *Hub) ClientCount() int {
 	h.mu.RLock()
 	defer h.mu.RUnlock()

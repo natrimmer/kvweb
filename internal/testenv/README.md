@@ -16,8 +16,8 @@ tests                       # Go tests + Svelte checks (what CI runs)
 Outside the devenv shell, `go test ./...` works too, as long as
 `valkey-server` and `redis-server` are on `PATH`.
 
-A run takes about 13 seconds for both engines. Servers start in ~30ms each, so
-the cost is dominated by one test that waits on the 5-second stats broadcast.
+Servers start in tens of milliseconds each, so a full run is dominated by one
+test that waits on the 5-second stats broadcast rather than by startup cost.
 
 ## How servers are provisioned
 

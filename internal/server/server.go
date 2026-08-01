@@ -18,7 +18,6 @@ import (
 	"github.com/natrimmer/kvweb/static"
 )
 
-// Server represents the HTTP server
 type Server struct {
 	cfg         *config.Config
 	client      *valkey.Client
@@ -31,7 +30,6 @@ type Server struct {
 	ctx         context.Context
 }
 
-// New creates a new Server
 func New(cfg *config.Config, client *valkey.Client) *Server {
 	s := &Server{
 		cfg:    cfg,
@@ -74,7 +72,6 @@ func New(cfg *config.Config, client *valkey.Client) *Server {
 
 // initNotifications checks and optionally enables keyspace notifications
 func (s *Server) initNotifications(ctx context.Context) {
-	// Check current setting
 	current, err := s.client.GetNotifyKeyspaceEvents(ctx)
 	if err != nil {
 		slog.Warn("Could not check keyspace notifications", "error", err)
@@ -107,16 +104,13 @@ func (s *Server) initNotifications(ctx context.Context) {
 	}
 }
 
-// Start starts the HTTP server
 func (s *Server) Start() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	s.cancelFunc = cancel
 	s.ctx = ctx
 
-	// Initialize notifications
 	s.initNotifications(ctx)
 
-	// Start WebSocket hub
 	go s.wsHub.Run()
 
 	// Start event broadcaster if live updates enabled
@@ -150,7 +144,6 @@ func (s *Server) enableLiveUpdates() {
 	s.liveUpdates.Store(true)
 	slog.Info("Live updates enabled at runtime")
 
-	// Start the event broadcaster
 	go s.runEventBroadcaster(s.ctx)
 
 	// Broadcast updated status to all connected clients
@@ -176,7 +169,6 @@ func (s *Server) disableLiveUpdates() {
 	})
 }
 
-// Shutdown gracefully shuts down the server
 func (s *Server) Shutdown() error {
 	if s.cancelFunc != nil {
 		s.cancelFunc()
@@ -248,7 +240,6 @@ func (s *Server) runStatsBroadcaster(ctx context.Context) {
 	}
 }
 
-// handleWebSocket handles WebSocket connections for real-time updates
 func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	opts := &websocket.AcceptOptions{}
 	if s.cfg.CORSOrigin != "" {

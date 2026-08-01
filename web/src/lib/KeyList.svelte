@@ -858,8 +858,13 @@
 					</Empty.Media>
 					<Empty.Title>No Keys Found</Empty.Title>
 					<Empty.Description>
-						No keys match your current search pattern
-						{typeFilter !== 'all' ? `and type filter "${typeFilterLabel}"` : ''}.
+						{#if pattern !== '*' && typeFilter !== 'all'}
+							No keys match the pattern "{pattern}" and the type filter "{typeFilterLabel}".
+						{:else if typeFilter !== 'all'}
+							No keys of type "{typeFilterLabel}".
+						{:else}
+							No keys match the pattern "{pattern}".
+						{/if}
 					</Empty.Description>
 				</Empty.Header>
 				<Empty.Content>

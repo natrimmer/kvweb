@@ -197,9 +197,16 @@ export function formatCoordinate(value: number): string {
 }
 
 /**
- * Checks if a value exceeds the recommended size limit (1MB).
+ * Size at which a value is worth warning about. Deliberately below the server's
+ * 1MB request body cap (maxBodySize in internal/api/api.go) so that confirming
+ * the warning still leaves room for the value to be saved.
  */
-export function isLargeValue(value: string, limitBytes = 1024 * 1024): boolean {
+export const largeValueThreshold = 512 * 1024;
+
+/**
+ * Checks if a value is large enough to warn about before saving.
+ */
+export function isLargeValue(value: string, limitBytes = largeValueThreshold): boolean {
 	return new Blob([value]).size > limitBytes;
 }
 

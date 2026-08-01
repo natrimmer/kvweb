@@ -15,14 +15,12 @@ const (
 	sendBufferSize = 256
 )
 
-// Client represents a WebSocket client connection
 type Client struct {
 	hub  *Hub
 	conn *websocket.Conn
 	send chan []byte
 }
 
-// NewClient creates a new Client
 func NewClient(hub *Hub, conn *websocket.Conn) *Client {
 	return &Client{
 		hub:  hub,
@@ -70,7 +68,6 @@ func (c *Client) ReadPump(ctx context.Context) {
 	}
 }
 
-// Send queues a message to be sent to this client
 func (c *Client) Send(data []byte) bool {
 	select {
 	case c.send <- data:

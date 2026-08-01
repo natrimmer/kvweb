@@ -8,7 +8,6 @@ import (
 	"github.com/valkey-io/valkey-go"
 )
 
-// KeyEvent represents a keyspace notification event
 type KeyEvent struct {
 	Operation string // "set", "del", "expire", "expired", "rename_from", "rename_to", etc.
 	Key       string

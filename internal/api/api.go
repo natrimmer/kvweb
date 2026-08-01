@@ -18,7 +18,6 @@ import (
 // maxBodySize is the maximum allowed request body size (1MB)
 const maxBodySize = 1 << 20
 
-// Handler handles API requests
 type Handler struct {
 	cfg                     *config.Config
 	client                  *valkey.Client
@@ -27,7 +26,6 @@ type Handler struct {
 	onNotificationsDisabled func() // Callback when notifications are disabled at runtime
 }
 
-// New creates a new API handler
 func New(cfg *config.Config, client *valkey.Client) *Handler {
 	h := &Handler{
 		cfg:    cfg,
@@ -35,7 +33,6 @@ func New(cfg *config.Config, client *valkey.Client) *Handler {
 		mux:    http.NewServeMux(),
 	}
 
-	// Register routes
 	h.mux.HandleFunc("GET /api/health", h.handleHealth)
 	h.mux.HandleFunc("GET /api/config", h.handleConfig)
 	h.mux.HandleFunc("GET /api/info", h.handleInfo)
@@ -96,17 +93,14 @@ func New(cfg *config.Config, client *valkey.Client) *Handler {
 	return h
 }
 
-// SetOnNotificationsEnabled sets the callback for when notifications are enabled at runtime
 func (h *Handler) SetOnNotificationsEnabled(fn func()) {
 	h.onNotificationsEnabled = fn
 }
 
-// SetOnNotificationsDisabled sets the callback for when notifications are disabled at runtime
 func (h *Handler) SetOnNotificationsDisabled(fn func()) {
 	h.onNotificationsDisabled = fn
 }
 
-// ServeHTTP implements http.Handler
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if h.cfg.CORSOrigin != "" {
 		w.Header().Set("Access-Control-Allow-Origin", h.cfg.CORSOrigin)
@@ -185,7 +179,6 @@ func (h *Handler) applyPrefixToPattern(pattern string) string {
 // Handlers
 
 func (h *Handler) handleHealth(w http.ResponseWriter, r *http.Request) {
-	// Check database connectivity by pinging
 	err := h.client.Ping(r.Context())
 
 	status := "ok"
@@ -468,7 +461,6 @@ func (h *Handler) handleGetKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse pagination params
 	pageStr := r.URL.Query().Get("page")
 	page := int64(1)
 	if pageStr != "" {
@@ -1439,7 +1431,6 @@ func (h *Handler) handleGeoGet(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	// Get total count
 	length, _ := h.client.ZCard(ctx, key)
 
 	// Get paginated members

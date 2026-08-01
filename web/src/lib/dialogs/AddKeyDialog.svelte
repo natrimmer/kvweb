@@ -549,7 +549,9 @@
 	<Dialog.Content class="flex max-h-[85vh] max-w-2xl flex-col">
 		<Dialog.Header>
 			<Dialog.Title>Create New Key</Dialog.Title>
-			<Dialog.Description>Configure the key name, type, and initial data.</Dialog.Description>
+			<Dialog.Description>
+				Type is fixed once the key exists. Changing it later means deleting and recreating the key.
+			</Dialog.Description>
 		</Dialog.Header>
 
 		<div class="min-h-0 flex-1 space-y-4 overflow-y-auto px-1">

@@ -110,7 +110,7 @@
 				toast.success('Live updates disabled');
 			}
 		} catch (e) {
-			toastError(e, `Failed to ${notificationsEnabled ? 'disable' : 'enable'} notifications`);
+			toastError(e, `Failed to ${notificationsEnabled ? 'disable' : 'enable'} live updates`);
 		} finally {
 			enablingNotifications = false;
 		}
@@ -121,7 +121,7 @@
 	<Dialog.Content class="flex max-h-[80vh] min-w-3xl flex-col">
 		<Dialog.Header>
 			<Dialog.Title>Server Settings</Dialog.Title>
-			<Dialog.Description>View server information and manage database settings</Dialog.Description>
+			<Dialog.Description>Output of INFO, plus live updates and flush controls</Dialog.Description>
 		</Dialog.Header>
 		<div class="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
 			<div class="flex shrink-0 items-center justify-between gap-2">
@@ -184,8 +184,8 @@
 							disabled={enablingNotifications}
 							class="hover:bg-accent"
 							title={notificationsEnabled
-								? 'Disable Valkey keyspace notifications (stops real-time updates)'
-								: 'Enable Valkey keyspace notifications at runtime (enables real-time key change updates)'}
+								? 'Stop showing key changes as they happen (turns off keyspace notifications)'
+								: 'Show key changes as they happen (turns on keyspace notifications)'}
 							aria-label={notificationsEnabled ? 'Disable live updates' : 'Enable live updates'}
 						>
 							<Radio />

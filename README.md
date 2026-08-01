@@ -52,8 +52,14 @@ Or build from source (requires Go, Node.js, pnpm):
 ```
 git clone https://github.com/natrimmer/kvweb
 cd kvweb
-build
+cd web && pnpm install && pnpm build && cd ..
+rm -rf static/dist && cp -r web/dist static/
+go build -o kvweb ./cmd/kvweb
 ```
+
+The frontend has to be built into `static/dist/` first, because the binary embeds
+it from there. Inside the devenv shell, `build` does all of the above and stamps
+the version from `git describe`.
 
 ## Usage
 
@@ -70,9 +76,10 @@ kvweb [flags]
 | `-port` | `8080` | HTTP listen port |
 | `-readonly` | `false` | Disable write operations |
 | `-prefix` | | Only show keys matching this prefix |
-| `-disable-flush` | `true` | Block FLUSHDB even in write mode |
+| `-disable-flush` | `true` | Block FLUSHDB and FLUSHALL even in write mode |
 | `-max-keys` | `0` | Limit SCAN count per request (0 = no limit) |
 | `-notifications` | `false` | Auto-enable keyspace notifications for live updates |
+| `-cors-origin` | | Allowed CORS origin (e.g. `http://localhost:5173`). Omit to disallow cross-origin requests |
 | `-open` | `false` | Open browser on start |
 | `-dev` | `false` | Skip serving embedded frontend (API + WebSocket only) |
 

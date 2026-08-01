@@ -78,7 +78,7 @@
 				{ type: 'command', text: 'exit' },
 				{
 					type: 'result',
-					text: 'you can close the console pane by clicking the same button you used to open it. thanks for using kvweb. i love you.'
+					text: 'Close the console pane with the same button you used to open it. Thanks for using kvweb. I love you.'
 				}
 			];
 			scrollToBottom();
@@ -179,7 +179,7 @@
 		{#each outputHistory as line}
 			{#if line.type === 'command'}
 				<div class="text-muted-foreground">
-					<span class="text-primary">valkey&gt;</span>
+					<span class="text-primary">kv&gt;</span>
 					{' '}{line.text}
 				</div>
 			{:else if line.type === 'error'}
