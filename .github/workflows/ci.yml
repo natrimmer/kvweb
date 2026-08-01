@@ -1,0 +1,172 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Full suite against server binaries this job launches itself. Every test runs
+  # here, including the ones that need an exclusive server (keyspace
+  # notifications, slow log, WebSocket live updates).
+  test:
+    name: Test (valkey + redis)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      # internal/server embeds static/dist via go:embed, so the directory has to
+      # exist for the package to compile. Tests run in dev mode and never serve
+      # these bytes; building the real frontend here would only cost time.
+      - name: Create embed placeholder
+        run: |
+          mkdir -p static/dist
+          echo '<!doctype html><title>placeholder</title>' > static/dist/index.html
+
+      # Resolve each engine to an exact store path. Both packages ship a binary
+      # named redis-server, so relying on PATH order would silently run the
+      # Redis matrix against Valkey.
+      - name: Install Valkey and Redis
+        run: |
+          valkey=$(nix build --no-link --print-out-paths nixpkgs#valkey)
+          redis=$(nix build --no-link --print-out-paths nixpkgs#redis)
+          echo "KVWEB_TEST_VALKEY_SERVER=$valkey/bin/valkey-server" >> "$GITHUB_ENV"
+          echo "KVWEB_TEST_REDIS_SERVER=$redis/bin/redis-server" >> "$GITHUB_ENV"
+          "$valkey/bin/valkey-server" --version
+          "$redis/bin/redis-server" --version
+
+      - name: Test
+        env:
+          # Fail rather than skip if either engine is missing.
+          KVWEB_TEST_REQUIRE_ENGINES: "1"
+        run: go test -race -count=1 ./...
+
+  # Cross-version sweep against released images. These servers are shared, so
+  # tests that need an exclusive server skip; the rest still run against every
+  # version we claim to support.
+  compat:
+    name: Compat (${{ matrix.engine }} ${{ matrix.version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - engine: valkey
+            version: "8"
+            image: valkey/valkey:8
+            healthcmd: valkey-cli ping
+          - engine: valkey
+            version: "9"
+            image: valkey/valkey:9
+            healthcmd: valkey-cli ping
+          - engine: redis
+            version: "7"
+            image: redis:7
+            healthcmd: redis-cli ping
+          - engine: redis
+            version: "8"
+            image: redis:8
+            healthcmd: redis-cli ping
+    services:
+      engine:
+        image: ${{ matrix.image }}
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "${{ matrix.healthcmd }}"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Create embed placeholder
+        run: |
+          mkdir -p static/dist
+          echo '<!doctype html><title>placeholder</title>' > static/dist/index.html
+
+      - name: Test
+        env:
+          KVWEB_TEST_ENGINES: ${{ matrix.engine }}
+          KVWEB_TEST_REQUIRE_ENGINES: "1"
+          KVWEB_TEST_VALKEY_URL: ${{ matrix.engine == 'valkey' && '127.0.0.1:6379' || '' }}
+          KVWEB_TEST_REDIS_URL: ${{ matrix.engine == 'redis' && '127.0.0.1:6379' || '' }}
+        run: go test -count=1 ./...
+
+  lint:
+    name: Lint (Go)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Create embed placeholder
+        run: |
+          mkdir -p static/dist
+          echo '<!doctype html><title>placeholder</title>' > static/dist/index.html
+
+      - name: gofmt
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "These files need gofmt:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: go vet
+        run: go vet ./...
+
+      # Action v6 installs the golangci-lint v1 series, which is built with Go
+      # 1.24 and refuses a module targeting a newer Go. v9 installs v2. Pin the
+      # version to the one devenv provides, so CI lints what you lint locally.
+      - uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.12.2
+
+  web:
+    name: Check (frontend)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Check
+        run: pnpm check
+
+      - name: Lint
+        run: pnpm lint

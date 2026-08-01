@@ -2,6 +2,7 @@ package valkey
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -353,6 +354,12 @@ func (c *Client) XRangePage(ctx context.Context, key string, startAfterID string
 
 	// Fetch pageSize + 1 entries to determine if there are more
 	fetchCount := pageSize + 1
+	if startAfterID != "" {
+		// XRANGE start is inclusive, so one of the fetched entries is the cursor
+		// itself and gets dropped below. Without this the last slot is always
+		// consumed by the cursor and nextCursor never gets set past page one.
+		fetchCount++
+	}
 	entries, err := c.XRange(ctx, key, startID, "+", fetchCount)
 	if err != nil {
 		return nil, "", err
@@ -542,6 +549,42 @@ func (c *Client) GetMemoryStats(ctx context.Context) (*MemoryStats, error) {
 // Exec executes an arbitrary command and returns the result as a generic value.
 func (c *Client) Exec(ctx context.Context, args []string) (any, error) {
 	return c.client.Do(ctx, c.client.B().Arbitrary(args...).Build()).ToAny()
+}
+
+// ErrNoKeyArguments reports that a command takes no key arguments at all.
+var ErrNoKeyArguments = errors.New("command has no key arguments")
+
+// ErrCommandNotUnderstood reports that the server does not recognize the
+// command, or was given the wrong number of arguments for it. Executing such a
+// command fails the same way, so it cannot reach any key.
+var ErrCommandNotUnderstood = errors.New("command is not recognized by the server")
+
+// GetKeys returns the key arguments of a command, as the server itself resolves
+// them. Key positions vary far too much to infer locally: destinations come
+// last (COPY src dst), first (BITOP AND dst src), or behind a token
+// (SORT key STORE dst), and counted forms (ZUNIONSTORE dst 2 a b) move with
+// their operands. The server already knows all of this, because it needs the
+// same answer for cluster routing and ACL key permissions.
+//
+// Returns ErrNoKeyArguments for keyless commands and ErrCommandNotUnderstood
+// for ones the server would reject anyway.
+func (c *Client) GetKeys(ctx context.Context, args []string) ([]string, error) {
+	full := make([]string, 0, len(args)+2)
+	full = append(full, "COMMAND", "GETKEYS")
+	full = append(full, args...)
+
+	keys, err := c.client.Do(ctx, c.client.B().Arbitrary(full...).Build()).AsStrSlice()
+	if err == nil {
+		return keys, nil
+	}
+	switch message := err.Error(); {
+	case strings.Contains(message, "no key arguments"):
+		return nil, ErrNoKeyArguments
+	case strings.Contains(message, "Invalid command specified"),
+		strings.Contains(message, "Invalid number of arguments"):
+		return nil, ErrCommandNotUnderstood
+	}
+	return nil, err
 }
 
 // Config operations

@@ -92,6 +92,22 @@ The URL can include username, password, and database number. The `-password` and
 
 The `rediss://` and `valkeys://` schemes enable TLS with system CA certificates. Custom CA certs, client certificates, and other advanced TLS settings are not supported through the URL.
 
+## Testing
+
+The test suite runs against a real Redis and a real Valkey server, launched by
+the tests themselves — there are no mocks.
+
+```
+tests               # everything CI runs
+test-integration    # integration tests only, verbose, both engines
+test-unit           # -short: skips anything that needs a server
+```
+
+Outside the devenv shell, `go test ./...` works as long as `valkey-server` and
+`redis-server` are on your PATH; it skips cleanly if they are not. See
+[`internal/testenv/README.md`](internal/testenv/README.md) for how the harness
+works and how to add a test.
+
 ## Versioning
 
 kvweb uses [SemVer](https://semver.org/) with git tags as the source of truth. The version and commit hash are embedded at build time via `git describe`.
