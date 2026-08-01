@@ -12,6 +12,12 @@ in
     PORT_VALKEY = toString ports.valkey;
     PORT_BACKEND = toString ports.backend;
     PORT_FRONTEND = toString ports.frontend;
+
+    # Integration tests launch their own servers. Both packages ship a binary
+    # called redis-server, so point at each one explicitly rather than letting
+    # PATH order decide which engine the Redis tests actually run against.
+    KVWEB_TEST_VALKEY_SERVER = "${pkgs.valkey}/bin/valkey-server";
+    KVWEB_TEST_REDIS_SERVER = "${pkgs.redis}/bin/redis-server";
   };
 
   packages = [
@@ -24,6 +30,7 @@ in
     pkgs.nixd
     pkgs.nil
     pkgs.valkey
+    pkgs.redis
     pkgs.zstd
     pkgs.docker
     pkgs.colima
@@ -129,12 +136,32 @@ in
     '';
 
     tests.exec = ''
-      echo "Running Go tests..."
+      echo "Running Go tests (integration tests launch their own valkey/redis)..."
       go test ./...
       echo ""
       echo "Running Svelte checks..."
       cd $DEVENV_ROOT/web
       pnpm check
+    '';
+
+    test-unit.exec = ''
+      echo "Running Go unit tests only (no servers launched)..."
+      go test -short ./...
+    '';
+
+    test-integration.exec = ''
+      # Every engine must be present, so a missing binary fails instead of
+      # quietly skipping half the matrix.
+      export KVWEB_TEST_REQUIRE_ENGINES=1
+      ENGINES="''${1:-}"
+      if [ -n "$ENGINES" ]; then
+        export KVWEB_TEST_ENGINES="$ENGINES"
+        unset KVWEB_TEST_REQUIRE_ENGINES
+        echo "Running integration tests against: $ENGINES"
+      else
+        echo "Running integration tests against valkey and redis..."
+      fi
+      go test -count=1 -v ./internal/... 2>&1 | grep -Ev '^(=== RUN|=== PAUSE|=== CONT)'
     '';
 
     lint.exec = ''
@@ -175,7 +202,11 @@ in
       echo "  dev        - Start dev environment (valkey + backend + frontend)"
       echo "  build      - Build production binary with embedded frontend"
       echo "  build-web  - Build frontend only"
-      echo "  tests      - Run all tests"
+      echo "  tests      - Run all tests (Go + Svelte checks)"
+      echo "  test-unit  - Run Go unit tests only, no servers launched"
+      echo "  test-integration [ENGINES]"
+      echo "             - Run integration tests against real valkey and redis"
+      echo "               ENGINES: valkey, redis, or valkey,redis (default: both)"
       echo "  lint       - Run linters"
       echo "  deps       - Update dependencies"
       echo "  seed [TYPE]- Populate valkey with sample data"

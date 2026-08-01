@@ -247,7 +247,7 @@ var readOnlyCommands = map[string]bool{
 	"CONFIG": true, "CLIENT": true, "SLOWLOG": true, "CLUSTER": true, "ACL": true,
 	// Key inspection
 	"EXISTS": true, "TYPE": true, "TTL": true, "PTTL": true,
-	"DUMP": true, "OBJECT": true, "RANDOMKEY": true,
+	"DUMP": true, "RANDOMKEY": true,
 	"SCAN": true, "KEYS": true,
 	// String
 	"GET": true, "MGET": true, "GETRANGE": true, "STRLEN": true,

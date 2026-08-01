@@ -353,6 +353,12 @@ func (c *Client) XRangePage(ctx context.Context, key string, startAfterID string
 
 	// Fetch pageSize + 1 entries to determine if there are more
 	fetchCount := pageSize + 1
+	if startAfterID != "" {
+		// XRANGE start is inclusive, so one of the fetched entries is the cursor
+		// itself and gets dropped below. Without this the last slot is always
+		// consumed by the cursor and nextCursor never gets set past page one.
+		fetchCount++
+	}
 	entries, err := c.XRange(ctx, key, startID, "+", fetchCount)
 	if err != nil {
 		return nil, "", err
