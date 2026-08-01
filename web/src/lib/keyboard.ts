@@ -1,10 +1,3 @@
-/**
- * Keyboard utility functions for handling keyboard shortcuts across platforms.
- */
-
-/**
- * Detects if the current platform is macOS.
- */
 export function isMac(): boolean {
 	const uad = (navigator as Navigator & { userAgentData?: { platform: string } }).userAgentData;
 	if (uad) {
@@ -13,22 +6,14 @@ export function isMac(): boolean {
 	return /Mac|iPhone|iPad|iPod/.test(navigator.userAgent);
 }
 
-/**
- * Gets the appropriate modifier key name for the current platform.
- * @returns "Cmd" for macOS, "Ctrl" for other platforms
- */
+/** "Cmd" on macOS, "Ctrl" everywhere else. */
 export function getModifierKey(): string {
 	return isMac() ? 'Cmd' : 'Ctrl';
 }
 
 /**
- * Checks if the keyboard event matches a specific shortcut.
- * @param event The keyboard event to check
- * @param key The key to match (e.g., 's', 'Enter', 'Escape')
- * @param ctrl Whether the Ctrl/Cmd modifier should be pressed
- * @param shift Whether the Shift modifier should be pressed
- * @param alt Whether the Alt modifier should be pressed
- * @returns true if the event matches the shortcut
+ * `ctrl` matches the platform's primary modifier: Cmd on macOS, Ctrl elsewhere.
+ * Modifiers must match exactly, so Ctrl+Shift+S does not satisfy a Ctrl+S shortcut.
  */
 export function matchesShortcut(
 	event: KeyboardEvent,
@@ -46,14 +31,7 @@ export function matchesShortcut(
 	);
 }
 
-/**
- * Formats a keyboard shortcut for display in the UI.
- * @param key The key (e.g., 'S', 'Delete', 'Escape')
- * @param ctrl Whether to include the Ctrl/Cmd modifier
- * @param shift Whether to include the Shift modifier
- * @param alt Whether to include the Alt modifier
- * @returns A formatted shortcut string (e.g., "Ctrl+S", "Cmd+S", "Delete")
- */
+/** Renders a shortcut for display: "Cmd+S", "Ctrl+Shift+S", "Delete". */
 export function formatShortcut(key: string, ctrl = false, shift = false, alt = false): string {
 	const parts: string[] = [];
 
@@ -72,10 +50,7 @@ export function formatShortcut(key: string, ctrl = false, shift = false, alt = f
 	return parts.join('+');
 }
 
-/**
- * Checks if the current active element is an input that should not be interrupted by shortcuts.
- * @returns true if an input element is focused
- */
+/** True when focus is somewhere a keystroke is text, not a shortcut. */
 export function isInputFocused(): boolean {
 	const activeElement = document.activeElement;
 	if (!activeElement) return false;

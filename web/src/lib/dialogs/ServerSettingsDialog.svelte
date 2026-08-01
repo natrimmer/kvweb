@@ -164,7 +164,7 @@
 								<AlertDialog.Header>
 									<AlertDialog.Title>Flush Database</AlertDialog.Title>
 									<AlertDialog.Description>
-										This will delete ALL keys in the current database. This action cannot be undone.
+										Deletes every key in the current database. This can't be undone.
 									</AlertDialog.Description>
 								</AlertDialog.Header>
 								<AlertDialog.Footer>

@@ -550,7 +550,8 @@
 		<Dialog.Header>
 			<Dialog.Title>Create New Key</Dialog.Title>
 			<Dialog.Description>
-				Type is fixed once the key exists. Changing it later means deleting and recreating the key.
+				Name the key and pick its type. Type is fixed once the key exists, so changing it later
+				means deleting and recreating.
 			</Dialog.Description>
 		</Dialog.Header>
 

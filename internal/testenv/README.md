@@ -1,8 +1,9 @@
 # Integration test harness
 
 Every test in `internal/api`, `internal/server` and `internal/valkey` runs
-against a real Redis **and** a real Valkey server. No mocks, no fakes — the
-whole point is to catch the places where the two engines drift apart.
+against a real Redis **and** a real Valkey server. No mocks, no fakes. Redis
+and Valkey diverge in the replies kvweb parses by hand, and only a real server
+of each shows where.
 
 ## Running
 
@@ -16,8 +17,8 @@ tests                       # Go tests + Svelte checks (what CI runs)
 Outside the devenv shell, `go test ./...` works too, as long as
 `valkey-server` and `redis-server` are on `PATH`.
 
-Servers start in tens of milliseconds each, so a full run is dominated by one
-test that waits on the 5-second stats broadcast rather than by startup cost.
+Server startup is negligible. A run is dominated by one test that waits on the
+5-second stats broadcast.
 
 ## How servers are provisioned
 
@@ -30,7 +31,7 @@ short-circuits that by exporting exact store paths.
 | Variable | Effect |
 | --- | --- |
 | `KVWEB_TEST_ENGINES` | Comma-separated subset, e.g. `valkey` |
-| `KVWEB_TEST_REQUIRE_ENGINES` | Fail instead of skip when an engine is missing — CI sets this |
+| `KVWEB_TEST_REQUIRE_ENGINES` | Fail instead of skip when an engine is missing (CI sets this) |
 | `KVWEB_TEST_VALKEY_SERVER` / `KVWEB_TEST_REDIS_SERVER` | Exact binary paths |
 | `KVWEB_TEST_VALKEY_URL` / `KVWEB_TEST_REDIS_URL` | Use an already-running server instead of launching one |
 
@@ -72,8 +73,8 @@ spaces or unicode round-trip correctly. Always build key URLs with it.
 By default a test gets a **logical database** on the engine's shared server,
 flushed before and after. Up to 16 tests per engine run in parallel this way.
 
-Reach for `testenv.Exclusive()` when a test changes anything server-wide —
-`notify-keyspace-events`, slowlog config, `SCRIPT FLUSH`, `CONFIG SET`:
+Reach for `testenv.Exclusive()` when a test changes anything server-wide:
+`notify-keyspace-events`, slowlog config, `SCRIPT FLUSH`, `CONFIG SET`.
 
 ```go
 h := testenv.New(t, e, testenv.Exclusive("--slowlog-log-slower-than", "0"))

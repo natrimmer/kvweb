@@ -29,7 +29,6 @@ func NewClient(hub *Hub, conn *websocket.Conn) *Client {
 	}
 }
 
-// WritePump pumps messages from the hub to the WebSocket connection
 func (c *Client) WritePump(ctx context.Context) {
 	defer func() {
 		_ = c.conn.CloseNow()
@@ -54,7 +53,8 @@ func (c *Client) WritePump(ctx context.Context) {
 	}
 }
 
-// ReadPump reads messages from the WebSocket connection (mainly to detect disconnects)
+// ReadPump exists to notice when the peer goes away; the frames themselves are
+// discarded.
 func (c *Client) ReadPump(ctx context.Context) {
 	defer c.hub.Unregister(c)
 	c.conn.SetReadLimit(4096) // We don't process incoming messages; cap to prevent abuse
@@ -64,7 +64,6 @@ func (c *Client) ReadPump(ctx context.Context) {
 		if err != nil {
 			break
 		}
-		// We don't process incoming messages currently
 	}
 }
 

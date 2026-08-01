@@ -262,7 +262,7 @@ func (h *Handler) handleKeys(w http.ResponseWriter, r *http.Request) {
 		var err error
 		cursor, err = strconv.ParseUint(cursorStr, 10, 64)
 		if err != nil {
-			jsonError(w, fmt.Sprintf("invalid cursor: %v", err), http.StatusBadRequest)
+			jsonError(w, fmt.Sprintf("Invalid cursor: %v", err), http.StatusBadRequest)
 			return
 		}
 	}
@@ -273,7 +273,7 @@ func (h *Handler) handleKeys(w http.ResponseWriter, r *http.Request) {
 		var err error
 		count, err = strconv.ParseInt(countStr, 10, 64)
 		if err != nil {
-			jsonError(w, fmt.Sprintf("invalid count: %v", err), http.StatusBadRequest)
+			jsonError(w, fmt.Sprintf("Invalid count: %v", err), http.StatusBadRequest)
 			return
 		}
 	}
@@ -598,17 +598,13 @@ func (h *Handler) handleGetKey(w http.ResponseWriter, r *http.Request) {
 		}
 	case "stream":
 		length, _ = h.client.XLen(ctx, key)
-		// Streams use ID-based pagination for efficiency
-		// We fetch only the entries needed using XRANGE with cursor
-
-		// To support page jumping, we need to find the starting ID for the requested page
-		// For page 1, start from beginning. For others, we need to skip entries.
+		// Streams paginate by ID, not offset, so jumping to page N means first
+		// learning the ID of the (N-1)*pageSize'th entry. XRANGE walks to that
+		// entry and its ID becomes the cursor the page is read from.
 		var startAfterID string
 		if page > 1 {
-			// We need to skip (page-1) * pageSize entries to find the start ID
 			skipCount := (page - 1) * pageSize
 			if skipCount < length {
-				// Fetch entries up to but not including the target page to get the cursor
 				skipEntries, err := h.client.XRange(ctx, key, "-", "+", skipCount)
 				if err != nil {
 					internalError(w, err)
@@ -620,7 +616,6 @@ func (h *Handler) handleGetKey(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		// Now fetch the actual page using the cursor
 		entries, nextCursor, err := h.client.XRangePage(ctx, key, startAfterID, pageSize)
 		if err == nil {
 			value = entries

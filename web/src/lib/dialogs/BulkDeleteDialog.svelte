@@ -41,8 +41,8 @@
 		<AlertDialog.Header>
 			<AlertDialog.Title>Delete {keys.size} Key{keys.size === 1 ? '' : 's'}</AlertDialog.Title>
 			<AlertDialog.Description>
-				Are you sure you want to delete {keys.size} key{keys.size === 1 ? '' : 's'}? This action
-				cannot be undone.
+				Deletes {keys.size === 1 ? 'this key' : `these ${keys.size} keys`} immediately. This can't be
+				undone.
 			</AlertDialog.Description>
 		</AlertDialog.Header>
 		<div class="max-h-48 overflow-y-auto rounded border border-border bg-muted/50 p-2">

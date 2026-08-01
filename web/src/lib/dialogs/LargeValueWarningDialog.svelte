@@ -34,7 +34,8 @@
 				<li>Replication delays</li>
 			</ul>
 			<p class="mb-8">
-				Values over 1 MB are refused outright: kvweb caps request bodies at that size.
+				kvweb caps each request at 1 MB total, so a value near that size may be refused even after
+				you confirm.
 			</p>
 			<p class="font-medium text-foreground">
 				Consider storing large data in object storage (S3, etc.) and keeping only references in
